@@ -210,6 +210,27 @@ namespace WinState.ViewModels.Windows
             if (propertyName == "CpuPower")
             {
                 POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
+                switch (propertyName)
+                {
+                    case "CpuUsage":
+                        notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
+                        break;
+                    case "GpuUsage":
+                        GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
+                        break;
+                    case "RamUsage":
+                        RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
+                        break;
+                    case "DiskUsage":
+                        DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
+                        break;
+                    case "NetworkUpload":
+                        NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
+                        break;
+                    case "CpuPower":
+                        POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
+                        break;
+                }
             }
         }
 
