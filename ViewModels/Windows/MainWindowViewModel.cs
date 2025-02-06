@@ -187,50 +187,26 @@ namespace WinState.ViewModels.Windows
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            if (propertyName == "CpuUsage")
+            switch (propertyName)
             {
-                notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
-            }
-            if (propertyName == "GpuUsage")
-            {
-                GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
-            }
-            if (propertyName == "RamUsage")
-            {
-                RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
-            }
-            if (propertyName == "DiskUsage")
-            {
-                DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
-            }
-            if (propertyName == "NetworkUpload")
-            {
-                NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
-            }
-            if (propertyName == "CpuPower")
-            {
-                POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
-                switch (propertyName)
-                {
-                    case "CpuUsage":
-                        notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
-                        break;
-                    case "GpuUsage":
-                        GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
-                        break;
-                    case "RamUsage":
-                        RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
-                        break;
-                    case "DiskUsage":
-                        DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
-                        break;
-                    case "NetworkUpload":
-                        NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
-                        break;
-                    case "CpuPower":
-                        POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
-                        break;
-                }
+                case "CpuUsage":
+                    notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
+                    break;
+                case "GpuUsage":
+                    GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
+                    break;
+                case "RamUsage":
+                    RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
+                    break;
+                case "DiskUsage":
+                    DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
+                    break;
+                case "NetworkUpload":
+                    NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
+                    break;
+                case "CpuPower":
+                    POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
+                    break;
             }
         }
 
