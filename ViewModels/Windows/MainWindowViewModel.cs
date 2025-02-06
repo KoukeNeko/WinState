@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using WinState.Services;
 using Wpf.Ui.Controls;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace WinState.ViewModels.Windows
 {
@@ -82,7 +83,6 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "CPU: " + _systemInfoService.CpuUsage.ToString() + "%"
             };
 
             GPU = new NotifyIcon
@@ -90,7 +90,6 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "GPU: " + _systemInfoService.GpuUsage.ToString() + "%"
             };
 
             RAM = new NotifyIcon
@@ -98,7 +97,7 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "RAM: " + _systemInfoService.RamUsage.ToString() + "%"
+                
             };
 
             DISK = new NotifyIcon
@@ -106,7 +105,7 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%"
+                
             };
 
             NETWORK = new NotifyIcon
@@ -114,7 +113,7 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + "KB/s" + " / " + _systemInfoService.NetworkDownload.ToString() + "KB/s"
+                
             };
 
             POWER = new NotifyIcon
@@ -122,7 +121,7 @@ namespace WinState.ViewModels.Windows
                 Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-                Text = "PWR: " + _systemInfoService.CpuPower.ToString() + "W"
+                
             };
 
 
@@ -166,8 +165,8 @@ namespace WinState.ViewModels.Windows
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-            using (var title = new Font("Arial", 20, System.Drawing.FontStyle.Bold))
-            using (var subtitle = new Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
+            using (var title = new System.Drawing.Font("Arial", 20, System.Drawing.FontStyle.Bold))
+            using (var subtitle = new System.Drawing.Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
             using (Brush brush = new SolidBrush(Color.White))
             {
                 g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
@@ -201,21 +200,27 @@ namespace WinState.ViewModels.Windows
             {
                 case "CpuUsage":
                     CPU.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
+                    CPU.Text = "CPU: " + _systemInfoService.CpuUsage.ToString() + "%";
                     break;
                 case "GpuUsage":
                     GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
+                    GPU.Text = "GPU: " + _systemInfoService.GpuUsage.ToString() + "%";
                     break;
                 case "RamUsage":
                     RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
+                    RAM.Text = "RAM: " + _systemInfoService.RamUsage.ToString() + "%";
                     break;
                 case "DiskUsage":
                     DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
+                    DISK.Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%";
                     break;
                 case "NetworkUpload":
                     NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
+                    NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + "KB/s" + " / " + _systemInfoService.NetworkDownload.ToString() + "KB/s";
                     break;
                 case "CpuPower":
                     POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
+                    POWER.Text = "PWR: " + _systemInfoService.CpuPower.ToString() + "W";
                     break;
             }
         }
