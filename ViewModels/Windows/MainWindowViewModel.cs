@@ -77,6 +77,50 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
+            var GPU = new NotifyIcon
+            {
+                Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+            var RAM = new NotifyIcon
+            {
+                Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+            var DISK = new NotifyIcon
+            {
+                Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+            var NETWORK = new NotifyIcon
+            {
+                Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+            var BATTERY = new NotifyIcon
+            {
+                Icon = CreateTextIcon("PWR", _systemInfoService.BatteryLevel.ToString()),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+
+
+            foreach (var item in _trayMenuItems)
+            {
+                notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
+            }
+
+            _trayMenuItems.Clear();
+
             foreach (var item in _trayMenuItems)
             {
                 notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
@@ -98,8 +142,8 @@ namespace WinState.ViewModels.Windows
             using (var subtitle = new Font("Arial", 35f, System.Drawing.FontStyle.Regular))
             using (Brush brush = new SolidBrush(Color.White))
             {
-                g.DrawString(text1, title, brush, new PointF(0, -7.0f));
-                g.DrawString(text2, subtitle, brush, new PointF(0, 22f));
+                g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
+                g.DrawString(text2, subtitle, brush, new PointF(-6, 22f));
             }
 
             return Icon.FromHandle(bitmap.GetHicon());
