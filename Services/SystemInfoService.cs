@@ -17,7 +17,7 @@ namespace WinState.Services
         public double NetworkDownload { get; private set; }
         public double BatteryLevel { get; private set; }
 
-        public event EventHandler DataUpdated;
+        public event EventHandler? DataUpdated;
 
         public SystemInfoService()
         {

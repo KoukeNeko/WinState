@@ -70,12 +70,19 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.DataUpdated += OnDataUpdated;
 
             //  測試系統圖標
-            NotifyIcon notifyIcon = new NotifyIcon
+            var notifyIcon = new NotifyIcon
             {
-                Icon = CreateTextIcon("CPU","40"),
+                Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
+
+            foreach (var item in _trayMenuItems)
+            {
+                notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
+            }
+
+            _trayMenuItems.Clear();
 
         }
 
@@ -105,7 +112,7 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.Start();
         }
 
-        private void OnDataUpdated(object sender, EventArgs e)
+        private void OnDataUpdated(object? sender, EventArgs e)
         {
             // SystemInfoService 每秒更新時，呼叫 PropertyChanged
             OnPropertyChanged(nameof(CpuUsage));
