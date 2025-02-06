@@ -156,7 +156,7 @@ namespace WinState.ViewModels.Windows
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-            using (var title = new Font("Arial", 22, System.Drawing.FontStyle.Bold))
+            using (var title = new Font("Arial", 20, System.Drawing.FontStyle.Bold))
             using (var subtitle = new Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
             using (Brush brush = new SolidBrush(Color.White))
             {
