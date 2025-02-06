@@ -41,6 +41,8 @@ namespace WinState.Services
             System.Threading.Thread.Sleep(1000); // Wait a second to get a valid reading
             CpuUsage = cpuCounter.NextValue();
 
+            // 
+
             // Get RAM usage
             var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
             var totalRam = new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / (1024 * 1024);

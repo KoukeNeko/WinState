@@ -166,12 +166,84 @@ namespace WinState.ViewModels.Windows
 
             using (var title = new System.Drawing.Font("Arial", 20, System.Drawing.FontStyle.Bold))
             using (var subtitle = new System.Drawing.Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
-            using (Brush brush = new SolidBrush(Color.White))
             {
+                Brush brush = new SolidBrush(Color.White);
+                if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK") && double.TryParse(text2, out double value))
+                {
+                    if (value >= 90)
+                    {
+                        brush = new SolidBrush(Color.OrangeRed);
+                    }
+                    else if (value >= 80)
+                    {
+                        brush = new SolidBrush(Color.Orange);
+                    }else if (value >= 70)
+                    {
+                        brush = new SolidBrush(Color.Yellow);
+                    }
+                }
+
                 g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
                 g.DrawString(text2, subtitle, brush, new PointF(-8, text2.Length >= 3 ? 29 : 22f));
             }
 
+            static Icon CreateTextIcon(string text1, string text2)
+            {
+                if (text2.Length >= 3)
+                {
+                    // Convert large numbers to a more readable format
+                    if (double.TryParse(text2, out double number))
+                    {
+                        if (number >= 1000)
+                        {
+                            text2 = (number / 1000).ToString("0.0") + "k";
+                        }
+                        else
+                        {
+                            text2 = Math.Round(number).ToString();
+                        }
+                    }
+                }
+
+                using var bitmap = new Bitmap(64, 64);
+                using var g = Graphics.FromImage(bitmap);
+                g.Clear(Color.Transparent);
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                using var title = new System.Drawing.Font("Arial", 20, System.Drawing.FontStyle.Bold);
+                using var subtitle = new System.Drawing.Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular);
+                using var brush = new SolidBrush(Color.White);
+
+                if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK") && double.TryParse(text2, out double value))
+                {
+                    if (value >= 90)
+                    {
+                        brush.Color = Color.OrangeRed;
+                    }
+                    else if (value >= 80)
+                    {
+                        brush.Color = Color.Orange;
+                    }
+                    else if (value >= 70)
+                    {
+                        brush.Color = Color.Yellow;
+                    }
+                }
+
+                g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
+                g.DrawString(text2, subtitle, brush, new PointF(-8, text2.Length >= 3 ? 29 : 22f));
+
+                // Ensure the icon handle is released properly
+                IntPtr hIcon = bitmap.GetHicon();
+                Icon icon = Icon.FromHandle(hIcon);
+                DestroyIcon(hIcon); // Release the handle to avoid resource leaks
+
+                return icon;
+            }
+
+            [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+            extern static bool DestroyIcon(IntPtr handle);
             return Icon.FromHandle(bitmap.GetHicon());
         }
 
