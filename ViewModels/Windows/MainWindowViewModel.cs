@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 using WinState.Services;
 using Wpf.Ui.Controls;
 
@@ -66,6 +68,33 @@ namespace WinState.ViewModels.Windows
         {
             _systemInfoService = new SystemInfoService();
             _systemInfoService.DataUpdated += OnDataUpdated;
+
+            //  測試系統圖標
+            NotifyIcon notifyIcon = new NotifyIcon
+            {
+                Icon = CreateTextIcon("CPU","40"),
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+            };
+
+        }
+
+        static Icon CreateTextIcon(string text1, string text2)
+        {
+            using (var bitmap = new Bitmap(64, 64)) // 設定圖標大小
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                g.Clear(Color.Transparent);
+                using (var title = new Font("Arial", 20, System.Drawing.FontStyle.Regular))
+                using (var subtitle = new Font("Arial", 35f, System.Drawing.FontStyle.Regular))
+                using (Brush brush = new SolidBrush(Color.White))
+                {
+                    g.DrawString(text1, title, brush, new PointF(0, -7.5f));
+                    g.DrawString(text2, subtitle, brush, new PointF(0, 22f));
+                }
+
+                return Icon.FromHandle(bitmap.GetHicon());
+            }
         }
 
         public void StartMonitoring()
