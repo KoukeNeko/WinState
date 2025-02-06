@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Management;
 using System.Net.NetworkInformation;
+using WinState.ViewModels.Windows;
 
 namespace WinState.Services
 {
@@ -25,7 +26,7 @@ namespace WinState.Services
         {
             // 每 1 秒觸發
             _timer = new System.Timers.Timer(1000);
-            _timer.Elapsed += (s, e) => UpdateData();
+            _timer.Elapsed += (s, e) => UpdateDataAsync();
         }
 
         public void Start()
@@ -33,7 +34,7 @@ namespace WinState.Services
             _timer.Start();
         }
 
-        private void UpdateData()
+        private async Task UpdateDataAsync()
         {
             // Get CPU usage
             var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
@@ -73,7 +74,7 @@ namespace WinState.Services
             }
 
             // Get Power status (Watt)
-            CpuPower = GetCpuPower();
+            CpuPower = await CpuPowerMonitor.GetCpuPowerConsumption();
 
             // Notify external (ViewModel)
             DataUpdated?.Invoke(this, EventArgs.Empty);
