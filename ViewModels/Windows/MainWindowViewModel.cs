@@ -64,7 +64,7 @@ namespace WinState.ViewModels.Windows
         public double NetworkDownload => _systemInfoService.NetworkDownload;
         public double CpuPower => _systemInfoService.CpuPower;
 
-        NotifyIcon notifyIcon;
+        NotifyIcon CPU;
         NotifyIcon GPU;
         NotifyIcon RAM;
         NotifyIcon DISK;
@@ -77,60 +77,66 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.Start();
 
             //  測試系統圖標
-            notifyIcon = new NotifyIcon
+            CPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "CPU: " + _systemInfoService.CpuUsage.ToString() + "%"
             };
 
             GPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "GPU: " + _systemInfoService.GpuUsage.ToString() + "%"
             };
 
             RAM = new NotifyIcon
             {
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "RAM: " + _systemInfoService.RamUsage.ToString() + "%"
             };
 
             DISK = new NotifyIcon
             {
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%"
             };
 
             NETWORK = new NotifyIcon
             {
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + "KB/s" + " / " + _systemInfoService.NetworkDownload.ToString() + "KB/s"
             };
 
             POWER = new NotifyIcon
             {
                 Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
                 Visible = true,
-                ContextMenuStrip = new ContextMenuStrip()
+                ContextMenuStrip = new ContextMenuStrip(),
+                Text = "PWR: " + _systemInfoService.CpuPower.ToString() + "W"
             };
 
 
 
             foreach (var item in _trayMenuItems)
             {
-                notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
+                CPU.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
             }
 
             _trayMenuItems.Clear();
 
             foreach (var item in _trayMenuItems)
             {
-                notifyIcon.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
+                CPU.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
             }
 
             _trayMenuItems.Clear();
@@ -190,7 +196,7 @@ namespace WinState.ViewModels.Windows
             switch (propertyName)
             {
                 case "CpuUsage":
-                    notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
+                    CPU.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
                     break;
                 case "GpuUsage":
                     GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
