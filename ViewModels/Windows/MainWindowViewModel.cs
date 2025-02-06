@@ -13,37 +13,37 @@ namespace WinState.ViewModels.Windows
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
-        {
-            new NavigationViewItem()
-            {
-                Content = "Home",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
-                TargetPageType = typeof(Views.Pages.DashboardPage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "Data",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
-                TargetPageType = typeof(Views.Pages.DataPage)
-            }
-        };
+                    {
+                        new NavigationViewItem()
+                        {
+                            Content = "Home",
+                            Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
+                            TargetPageType = typeof(Views.Pages.DashboardPage)
+                        },
+                        new NavigationViewItem()
+                        {
+                            Content = "Data",
+                            Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
+                            TargetPageType = typeof(Views.Pages.DataPage)
+                        }
+                    };
 
         [ObservableProperty]
         private ObservableCollection<object> _footerMenuItems = new()
-        {
-            new NavigationViewItem()
-            {
-                Content = "Settings",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
-                TargetPageType = typeof(Views.Pages.SettingsPage)
-            }
-        };
+                    {
+                        new NavigationViewItem()
+                        {
+                            Content = "Settings",
+                            Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
+                            TargetPageType = typeof(Views.Pages.SettingsPage)
+                        }
+                    };
 
         [ObservableProperty]
         private ObservableCollection<MenuItem> _trayMenuItems = new()
-        {
-            new MenuItem { Header = "Home", Tag = "tray_home" }
-        };
+                    {
+                        new MenuItem { Header = "Home", Tag = "tray_home" }
+                    };
 
         // ---------------------------
         // 新增：整合系統監控資料
@@ -51,7 +51,7 @@ namespace WinState.ViewModels.Windows
 
         private readonly SystemInfoService _systemInfoService;
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public new event PropertyChangedEventHandler? PropertyChanged;
 
         // 暴露給 UI 的屬性
         public double CpuUsage => _systemInfoService.CpuUsage;
@@ -85,7 +85,7 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(BatteryLevel));
         }
 
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
