@@ -81,15 +81,18 @@ namespace WinState.ViewModels.Windows
 
         static Icon CreateTextIcon(string text1, string text2)
         {
-            using (var bitmap = new Bitmap(64, 64)) // 設定圖標大小
+            using (var bitmap = new Bitmap(64, 64))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 g.Clear(Color.Transparent);
-                using (var title = new Font("Arial", 20, System.Drawing.FontStyle.Regular))
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                using (var title = new Font("Arial", 22, System.Drawing.FontStyle.Bold))
                 using (var subtitle = new Font("Arial", 35f, System.Drawing.FontStyle.Regular))
                 using (Brush brush = new SolidBrush(Color.White))
                 {
-                    g.DrawString(text1, title, brush, new PointF(0, -7.5f));
+                    g.DrawString(text1, title, brush, new PointF(0, -7.0f));
                     g.DrawString(text2, subtitle, brush, new PointF(0, 22f));
                 }
 
