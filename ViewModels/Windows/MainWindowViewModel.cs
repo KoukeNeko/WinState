@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WinState.Services;
 using Wpf.Ui.Controls;
@@ -208,32 +209,42 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(CpuPower));
         }
 
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        extern static bool DestroyIcon(IntPtr handle);
+
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             switch (propertyName)
             {
                 case "CpuUsage":
+                    DestroyIcon(CPU.Icon.Handle);
                     CPU.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
                     CPU.Text = "CPU: " + _systemInfoService.CpuUsage.ToString() + "%";
                     break;
                 case "GpuUsage":
+                    DestroyIcon(GPU.Icon.Handle);
                     GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
                     GPU.Text = "GPU: " + _systemInfoService.GpuUsage.ToString() + "%";
                     break;
                 case "RamUsage":
+                    DestroyIcon(RAM.Icon.Handle);
                     RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
                     RAM.Text = "RAM: " + _systemInfoService.RamUsage.ToString() + "%";
                     break;
                 case "DiskUsage":
+                    DestroyIcon(DISK.Icon.Handle);
                     DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
                     DISK.Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%";
                     break;
                 case "NetworkUpload":
+                    DestroyIcon(NETWORK.Icon.Handle);
                     NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
                     NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + "KB/s" + " / " + _systemInfoService.NetworkDownload.ToString() + "KB/s";
                     break;
                 case "CpuPower":
+                    DestroyIcon(POWER.Icon.Handle);
                     POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
                     POWER.Text = "PWR: " + _systemInfoService.CpuPower.ToString() + "W";
                     break;
