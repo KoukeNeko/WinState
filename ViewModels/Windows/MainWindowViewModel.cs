@@ -146,11 +146,11 @@ namespace WinState.ViewModels.Windows
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             using (var title = new Font("Arial", 22, System.Drawing.FontStyle.Bold))
-            using (var subtitle = new Font("Arial", 35f, System.Drawing.FontStyle.Regular))
+            using (var subtitle = new Font("Arial", text2.Length >= 3 ? 30f : 35f, System.Drawing.FontStyle.Regular))
             using (Brush brush = new SolidBrush(Color.White))
             {
                 g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
-                g.DrawString(text2, subtitle, brush, new PointF(-6, 22f));
+                g.DrawString(text2, subtitle, brush, new PointF(-6, text2.Length >= 3 ? 29 : 22f));
             }
 
             return Icon.FromHandle(bitmap.GetHicon());
