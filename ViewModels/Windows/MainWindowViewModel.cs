@@ -62,14 +62,14 @@ namespace WinState.ViewModels.Windows
         public double DiskUsage => _systemInfoService.DiskUsage;
         public double NetworkUpload => _systemInfoService.NetworkUpload;
         public double NetworkDownload => _systemInfoService.NetworkDownload;
-        public double BatteryLevel => _systemInfoService.BatteryLevel;
+        public double CpuPower => _systemInfoService.CpuPower;
 
         NotifyIcon notifyIcon;
         NotifyIcon GPU;
         NotifyIcon RAM;
         NotifyIcon DISK;
         NotifyIcon NETWORK;
-        NotifyIcon BATTERY;
+        NotifyIcon POWER;
         public MainWindowViewModel()
         {
             _systemInfoService = new SystemInfoService();
@@ -112,9 +112,9 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            BATTERY = new NotifyIcon
+            POWER = new NotifyIcon
             {
-                Icon = CreateTextIcon("PWR", _systemInfoService.BatteryLevel.ToString()),
+                Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
@@ -139,6 +139,17 @@ namespace WinState.ViewModels.Windows
 
         static Icon CreateTextIcon(string text1, string text2)
         {
+            if (text2.Length >= 3)
+            {
+                // Convert large numbers to a more readable format
+                if (double.TryParse(text2, out double number))
+                {
+                    if (number >= 1000)
+                    {
+                        text2 = (number / 1000).ToString("0.0") + "k";
+                    }
+                }
+            }
             using var bitmap = new Bitmap(64, 64);
             using Graphics g = Graphics.FromImage(bitmap);
             g.Clear(Color.Transparent);
@@ -146,11 +157,11 @@ namespace WinState.ViewModels.Windows
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             using (var title = new Font("Arial", 22, System.Drawing.FontStyle.Bold))
-            using (var subtitle = new Font("Arial", text2.Length >= 3 ? 30f : 35f, System.Drawing.FontStyle.Regular))
+            using (var subtitle = new Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
             using (Brush brush = new SolidBrush(Color.White))
             {
                 g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
-                g.DrawString(text2, subtitle, brush, new PointF(-6, text2.Length >= 3 ? 29 : 22f));
+                g.DrawString(text2, subtitle, brush, new PointF(-8, text2.Length >= 3 ? 29 : 22f));
             }
 
             return Icon.FromHandle(bitmap.GetHicon());
@@ -170,7 +181,7 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(DiskUsage));
             OnPropertyChanged(nameof(NetworkUpload));
             OnPropertyChanged(nameof(NetworkDownload));
-            OnPropertyChanged(nameof(BatteryLevel));
+            OnPropertyChanged(nameof(CpuPower));
         }
 
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
@@ -196,9 +207,9 @@ namespace WinState.ViewModels.Windows
             {
                 NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
             }
-            if (propertyName == "BatteryLevel")
+            if (propertyName == "CpuPower")
             {
-                BATTERY.Icon = CreateTextIcon("PWR", BatteryLevel.ToString());
+                POWER.Icon = CreateTextIcon("PWR", CpuPower.ToString());
             }
         }
 
