@@ -154,6 +154,10 @@ namespace WinState.ViewModels.Windows
                     {
                         text2 = (number / 1000).ToString("0.0") + "k";
                     }
+                    else
+                    {
+                        text2 = Math.Round(number).ToString();
+                    }
                 }
             }
             using var bitmap = new Bitmap(64, 64);
