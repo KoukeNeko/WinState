@@ -64,48 +64,55 @@ namespace WinState.ViewModels.Windows
         public double NetworkDownload => _systemInfoService.NetworkDownload;
         public double BatteryLevel => _systemInfoService.BatteryLevel;
 
+        NotifyIcon notifyIcon;
+        NotifyIcon GPU;
+        NotifyIcon RAM;
+        NotifyIcon DISK;
+        NotifyIcon NETWORK;
+        NotifyIcon BATTERY;
         public MainWindowViewModel()
         {
             _systemInfoService = new SystemInfoService();
             _systemInfoService.DataUpdated += OnDataUpdated;
+            _systemInfoService.Start();
 
             //  測試系統圖標
-            var notifyIcon = new NotifyIcon
+            notifyIcon = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            var GPU = new NotifyIcon
+            GPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            var RAM = new NotifyIcon
+            RAM = new NotifyIcon
             {
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            var DISK = new NotifyIcon
+            DISK = new NotifyIcon
             {
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            var NETWORK = new NotifyIcon
+            NETWORK = new NotifyIcon
             {
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
             };
 
-            var BATTERY = new NotifyIcon
+            BATTERY = new NotifyIcon
             {
                 Icon = CreateTextIcon("PWR", _systemInfoService.BatteryLevel.ToString()),
                 Visible = true,
@@ -169,6 +176,30 @@ namespace WinState.ViewModels.Windows
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            if (propertyName == "CpuUsage")
+            {
+                notifyIcon.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
+            }
+            if (propertyName == "GpuUsage")
+            {
+                GPU.Icon = CreateTextIcon("GPU", GpuUsage.ToString());
+            }
+            if (propertyName == "RamUsage")
+            {
+                RAM.Icon = CreateTextIcon("RAM", RamUsage.ToString());
+            }
+            if (propertyName == "DiskUsage")
+            {
+                DISK.Icon = CreateTextIcon("DISK", DiskUsage.ToString());
+            }
+            if (propertyName == "NetworkUpload")
+            {
+                NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
+            }
+            if (propertyName == "BatteryLevel")
+            {
+                BATTERY.Icon = CreateTextIcon("PWR", BatteryLevel.ToString());
+            }
         }
 
     }
