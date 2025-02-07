@@ -1,5 +1,6 @@
 ﻿using System.Windows.Media;
 using WinState.Models;
+using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Controls;
 
 namespace WinState.ViewModels.Pages
@@ -42,6 +43,16 @@ namespace WinState.ViewModels.Pages
             Colors = colorCollection;
 
             _isInitialized = true;
+        }
+
+        public Task OnNavigatedToAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task OnNavigatedFromAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

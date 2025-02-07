@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Wpf.Ui;
 using WinState.Views.Pages;
 using WinState.Views.Windows;
+using Wpf.Ui.Abstractions;
+using System.Diagnostics;
 
 namespace WinState.Services
 {
@@ -43,14 +45,21 @@ namespace WinState.Services
         /// </summary>
         private async Task HandleActivationAsync()
         {
-            if (!Application.Current.Windows.OfType<MainWindow>().Any())
+            try
             {
-                _navigationWindow = (
-                    _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
-                )!;
-                _navigationWindow!.ShowWindow();
+                if (!Application.Current.Windows.OfType<MainWindow>().Any())
+                {
+                    _navigationWindow = (
+                        _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
+                    )!;
+                    _navigationWindow!.ShowWindow();
 
-                _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+                    _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+                }
+            } catch (InvalidOperationException ne)
+            {
+                Debug.WriteLine(ne.Message);
+
             }
 
             await Task.CompletedTask;

@@ -10,6 +10,7 @@ using WinState.ViewModels.Windows;
 using WinState.Views.Pages;
 using WinState.Views.Windows;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions;
 
 namespace WinState
 {
@@ -31,7 +32,7 @@ namespace WinState
                 services.AddHostedService<ApplicationHostService>();
 
                 // Page resolver service
-                services.AddSingleton<IPageService, PageService>();
+                services.AddSingleton<INavigationViewPageProvider, PageService>();
 
                 // Theme manipulation
                 services.AddSingleton<IThemeService, ThemeService>();
