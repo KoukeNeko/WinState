@@ -23,6 +23,10 @@ namespace WinState.Services
         private List<ISensor> _diskLoadSensors = new List<ISensor>();
         private ISensor? _cpuPowerSensor;
 
+        // 新增：網路感測器 (利用 LibreHardwareMonitor)
+        private ISensor? _networkUploadSensor;
+        private ISensor? _networkDownloadSensor;
+
         // Network Counters
         private PerformanceCounter? _uploadCounter;
         private PerformanceCounter? _downloadCounter;
@@ -124,6 +128,27 @@ namespace WinState.Services
                             }
                         }
                         break;
+
+                    case HardwareType.Network:
+                        // 新增：利用 LibreHardwareMonitor 初始化網路硬體與感測器
+                        hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
+                        foreach (var sensor in hardware.Sensors)
+                        {
+                            //DEBUG: print all sensors
+                            //Console.WriteLine(sensor.Name);
+
+                            // 依據實際情況，Sensor 名稱可能為 "Upload Speed" 與 "Download Speed"
+                            if (sensor.SensorType == SensorType.Load && sensor.Name == "Upload Speed")
+                            {
+                               
+                                _networkUploadSensor = sensor;
+                            }
+                            else if (sensor.SensorType == SensorType.Load && sensor.Name == "Download Speed")
+                            {
+                                _networkDownloadSensor = sensor;
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -143,7 +168,8 @@ namespace WinState.Services
                 // 第一次讀取通常是 0，先讀一次以便後面計算較準
                 _uploadCounter.NextValue();
                 _downloadCounter.NextValue();
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Debug.WriteLine($"Error initializing network counters: {ex.Message}");
             }
@@ -178,7 +204,8 @@ namespace WinState.Services
 
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating system info: {ex.Message}");
             }
@@ -242,38 +269,19 @@ namespace WinState.Services
 
         private (double Upload, double Download, string UploadUnit, string DownloadUnit) GetNetworkUsage()
         {
-
-
-            foreach (IHardware hardware in _computer.Hardware)
+            // 先嘗試利用 LibreHardwareMonitor 的網路感測器取得數值
+            if (_networkUploadSensor != null && _networkDownloadSensor != null)
             {
-                if (hardware.HardwareType == HardwareType.Network)
+                // 先更新所有網路硬體，才能正確讀取感測器數值
+                foreach (IHardware hardware in _computer.Hardware)
                 {
-                    hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
-                    Debug.WriteLine(hardware.Name);
-                    foreach (var sensor in hardware.Sensors)
+                    if (hardware.HardwareType == HardwareType.Network)
                     {
-                        Debug.WriteLine(sensor.Name + ": " + sensor.Value.GetValueOrDefault());
-                        if (sensor.SensorType == SensorType.Load && sensor.Name == "Upload Speed")
-                        {
-                            //Debug.WriteLine("Upload Speed: " + sensor.Value.GetValueOrDefault());
-                        }
-                        if (sensor.SensorType == SensorType.Load && sensor.Name == "Download Speed")
-                        {
-                            //Debug.WriteLine("Download Speed: " + sensor.Value.GetValueOrDefault());
-                        }
+                        hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
                     }
-                    Debug.WriteLine("");
                 }
-            }
-
-            //_downloadSpeed
-            try
-            {
-                if (_uploadCounter == null || _downloadCounter == null)
-                    return (0, 0, "Bps", "Bps");
-
-                double uploadValue = _uploadCounter.NextValue();
-                double downloadValue = _downloadCounter.NextValue();
+                double uploadValue = _networkUploadSensor.Value.GetValueOrDefault();
+                double downloadValue = _networkDownloadSensor.Value.GetValueOrDefault();
 
                 string uploadUnit = "Bps";
                 string downloadUnit = "Bps";
@@ -311,11 +319,9 @@ namespace WinState.Services
                 }
 
                 return (uploadValue, downloadValue, uploadUnit, downloadUnit);
-            } catch (Exception ex)
-            {
-                Debug.WriteLine($"Error getting network usage: {ex.Message}");
-                return (0, 0, "Bps", "Bps");
             }
+
+            return (-1, -1, "ERR", "ERR");
         }
 
         private string GetNetworkAdapterName()
@@ -348,7 +354,8 @@ namespace WinState.Services
                 {
                     _cachedNetworkInterface = "_Total";
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
                 _cachedNetworkInterface = "_Total";
@@ -356,7 +363,6 @@ namespace WinState.Services
 
             return _cachedNetworkInterface;
         }
-
 
         private double GetCpuPowerFromHardwareMonitor()
         {
