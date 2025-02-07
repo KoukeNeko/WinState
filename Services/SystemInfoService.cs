@@ -3,6 +3,7 @@ using System.Management;
 using System.Net.NetworkInformation;
 using System.Timers;
 using LibreHardwareMonitor.Hardware;
+using LibreHardwareMonitor.Hardware.Cpu;
 
 namespace WinState.Services
 {
@@ -54,7 +55,8 @@ namespace WinState.Services
                 IsMemoryEnabled = true,
                 IsGpuEnabled = true,
                 IsStorageEnabled = true,
-                IsControllerEnabled = true
+                IsControllerEnabled = true,
+                IsNetworkEnabled = true
             };
             _computer.Open();
 
@@ -141,8 +143,7 @@ namespace WinState.Services
                 // 第一次讀取通常是 0，先讀一次以便後面計算較準
                 _uploadCounter.NextValue();
                 _downloadCounter.NextValue();
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error initializing network counters: {ex.Message}");
             }
@@ -177,8 +178,7 @@ namespace WinState.Services
 
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating system info: {ex.Message}");
             }
@@ -242,6 +242,31 @@ namespace WinState.Services
 
         private (double Upload, double Download, string UploadUnit, string DownloadUnit) GetNetworkUsage()
         {
+
+
+            foreach (IHardware hardware in _computer.Hardware)
+            {
+                if (hardware.HardwareType == HardwareType.Network)
+                {
+                    hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
+                    Debug.WriteLine(hardware.Name);
+                    foreach (var sensor in hardware.Sensors)
+                    {
+                        Debug.WriteLine(sensor.Name + ": " + sensor.Value.GetValueOrDefault());
+                        if (sensor.SensorType == SensorType.Load && sensor.Name == "Upload Speed")
+                        {
+                            //Debug.WriteLine("Upload Speed: " + sensor.Value.GetValueOrDefault());
+                        }
+                        if (sensor.SensorType == SensorType.Load && sensor.Name == "Download Speed")
+                        {
+                            //Debug.WriteLine("Download Speed: " + sensor.Value.GetValueOrDefault());
+                        }
+                    }
+                    Debug.WriteLine("");
+                }
+            }
+
+            //_downloadSpeed
             try
             {
                 if (_uploadCounter == null || _downloadCounter == null)
@@ -286,8 +311,7 @@ namespace WinState.Services
                 }
 
                 return (uploadValue, downloadValue, uploadUnit, downloadUnit);
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network usage: {ex.Message}");
                 return (0, 0, "Bps", "Bps");
@@ -324,8 +348,7 @@ namespace WinState.Services
                 {
                     _cachedNetworkInterface = "_Total";
                 }
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
                 _cachedNetworkInterface = "_Total";
