@@ -62,6 +62,8 @@ namespace WinState.ViewModels.Windows
         public double DiskUsage => _systemInfoService.DiskUsage;
         public double NetworkUpload => _systemInfoService.NetworkUpload;
         public double NetworkDownload => _systemInfoService.NetworkDownload;
+        public string NetworkUploadUnit => _systemInfoService.NetworkUploadUnit;
+        public string NetworkDownloadUnit => _systemInfoService.NetworkDownloadUnit;
         public double CpuPower => _systemInfoService.CpuPower;
 
         NotifyIcon CPU;
@@ -205,6 +207,8 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(DiskUsage));
             OnPropertyChanged(nameof(NetworkUpload));
             OnPropertyChanged(nameof(NetworkDownload));
+            OnPropertyChanged(nameof(NetworkUploadUnit));
+            OnPropertyChanged(nameof(NetworkDownloadUnit));
             OnPropertyChanged(nameof(CpuPower));
         }
 
@@ -254,7 +258,7 @@ namespace WinState.ViewModels.Windows
                     {
                         DestroyIcon(NETWORK.Icon.Handle);
                         NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
-                        NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + "KB/s" + " / " + _systemInfoService.NetworkDownload.ToString() + "KB/s";
+                        NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + " " + _systemInfoService.NetworkUploadUnit + " / " + _systemInfoService.NetworkDownload.ToString() + " " + _systemInfoService.NetworkDownloadUnit;
                     }
                     break;
                 case "CpuPower":
