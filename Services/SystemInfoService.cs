@@ -227,7 +227,7 @@ namespace WinState.Services
                         {
                             Debug.WriteLine($"Sensor Name: {sensor.Name}, Value: {sensor.Value}");
 
-                            if (sensor.Name == "CPU Package" || sensor.Name == "Package Power" || sensor.Name == "CPU PPT")
+                            if (sensor.Name == "CPU Package" || sensor.Name == "Package Power" || sensor.Name == "CPU PPT" || sensor.Name == "Package")
                             {
                                 return sensor.Value.GetValueOrDefault(-1);
                             }
