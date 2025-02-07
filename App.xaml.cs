@@ -11,6 +11,7 @@ using WinState.Views.Pages;
 using WinState.Views.Windows;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
+using Wpf.Ui.Tray;
 
 namespace WinState
 {
@@ -53,6 +54,9 @@ namespace WinState
                 services.AddSingleton<DataViewModel>();
                 services.AddSingleton<SettingsPage>();
                 services.AddSingleton<SettingsViewModel>();
+
+                services.AddSingleton<INotifyIconService, CustomNotifyIconService>();
+
             }).Build();
 
         /// <summary>

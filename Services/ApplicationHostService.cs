@@ -5,6 +5,7 @@ using WinState.Views.Pages;
 using WinState.Views.Windows;
 using Wpf.Ui.Abstractions;
 using System.Diagnostics;
+using Wpf.Ui.Tray;
 
 namespace WinState.Services
 {
@@ -45,23 +46,25 @@ namespace WinState.Services
         /// </summary>
         private async Task HandleActivationAsync()
         {
-            try
+            if (!Application.Current.Windows.OfType<MainWindow>().Any())
             {
-                if (!Application.Current.Windows.OfType<MainWindow>().Any())
-                {
-                    _navigationWindow = (
-                        _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
-                    )!;
-                    _navigationWindow!.ShowWindow();
+                _navigationWindow = (
+                    _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
+                )!;
+                _navigationWindow!.ShowWindow();
 
-                    _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
-                }
-            } catch (InvalidOperationException ne)
-            {
-                Debug.WriteLine(ne.Message);
-
+                _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 
+            var notifyIconManager =
+    _serviceProvider.GetService(typeof(INotifyIconService)) as INotifyIconService;
+
+
+            if (!notifyIconManager!.IsRegistered)
+            {
+                notifyIconManager!.SetParentWindow(_navigationWindow as Window);
+                notifyIconManager.Register();
+            }
             await Task.CompletedTask;
         }
     }

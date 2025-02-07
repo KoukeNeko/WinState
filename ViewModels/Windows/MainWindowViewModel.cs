@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using WinState.Services;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Tray;
 
 namespace WinState.ViewModels.Windows
 {
@@ -78,7 +79,11 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
 
-            //  測試系統圖標
+
+            //ContextMenuLoader cml = new ContextMenuLoader();
+
+            //NotifyIconService ns = new NotifyIconService();
+            ////  測試系統圖標
             CPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
