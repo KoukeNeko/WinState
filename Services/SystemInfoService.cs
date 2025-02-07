@@ -201,6 +201,21 @@ namespace WinState.Services
 
         private double GetCpuPowerFromHardwareMonitor()
         {
+            //foreach (var hardware in _computer.Hardware)
+            //{
+            //    if (hardware.HardwareType == HardwareType.Cpu)
+            //    {
+            //        hardware.Update();
+            //        foreach (var sensor in hardware.Sensors)
+            //        {
+            //            if (sensor.SensorType == SensorType.Power && sensor.Name == "CPU Package")
+            //            {
+            //                return sensor.Value.GetValueOrDefault(-1);
+            //            }
+            //        }
+            //    }
+            //}
+
             foreach (var hardware in _computer.Hardware)
             {
                 if (hardware.HardwareType == HardwareType.Cpu)
@@ -208,9 +223,14 @@ namespace WinState.Services
                     hardware.Update();
                     foreach (var sensor in hardware.Sensors)
                     {
-                        if (sensor.SensorType == SensorType.Power && sensor.Name == "CPU Package")
+                        if (sensor.SensorType == SensorType.Power)
                         {
-                            return sensor.Value.GetValueOrDefault(-1);
+                            Debug.WriteLine($"Sensor Name: {sensor.Name}, Value: {sensor.Value}");
+
+                            if (sensor.Name == "CPU Package" || sensor.Name == "Package Power" || sensor.Name == "CPU PPT")
+                            {
+                                return sensor.Value.GetValueOrDefault(-1);
+                            }
                         }
                     }
                 }
