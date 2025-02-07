@@ -1,23 +1,24 @@
 ﻿using System.Diagnostics;
 using System.Management;
 using System.Net.NetworkInformation;
-using WinState.ViewModels.Windows;
+using System.Timers;
+using LibreHardwareMonitor.Hardware;
 
 namespace WinState.Services
 {
     public class SystemInfoService
     {
         private readonly System.Timers.Timer _timer;
-        private readonly Random _rand = new Random();
+        private Computer _computer;
+        private string? _cachedNetworkInterface;
 
-        // 各種監控屬性 (0~100)
+        // 各種監控屬性 (0~100 或實際值)
         public double CpuUsage { get; private set; }
         public double GpuUsage { get; private set; }
         public double RamUsage { get; private set; }
         public double DiskUsage { get; private set; }
         public double NetworkUpload { get; private set; }
         public double NetworkDownload { get; private set; }
-        //public double BatteryLevel { get; private set; }
         public double CpuPower { get; private set; }
 
         public event EventHandler? DataUpdated;
@@ -26,7 +27,19 @@ namespace WinState.Services
         {
             // 每 1 秒觸發
             _timer = new System.Timers.Timer(1000);
-            _timer.Elapsed += (s, e) => UpdateDataAsync();
+            _timer.Elapsed += async (s, e) => await UpdateDataAsync();
+
+            // 初始化 LibreHardwareMonitor
+            _computer = new Computer
+            {
+                IsCpuEnabled = true,
+                IsMotherboardEnabled = true,
+                IsMemoryEnabled = true,
+                IsGpuEnabled = true,
+                IsStorageEnabled = true,
+                IsControllerEnabled = true
+            };
+        _computer.Open();
         }
 
         public void Start()
@@ -36,121 +49,179 @@ namespace WinState.Services
 
         private async Task UpdateDataAsync()
         {
-            // Get CPU usage
-            var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            cpuCounter.NextValue();
-            System.Threading.Thread.Sleep(1000); // Wait a second to get a valid reading
-            CpuUsage = cpuCounter.NextValue();
+            try
+            {
+                // Get CPU usage
+                CpuUsage = GetCpuUsage();
 
-            // 
+                // Get GPU usage
+                GpuUsage = GetGpuUsage();
 
-            // Get RAM usage
-            var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-            var totalRam = new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / (1024 * 1024);
-            RamUsage = 100 - (ramCounter.NextValue() / totalRam * 100);
+                // Get RAM usage
+                RamUsage = GetRamUsage();
 
-            // Get Disk usage
-            var diskCounter = new PerformanceCounter("PhysicalDisk", "% Disk Time", "_Total");
-            diskCounter.NextValue();
-            System.Threading.Thread.Sleep(1000); // Wait a second to get a valid reading
-            DiskUsage = diskCounter.NextValue();
+                // Get Disk usage
+                DiskUsage = GetDiskUsage();
 
-            // Get Network usage
+                // Get Network usage
+                (NetworkUpload, NetworkDownload) = GetNetworkUsage();
+
+                // Get CPU power consumption
+                CpuPower = GetCpuPowerFromHardwareMonitor();
+
+                // Notify external (ViewModel)
+                DataUpdated?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating system info: {ex.Message}");
+            }
+        }
+
+        private double GetCpuUsage()
+        {
+            double cpuUsage = 0.0;
+            foreach (var hardware in _computer.Hardware)
+            {
+                if (hardware.HardwareType == HardwareType.Cpu)
+                {
+                    hardware.Update();
+                    foreach (var sensor in hardware.Sensors)
+                    {
+                        if (sensor.SensorType == SensorType.Load && sensor.Name == "CPU Total")
+                        {
+                            cpuUsage = sensor.Value.GetValueOrDefault();
+                        }
+                    }
+                }
+            }
+            return cpuUsage;
+        }
+
+        private double GetGpuUsage()
+        {
+            double gpuUsage = 0.0;
+            foreach (var hardware in _computer.Hardware)
+            {
+                if (hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd)
+                {
+                    hardware.Update();
+                    foreach (var sensor in hardware.Sensors)
+                    {
+                        if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core")
+                        {
+                            gpuUsage = sensor.Value.GetValueOrDefault();
+                        }
+                    }
+                }
+            }
+            return gpuUsage;
+        }
+
+        private double GetRamUsage()
+        {
+            var availableMemory = new PerformanceCounter("Memory", "Available MBytes").NextValue();
+            var totalMemory = new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / (1024 * 1024);
+            return 100 - (availableMemory / totalMemory * 100);
+        }
+
+        private double GetDiskUsage()
+        {
+            double diskUsage = 0.0;
+            foreach (var hardware in _computer.Hardware)
+            {
+                if (hardware.HardwareType == HardwareType.Storage)
+                {
+                    hardware.Update();
+                    foreach (var sensor in hardware.Sensors)
+                    {
+                        if (sensor.SensorType == SensorType.Load || hardware.HardwareType == HardwareType.Storage)
+                        {
+                            diskUsage = sensor.Value.GetValueOrDefault();
+                        }
+                    }
+                }
+            }
+            return diskUsage;
+        }
+
+        private (double Upload, double Download) GetNetworkUsage()
+        {
             try
             {
                 string networkAdapterName = GetNetworkAdapterName();
-                var networkUploadCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", networkAdapterName);
-                var networkDownloadCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", networkAdapterName);
-                NetworkUpload = networkUploadCounter.NextValue();
-                NetworkDownload = networkDownloadCounter.NextValue();
+                using var uploadCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", networkAdapterName);
+                using var downloadCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", networkAdapterName);
+
+                return (uploadCounter.NextValue(), downloadCounter.NextValue());
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                Debug.WriteLine($"Error getting network adapter performance counters: {ex.Message}. Falling back to '_Total'.");
-                var networkUploadCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", "_Total");
-                var networkDownloadCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", "_Total");
-                NetworkUpload = networkUploadCounter.NextValue();
-                NetworkDownload = networkDownloadCounter.NextValue();
+                Debug.WriteLine($"Error getting network usage: {ex.Message}");
+                return (0, 0);
             }
-
-            // Get Power status (Watt)
-            CpuPower = await CpuPowerMonitor.GetCpuPowerConsumption();
-
-            // Notify external (ViewModel)
-            DataUpdated?.Invoke(this, EventArgs.Empty);
         }
 
         private string GetNetworkAdapterName()
         {
-            string? _cachedNetworkInterface = null;
+            if (!string.IsNullOrEmpty(_cachedNetworkInterface))
+            {
+                return _cachedNetworkInterface;
+            }
+
             try
             {
-                // Return cached interface name if already found
-                if (!string.IsNullOrEmpty(_cachedNetworkInterface))
-                {
-                    return _cachedNetworkInterface;
-                }
-
-                // Get all available network interface names from Performance Counter
                 var category = new PerformanceCounterCategory("Network Interface");
-                string[] validInstances = category.GetInstanceNames();
-
-                // Get all network interfaces
-                NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-                // Find active adapter
-                var activeAdapter = interfaces.FirstOrDefault(ni =>
-                    ni.OperationalStatus == OperationalStatus.Up &&
-                    ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                    ni.Supports(NetworkInterfaceComponent.IPv4) &&
-                    ni.GetIPv4Statistics().BytesReceived > 0);
+                var validInstances = category.GetInstanceNames();
+                var activeAdapter = NetworkInterface.GetAllNetworkInterfaces()
+                    .FirstOrDefault(ni =>
+                        ni.OperationalStatus == OperationalStatus.Up &&
+                        ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                        ni.GetIPv4Statistics().BytesReceived > 0);
 
                 if (activeAdapter != null)
                 {
-                    // Find matching instance name from valid Performance Counter instances
-                    var matchingInstance = validInstances.FirstOrDefault(instance =>
-                        instance.Contains(activeAdapter.Description, StringComparison.OrdinalIgnoreCase) ||
-                        activeAdapter.Description.Contains(instance, StringComparison.OrdinalIgnoreCase));
-
-                    if (matchingInstance != null)
-                    {
-                        _cachedNetworkInterface = matchingInstance;
-                        return matchingInstance;
-                    }
+                    _cachedNetworkInterface = validInstances
+                        .FirstOrDefault(instance =>
+                            instance.Contains(activeAdapter.Description, StringComparison.OrdinalIgnoreCase)) ?? validInstances.First();
                 }
-
-                // Fallback to first valid instance if no match found
-                if (validInstances.Length > 0)
+                else
                 {
-                    _cachedNetworkInterface = validInstances[0];
-                    return validInstances[0];
+                    _cachedNetworkInterface = "_Total";
                 }
-
-                return "_Total"; // Final fallback
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
-                return "_Total";
+                _cachedNetworkInterface = "_Total";
             }
+
+            return _cachedNetworkInterface;
         }
 
-        private static double GetCpuPower()
+        private double GetCpuPowerFromHardwareMonitor()
         {
-            double power = 0.0;
-            try
+            foreach (var hardware in _computer.Hardware)
             {
-                var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PerfFormattedData_Counters_ProcessorInformation");
-                foreach (var obj in searcher.Get())
+                if (hardware.HardwareType == HardwareType.Cpu)
                 {
-                    power += Convert.ToDouble(obj["PercentProcessorPerformance"]);
+                    hardware.Update();
+                    foreach (var sensor in hardware.Sensors)
+                    {
+                        if (sensor.SensorType == SensorType.Power && sensor.Name == "CPU Package")
+                        {
+                            return sensor.Value.GetValueOrDefault(-1);
+                        }
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error retrieving CPU power: {ex.Message}");
-            }
-            return power;
+            return -1; // Default if no power sensor found
+        }
+
+        public void Cleanup()
+        {
+            _timer.Stop();
+            _computer.Close();
         }
     }
 }
