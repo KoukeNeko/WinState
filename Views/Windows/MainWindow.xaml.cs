@@ -25,6 +25,10 @@ namespace WinState.Views.Windows
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
+
+            //啟動後，最小化視窗到系統圖示列
+            this.WindowState = System.Windows.WindowState.Minimized;
+            this.Hide();
         }
 
         #region INavigationWindow methods
@@ -65,7 +69,7 @@ namespace WinState.Views.Windows
         /// <summary>
         /// 當點選 TitleBar 的最小化按鈕時，隱藏主視窗，達成最小化到系統托盤效果。
         /// </summary>
-        private void TitleBar_MinimizeClicked(object sender, RoutedEventArgs e)
+        private void TitleBar_MinimizeClicked(object sender, RoutedEventArgs? e)
         {
             // 先將視窗狀態設為最小化
             this.WindowState = WindowState.Minimized;

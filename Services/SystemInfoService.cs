@@ -251,7 +251,7 @@ namespace WinState.Services
                         // 先讀取一次來初始化計數器
                         counter.NextValue();
                         // 延遲一段時間，以便計算出正確的速率（這裡等待 1 秒）
-                        System.Threading.Thread.Sleep(1000);
+                        //System.Threading.Thread.Sleep(1000);
                         float bytesReceived = counter.NextValue();
 
                         adapterData.Add((instance, bytesReceived));
