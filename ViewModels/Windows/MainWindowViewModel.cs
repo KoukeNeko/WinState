@@ -163,6 +163,7 @@ namespace WinState.ViewModels.Windows
                     else
                     {
                         mainWindow.Hide();
+                        mainWindow.WindowState = WindowState.Minimized;
                     }
                 }
                 else
