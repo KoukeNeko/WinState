@@ -187,14 +187,14 @@ namespace WinState.Services
             }
 
             string activeAdapter = string.Empty;
-            double maxBytesReceived = 0;
+            double maxBytesTotal = 0;
 
             try
             {
                 // 使用 WMI 查詢 Win32_PerfFormattedData_Tcpip_NetworkInterface 類別，
                 // 該類別包含了所有有 TCP/IP 使用的網卡（包含虛擬網卡）的即時效能數據。
-                using ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Name, BytesReceivedPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface");
-                foreach (ManagementObject obj in searcher.Get())
+                using ManagementObjectSearcher searcher = new("SELECT Name, BytesTotalPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface");
+                foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
                 {
                     // 取得網卡名稱
                     string name = obj["Name"]?.ToString() ?? "";
@@ -205,14 +205,16 @@ namespace WinState.Services
                         continue; // 不符合的就跳過
                     }
 
-                    // 嘗試解析 BytesReceivedPerSec，若解析失敗則視為 0
-                    double bytesReceived = 0;
-                    double.TryParse(obj["BytesReceivedPerSec"]?.ToString(), out bytesReceived);
+                    // 嘗試解析 BytesTotalPerSec，若解析失敗則視為 0
+                    _ = double.TryParse(obj["BytesTotalPerSec"]?.ToString(), out double bytesTotal);
+
+                    // DEBUG 輸出：網卡名稱與收到的位元組數
+                    Debug.WriteLine($"Network Adapter: {name}, Bytes Received/sec: {bytesTotal}");
 
                     // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新 activeAdapter
-                    if (bytesReceived > maxBytesReceived)
+                    if (bytesTotal > maxBytesTotal)
                     {
-                        maxBytesReceived = bytesReceived;
+                        maxBytesTotal = bytesTotal;
                         activeAdapter = name;
                     }
                 }
@@ -447,8 +449,7 @@ namespace WinState.Services
                 Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
 
                 // 嘗試從所有 instance 名稱中找出包含活躍網卡描述的項目
-                _cachedNetworkInterface = instanceNames
-                    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
+                _cachedNetworkInterface = instanceNames.FirstOrDefault(name => name.Contains(activeAdapterDescription, StringComparison.OrdinalIgnoreCase));
 
                 // 如果找不到符合條件的 instance，則使用預設的 "_Total"
                 if (string.IsNullOrEmpty(_cachedNetworkInterface))
