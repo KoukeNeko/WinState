@@ -209,7 +209,7 @@ namespace WinState.Services
                     _ = double.TryParse(obj["BytesTotalPerSec"]?.ToString(), out double bytesTotal);
 
                     // DEBUG 輸出：網卡名稱與收到的位元組數
-                    Debug.WriteLine($"Network Adapter: {name}, Bytes Received/sec: {bytesTotal}");
+                    Debug.WriteLine($"Network Adapter: {name}, Bytes Total/sec: {bytesTotal}");
 
                     // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新 activeAdapter
                     if (bytesTotal > maxBytesTotal)
