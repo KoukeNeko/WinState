@@ -202,13 +202,8 @@ namespace WinState.Services
                 }
 
                 // 利用 NetworkInterface API 取得活躍網卡的描述（已過濾掉虛擬/特殊網卡）
-                string activeAdapterDescription = GetActiveNetworkAdapterDescription(category);
-                Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
-
-                // 從 PerformanceCounter 的 instance 名稱中，找出包含該描述的項目（不區分大小寫）
-                //_cachedNetworkInterface = instanceNames
-                //    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
-                _cachedNetworkInterface = activeAdapterDescription;
+                _cachedNetworkInterface = GetActiveNetworkAdapterDescription(category);
+                Debug.WriteLine("Active Adapter Description: " + _cachedNetworkInterface);
 
                 // 若比對不到，則退回使用 "_Total"
                 if (string.IsNullOrEmpty(_cachedNetworkInterface))
