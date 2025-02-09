@@ -202,7 +202,7 @@ namespace WinState.Services
                 }
 
                 // 利用 NetworkInterface API 取得活躍網卡的描述（已過濾掉虛擬/特殊網卡）
-                string activeAdapterDescription = GetActiveNetworkAdapterDescription();
+                string activeAdapterDescription = GetActiveNetworkAdapterDescription(category);
                 Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
 
                 // 從 PerformanceCounter 的 instance 名稱中，找出包含該描述的項目（不區分大小寫）
@@ -226,29 +226,56 @@ namespace WinState.Services
         }
 
         /// <summary>
-        /// 透過 System.Net.NetworkInformation 取得目前活躍且一般使用的網卡描述，
-        /// 依據網卡狀態、流量與描述過濾條件來選出流量最大的網卡。
+        /// 利用傳入的 PerformanceCounterCategory 查詢所有網卡（包括虛擬網卡）的實例，
+        /// 並根據 "Bytes Received/sec" 的數值挑選出流量最大的網卡，
+        /// 該網卡的 instance name 將作為後續 PerformanceCounter 的依據。
         /// </summary>
-        /// <returns>活躍網卡的描述字串，如果找不到則回傳空字串</returns>
-        private string GetActiveNetworkAdapterDescription()
+        /// <param name="category">用於查詢網卡的 PerformanceCounterCategory，通常為 "Network Adapter"</param>
+        /// <returns>流量最大的網卡的 instance name，如果查詢失敗則傳回空字串</returns>
+        private string GetActiveNetworkAdapterDescription(PerformanceCounterCategory category)
         {
-            var adapters = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
-                             ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                             IsUsableNetworkAdapter(ni.Description))
-                .OrderByDescending(ni => ni.GetIPv4Statistics().BytesReceived)
-                .ToList();
+            // 取得此 category 下所有的實例名稱
+            string[] instanceNames = category.GetInstanceNames();
 
-            // DEBUG show the BytesReceived
-            foreach (var adapter in adapters)
+            // 建立一個容器，儲存每個符合條件的網卡名稱及其 Bytes Received/sec 的數值
+            var adapterData = new List<(string Name, float BytesReceived)>();
+
+            // 依序處理每個 instance
+            foreach (var instanceName in instanceNames)
             {
-                Debug.WriteLine($"Adapter: {adapter.Description}, BytesReceived: {adapter.GetIPv4Statistics().BytesReceived}");
+                // 使用 IsUsableNetworkAdapter 判斷該 instance 是否為一般使用的網卡
+                if (!IsUsableNetworkAdapter(instanceName))
+                    continue;
+
+                try
+                {
+                    // 建立 PerformanceCounter，讀取 "Bytes Received/sec" 計數器的值
+                    using (PerformanceCounter counter = new PerformanceCounter(category.CategoryName, "Bytes Received/sec", instanceName))
+                    {
+                        // 取得目前的值
+                        float bytesReceived = counter.NextValue();
+                        adapterData.Add((instanceName, bytesReceived));
+
+                        // 輸出除錯訊息
+                        Debug.WriteLine($"Adapter: {instanceName}, Bytes Received/sec: {bytesReceived}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error reading counter for adapter {instanceName}: {ex.Message}");
+                }
             }
 
-            if (adapters.Count != 0)
-                return adapters.First().Description;
+            // 若有符合條件的網卡，挑選出 Bytes Received/sec 最高者
+            if (adapterData.Any())
+            {
+                var activeAdapter = adapterData.OrderByDescending(a => a.BytesReceived).First();
+                return activeAdapter.Name;
+            }
+
             return string.Empty;
         }
+
 
 
         /// <summary>
