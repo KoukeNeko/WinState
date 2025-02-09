@@ -167,18 +167,21 @@ namespace WinState.ViewModels.Windows
                 // 可透過 App.Current.MainWindow 或其他方式取得 MainWindow 實例
                 if (System.Windows.Application.Current.MainWindow is WinState.Views.Windows.MainWindow mainWindow)
                 {
-                    if (mainWindow.WindowState == WindowState.Minimized)
+                    if (mainWindow.Visibility == Visibility.Hidden)
                     {
-                        
+                        mainWindow.Visibility = Visibility.Visible;
+                        mainWindow.WindowState = WindowState.Normal;
+                        mainWindow.Activate();
                         _navigationWindow!.ShowWindow();
                         _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
                         //mainWindow.RestoreWindowFromTray();
                     }
                     else
                     {
-                        _navigationWindow!.CloseWindow();
-                        mainWindow.Hide();
-                        mainWindow.WindowState = WindowState.Minimized;
+                        mainWindow.Visibility = Visibility.Hidden;
+                        //_navigationWindow!.CloseWindow();
+                        //mainWindow.Hide();
+                        //mainWindow.WindowState = WindowState.Minimized;
                     }
                 }
                 else
