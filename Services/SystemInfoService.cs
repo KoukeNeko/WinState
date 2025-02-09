@@ -206,8 +206,9 @@ namespace WinState.Services
                 Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
 
                 // 從 PerformanceCounter 的 instance 名稱中，找出包含該描述的項目（不區分大小寫）
-                _cachedNetworkInterface = instanceNames
-                    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
+                //_cachedNetworkInterface = instanceNames
+                //    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
+                _cachedNetworkInterface = activeAdapterDescription;
 
                 // 若比對不到，則退回使用 "_Total"
                 if (string.IsNullOrEmpty(_cachedNetworkInterface))
