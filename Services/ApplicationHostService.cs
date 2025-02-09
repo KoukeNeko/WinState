@@ -53,13 +53,12 @@ namespace WinState.Services
                     _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
                 )!;
 
-               (_navigationWindow as MainWindow).Visibility = Visibility.Hidden;
+                (_navigationWindow as MainWindow).Visibility = Visibility.Hidden;
                 //_navigationWindow!.ShowWindow();
                 //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 
-            var notifyIconManager =
-    _serviceProvider.GetService(typeof(INotifyIconService)) as INotifyIconService;
+            var notifyIconManager = _serviceProvider.GetService(typeof(INotifyIconService)) as INotifyIconService;
 
 
             if (!notifyIconManager!.IsRegistered)

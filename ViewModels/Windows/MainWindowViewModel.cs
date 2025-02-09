@@ -150,18 +150,12 @@ namespace WinState.ViewModels.Windows
         }
 
 
-        private static void NotifyIcon_MouseDoubleClick(object? sender, MouseEventArgs e)
+        private static async void NotifyIcon_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
 
                 var _navigationWindow = App.GetService<INavigationWindow>();
-
-                //_navigationWindow!.ShowWindow();
-
-                //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
-
-
 
                 // 當 NotifyIcon 被左鍵點選時，還原或隱藏主視窗
                 // 可透過 App.Current.MainWindow 或其他方式取得 MainWindow 實例
@@ -170,15 +164,19 @@ namespace WinState.ViewModels.Windows
                     if (mainWindow.Visibility == Visibility.Hidden)
                     {
                         mainWindow.Visibility = Visibility.Visible;
-                        mainWindow.WindowState = WindowState.Normal;
-                        mainWindow.Activate();
+
+                        await Task.Delay(50);
                         _navigationWindow!.ShowWindow();
                         _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+
+                        mainWindow.Activate();
+                        SystemCommands.RestoreWindow(mainWindow);
                         //mainWindow.RestoreWindowFromTray();
                     }
                     else
                     {
-                        mainWindow.Visibility = Visibility.Hidden;
+                        SystemCommands.MinimizeWindow(mainWindow);
+                        //mainWindow.Visibility = Visibility.Hidden;
                         //_navigationWindow!.CloseWindow();
                         //mainWindow.Hide();
                         //mainWindow.WindowState = WindowState.Minimized;
