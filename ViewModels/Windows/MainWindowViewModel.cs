@@ -178,6 +178,7 @@ namespace WinState.ViewModels.Windows
                     {
                         _navigationWindow!.CloseWindow();
                         mainWindow.Hide();
+                        mainWindow.WindowState = WindowState.Minimized;
                     }
                 }
                 else
