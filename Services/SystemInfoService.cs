@@ -153,22 +153,46 @@ namespace WinState.Services
             }
         }
 
+        /// <summary>
+        /// 利用 WMI 查詢所有網卡（包括虛擬網卡）的效能資料，
+        /// 並依據 BytesReceivedPerSec 選出流量最大的網卡，其名稱將作為後續 PerformanceCounter 的實例名稱。
+        /// </summary>
+        /// <returns>流量最大的網卡名稱，如果查詢失敗則傳回空字串</returns>
         private string GetActiveNetworkAdapterDescription()
         {
-            // 篩選出所有狀態為 Up 且非 Loopback 的網卡，然後依照 BytesReceived 排序
-            var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
-                             ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .OrderByDescending(ni => ni.GetIPv4Statistics().BytesReceived)
-                .ToList();
+            string activeAdapter = string.Empty;
+            double maxBytesReceived = 0;
 
-            if (activeAdapters.Any())
+            try
             {
-                // 取流量最大的那張網卡的 Description
-                return activeAdapters.First().Description;
+                // 使用 WMI 查詢 Win32_PerfFormattedData_Tcpip_NetworkInterface 類別，
+                // 該類別包含了所有有 TCP/IP 使用的網卡（包含虛擬網卡）的即時效能數據。
+                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Name, BytesReceivedPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface"))
+                {
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        // 取得網卡名稱
+                        string name = obj["Name"]?.ToString() ?? "";
+
+                        // 嘗試解析 BytesReceivedPerSec，若失敗則視為 0
+                        double bytesReceived = 0;
+                        double.TryParse(obj["BytesReceivedPerSec"]?.ToString(), out bytesReceived);
+
+                        // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新
+                        if (bytesReceived > maxBytesReceived)
+                        {
+                            maxBytesReceived = bytesReceived;
+                            activeAdapter = name;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Error retrieving network adapter performance: " + ex.Message);
             }
 
-            return string.Empty;
+            return activeAdapter;
         }
 
         /// <summary>
@@ -176,6 +200,9 @@ namespace WinState.Services
         /// </summary>
         private void InitializeNetworkCounters()
         {
+
+
+
             try
             {
                 // 透過前面的方法取得實際的網卡名稱
@@ -373,7 +400,7 @@ namespace WinState.Services
             try
             {
                 // 取得所有 PerformanceCounter 中的網路介面實例名稱
-                var category = new PerformanceCounterCategory("Network Interface");
+                var category = new PerformanceCounterCategory("Network Adapter");
                 var instanceNames = category.GetInstanceNames();
 
                 // 列印所有 instance 名稱供除錯使用
