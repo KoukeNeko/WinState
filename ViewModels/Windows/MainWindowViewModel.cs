@@ -257,7 +257,7 @@ namespace WinState.ViewModels.Windows
                     if (NETWORK.Icon != null)
                     {
                         DestroyIcon(NETWORK.Icon.Handle);
-                        NETWORK.Icon = CreateTextIcon("NET", NetworkUpload.ToString());
+                        NETWORK.Icon = CreateTextIcon("NET", Math.Max(_systemInfoService.NetworkUpload, _systemInfoService.NetworkDownload).ToString());
                         NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + " " + _systemInfoService.NetworkUploadUnit + " / " + _systemInfoService.NetworkDownload.ToString() + " " + _systemInfoService.NetworkDownloadUnit;
                     }
                     break;

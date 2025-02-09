@@ -138,12 +138,12 @@ namespace WinState.Services
                             //Console.WriteLine(sensor.Name);
 
                             // 依據實際情況，Sensor 名稱可能為 "Upload Speed" 與 "Download Speed"
-                            if (sensor.SensorType == SensorType.Load && sensor.Name == "Upload Speed")
+                            if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Upload Speed")
                             {
                                
                                 _networkUploadSensor = sensor;
                             }
-                            else if (sensor.SensorType == SensorType.Load && sensor.Name == "Download Speed")
+                            else if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Download Speed")
                             {
                                 _networkDownloadSensor = sensor;
                             }
@@ -153,6 +153,24 @@ namespace WinState.Services
             }
         }
 
+        private string GetActiveNetworkAdapterDescription()
+        {
+            // 篩選出所有狀態為 Up 且非 Loopback 的網卡，然後依照 BytesReceived 排序
+            var activeAdapters = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
+                             ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                .OrderByDescending(ni => ni.GetIPv4Statistics().BytesReceived)
+                .ToList();
+
+            if (activeAdapters.Any())
+            {
+                // 取流量最大的那張網卡的 Description
+                return activeAdapters.First().Description;
+            }
+
+            return string.Empty;
+        }
+
         /// <summary>
         /// 初始化網路計數器，只需要做一次
         /// </summary>
@@ -160,12 +178,14 @@ namespace WinState.Services
         {
             try
             {
+                // 透過前面的方法取得實際的網卡名稱
                 string networkAdapterName = GetNetworkAdapterName();
-                // 建立後就放在欄位，後面直接用 .NextValue()
+
+                // 使用該網卡名稱初始化 PerformanceCounter
                 _uploadCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", networkAdapterName);
                 _downloadCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", networkAdapterName);
 
-                // 第一次讀取通常是 0，先讀一次以便後面計算較準
+                // 第一次讀取通常為 0，先呼叫一次 NextValue() 以便後續計算較準
                 _uploadCounter.NextValue();
                 _downloadCounter.NextValue();
             }
@@ -174,6 +194,7 @@ namespace WinState.Services
                 Debug.WriteLine($"Error initializing network counters: {ex.Message}");
             }
         }
+
 
         public void Start()
         {
@@ -267,65 +288,83 @@ namespace WinState.Services
             return diskUsage;
         }
 
+        /// <summary>
+        /// 利用 PerformanceCounter 取得網路上傳與下載的數值，並將數值轉換成工作管理員類似的格式（以位元/秒顯示）。
+        /// </summary>
+        /// <returns>
+        /// 回傳一個 Tuple，包含：上傳速率、下載速率、上傳單位、下載單位。
+        /// </returns>
         private (double Upload, double Download, string UploadUnit, string DownloadUnit) GetNetworkUsage()
         {
-            // 先嘗試利用 LibreHardwareMonitor 的網路感測器取得數值
-            if (_networkUploadSensor != null && _networkDownloadSensor != null)
+            // 檢查 PerformanceCounter 是否初始化成功
+            if (_uploadCounter != null && _downloadCounter != null)
             {
-                // 先更新所有網路硬體，才能正確讀取感測器數值
-                foreach (IHardware hardware in _computer.Hardware)
-                {
-                    if (hardware.HardwareType == HardwareType.Network)
-                    {
-                        hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
-                    }
-                }
-                double uploadValue = _networkUploadSensor.Value.GetValueOrDefault();
-                double downloadValue = _networkDownloadSensor.Value.GetValueOrDefault();
+                // 取得當前上傳與下載的數值，單位為「位元組/秒」
+                double uploadBytesPerSec = _uploadCounter.NextValue();
+                double downloadBytesPerSec = _downloadCounter.NextValue();
 
-                string uploadUnit = "Bps";
-                string downloadUnit = "Bps";
+                // 將「位元組/秒」轉換成「位元/秒」
+                double uploadBitsPerSec = uploadBytesPerSec * 8;
+                double downloadBitsPerSec = downloadBytesPerSec * 8;
 
-                if (uploadValue >= 1_000_000_000)
-                {
-                    uploadValue /= 1_000_000_000;
-                    uploadUnit = "GBps";
-                }
-                else if (uploadValue >= 1_000_000)
-                {
-                    uploadValue /= 1_000_000;
-                    uploadUnit = "MBps";
-                }
-                else if (uploadValue >= 1_000)
-                {
-                    uploadValue /= 1_000;
-                    uploadUnit = "KBps";
-                }
+                // 輸出除錯訊息到 Visual Studio 的 Output 視窗
+                Debug.WriteLine("Debug - Upload Bits/sec: " + uploadBitsPerSec);
+                Debug.WriteLine("Debug - Download Bits/sec: " + downloadBitsPerSec);
 
-                if (downloadValue >= 1_000_000_000)
+                // 預設單位皆為 bit/s
+                string uploadUnit = "bps";
+                string downloadUnit = "bps";
+
+                /*
+                 * 將讀取到的數值依據大小轉換成較易閱讀的單位：
+                 * 如果數值太大，則轉換為 Kbps, Mbps 或 Gbps，
+                 * 注意：這裡以 1000 為進位單位（Task Manager 常用 Mbps 等）。
+                 */
+                if (uploadBitsPerSec >= 1_000_000_000)
                 {
-                    downloadValue /= 1_000_000_000;
-                    downloadUnit = "GBps";
+                    uploadBitsPerSec /= 1_000_000_000;
+                    uploadUnit = "Gbps";
                 }
-                else if (downloadValue >= 1_000_000)
+                else if (uploadBitsPerSec >= 1_000_000)
                 {
-                    downloadValue /= 1_000_000;
-                    downloadUnit = "MBps";
+                    uploadBitsPerSec /= 1_000_000;
+                    uploadUnit = "Mbps";
                 }
-                else if (downloadValue >= 1_000)
+                else if (uploadBitsPerSec >= 1_000)
                 {
-                    downloadValue /= 1_000;
-                    downloadUnit = "KBps";
+                    uploadBitsPerSec /= 1_000;
+                    uploadUnit = "Kbps";
                 }
 
-                return (uploadValue, downloadValue, uploadUnit, downloadUnit);
+                if (downloadBitsPerSec >= 1_000_000_000)
+                {
+                    downloadBitsPerSec /= 1_000_000_000;
+                    downloadUnit = "Gbps";
+                }
+                else if (downloadBitsPerSec >= 1_000_000)
+                {
+                    downloadBitsPerSec /= 1_000_000;
+                    downloadUnit = "Mbps";
+                }
+                else if (downloadBitsPerSec >= 1_000)
+                {
+                    downloadBitsPerSec /= 1_000;
+                    downloadUnit = "Kbps";
+                }
+
+                return (uploadBitsPerSec, downloadBitsPerSec, uploadUnit, downloadUnit);
             }
 
-            return (-1, -1, "ERR", "ERR");
+            // 若 PerformanceCounter 尚未初始化，則回傳 0 與預設單位
+            return (0, 0, "bps", "bps");
         }
+
+
+
 
         private string GetNetworkAdapterName()
         {
+            // 如果已經快取過，就直接回傳
             if (!string.IsNullOrEmpty(_cachedNetworkInterface))
             {
                 return _cachedNetworkInterface;
@@ -333,32 +372,33 @@ namespace WinState.Services
 
             try
             {
+                // 取得所有 PerformanceCounter 中的網路介面實例名稱
                 var category = new PerformanceCounterCategory("Network Interface");
-                var validInstances = category.GetInstanceNames(); // 這裡包含所有可用的介面名稱
+                var instanceNames = category.GetInstanceNames();
 
-                var activeAdapter = NetworkInterface.GetAllNetworkInterfaces()
-                    .FirstOrDefault(ni =>
-                        ni.OperationalStatus == OperationalStatus.Up &&
-                        ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                        ni.GetIPv4Statistics().BytesReceived > 0);
-
-                if (activeAdapter != null)
+                // 列印所有 instance 名稱供除錯使用
+                foreach (var name in instanceNames)
                 {
-                    // 嘗試比對 activeAdapter.Description 與 validInstances
-                    _cachedNetworkInterface = validInstances
-                        .FirstOrDefault(instance =>
-                            instance.Contains(activeAdapter.Description, StringComparison.OrdinalIgnoreCase))
-                        ?? validInstances.First();
+                    Debug.WriteLine("Instance Name: " + name);
                 }
-                else
+
+                // 取得一個活動中的網卡描述（例如從 GetActiveNetworkAdapterDescription()）
+                string activeAdapterDescription = GetActiveNetworkAdapterDescription();
+
+                // 嘗試在 PerformanceCounter 的實例中比對描述文字
+                _cachedNetworkInterface = instanceNames
+                    .FirstOrDefault(name => name.Contains(activeAdapterDescription, StringComparison.OrdinalIgnoreCase));
+
+                // 若比對失敗，則預設使用第一個實例
+                if (string.IsNullOrEmpty(_cachedNetworkInterface) && instanceNames.Any())
                 {
-                    _cachedNetworkInterface = "_Total";
+                    _cachedNetworkInterface = instanceNames.First();
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
-                _cachedNetworkInterface = "_Total";
+                _cachedNetworkInterface = "_Total"; // 當作總和來顯示
             }
 
             return _cachedNetworkInterface;
