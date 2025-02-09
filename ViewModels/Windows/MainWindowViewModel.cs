@@ -1,9 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using WinState.Services;
+using WinState.Views.Windows;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Tray;
 
@@ -16,37 +18,37 @@ namespace WinState.ViewModels.Windows
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
-                    {
-                        new NavigationViewItem()
-                        {
-                            Content = "Home",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
-                            TargetPageType = typeof(Views.Pages.DashboardPage)
-                        },
-                        new NavigationViewItem()
-                        {
-                            Content = "Data",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
-                            TargetPageType = typeof(Views.Pages.DataPage)
-                        }
-                    };
+        {
+            new NavigationViewItem()
+            {
+                Content = "Home",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
+                TargetPageType = typeof(Views.Pages.DashboardPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "Data",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
+                TargetPageType = typeof(Views.Pages.DataPage)
+            }
+        };
 
         [ObservableProperty]
         private ObservableCollection<object> _footerMenuItems =
-                    [
-                        new NavigationViewItem()
-                        {
-                            Content = "Settings",
-                            Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
-                            TargetPageType = typeof(Views.Pages.SettingsPage)
-                        }
-                    ];
+        [
+            new NavigationViewItem()
+            {
+                Content = "Settings",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
+                TargetPageType = typeof(Views.Pages.SettingsPage)
+            }
+        ];
 
         [ObservableProperty]
         private ObservableCollection<MenuItem> _trayMenuItems = new()
-                    {
-                        new MenuItem { Header = "Home", Tag = "tray_home" }
-                    };
+        {
+            new MenuItem { Header = "Home", Tag = "tray_home" }
+        };
 
         // ---------------------------
         // 新增：整合系統監控資料
@@ -73,23 +75,21 @@ namespace WinState.ViewModels.Windows
         NotifyIcon DISK;
         NotifyIcon NETWORK;
         NotifyIcon POWER;
+
         public MainWindowViewModel()
         {
             _systemInfoService = new SystemInfoService();
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
 
-
-            //ContextMenuLoader cml = new ContextMenuLoader();
-
-            //NotifyIconService ns = new NotifyIconService();
-            ////  測試系統圖標
             CPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
             };
+            // 原先的註解和邏輯，移到方法裡之後，這裡就只需要掛載事件
+            CPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             GPU = new NotifyIcon
             {
@@ -97,39 +97,39 @@ namespace WinState.ViewModels.Windows
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
             };
+            GPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             RAM = new NotifyIcon
             {
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-
             };
+            RAM.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             DISK = new NotifyIcon
             {
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-
             };
+            DISK.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             NETWORK = new NotifyIcon
             {
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-
             };
+            NETWORK.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
             POWER = new NotifyIcon
             {
                 Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
-
             };
-
+            POWER.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
 
 
             foreach (var item in _trayMenuItems)
@@ -145,7 +145,31 @@ namespace WinState.ViewModels.Windows
             }
 
             _trayMenuItems.Clear();
+        }
 
+
+        private static void NotifyIcon_MouseDoubleClick(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                // 當 NotifyIcon 被左鍵點選時，還原或隱藏主視窗
+                // 可透過 App.Current.MainWindow 或其他方式取得 MainWindow 實例
+                if (System.Windows.Application.Current.MainWindow is WinState.Views.Windows.MainWindow mainWindow)
+                {
+                    if (mainWindow.WindowState == WindowState.Minimized)
+                    {
+                        mainWindow.RestoreWindowFromTray();
+                    }
+                    else
+                    {
+                        mainWindow.Hide();
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("MainWindow instance not found.");
+                }
+            }
         }
 
         static Icon CreateTextIcon(string text1, string text2)
@@ -217,7 +241,6 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(CpuPower));
         }
 
-
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         extern static bool DestroyIcon(IntPtr handle);
 
@@ -276,8 +299,5 @@ namespace WinState.ViewModels.Windows
                     break;
             }
         }
-
     }
-
-
 }

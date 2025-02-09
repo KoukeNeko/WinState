@@ -1,5 +1,4 @@
-﻿using WinState.Services;
-using WinState.ViewModels.Windows;
+﻿using WinState.ViewModels.Windows;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
@@ -61,6 +60,39 @@ namespace WinState.Views.Windows
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 當點選 TitleBar 的最小化按鈕時，隱藏主視窗，達成最小化到系統托盤效果。
+        /// </summary>
+        private void TitleBar_MinimizeClicked(object sender, RoutedEventArgs e)
+        {
+            // 先將視窗狀態設為最小化
+            this.WindowState = WindowState.Minimized;
+            // 隱藏視窗，使其不出現在工作列上
+            this.Hide();
+        }
+
+        /// <summary>
+        /// 當視窗狀態從最小化還原時，自動顯示視窗（可搭配 NotifyIcon 事件還原視窗）。
+        /// </summary>
+        private void MainWindow_StateChanged(object sender, EventArgs e)
+        {
+            if (this.WindowState != WindowState.Minimized && !this.IsVisible)
+            {
+                this.Show();
+            }
+        }
+
+        /// <summary>
+        /// 供 NotifyIcon 還原視窗的公開方法
+        /// </summary>
+        public void RestoreWindowFromTray()
+        {
+            // 顯示視窗並還原至正常狀態
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
         }
     }
 }
