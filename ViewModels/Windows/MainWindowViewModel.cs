@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using Microsoft.Extensions.Hosting;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -6,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using WinState.Services;
 using WinState.Views.Windows;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
 using Wpf.Ui.Tray;
 
@@ -152,16 +154,29 @@ namespace WinState.ViewModels.Windows
         {
             if (e.Button == MouseButtons.Left)
             {
+
+                var _navigationWindow = App.GetService<INavigationWindow>();
+
+                //_navigationWindow!.ShowWindow();
+
+                //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+
+
+
                 // 當 NotifyIcon 被左鍵點選時，還原或隱藏主視窗
                 // 可透過 App.Current.MainWindow 或其他方式取得 MainWindow 實例
                 if (System.Windows.Application.Current.MainWindow is WinState.Views.Windows.MainWindow mainWindow)
                 {
                     if (mainWindow.WindowState == WindowState.Minimized)
                     {
-                        mainWindow.RestoreWindowFromTray();
+                        
+                        _navigationWindow!.ShowWindow();
+                        _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+                        //mainWindow.RestoreWindowFromTray();
                     }
                     else
                     {
+                        _navigationWindow!.CloseWindow();
                         mainWindow.Hide();
                     }
                 }

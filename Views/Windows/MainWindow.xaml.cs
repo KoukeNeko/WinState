@@ -22,13 +22,14 @@ namespace WinState.Views.Windows
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
+            //this.Visibility = Visibility.Hidden;
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
 
             //啟動後，最小化視窗到系統圖示列
-            this.WindowState = System.Windows.WindowState.Minimized;
-            this.Hide();
+            //this.WindowState = System.Windows.WindowState.Minimized;
+            //this.Hide();
         }
 
         #region INavigationWindow methods
