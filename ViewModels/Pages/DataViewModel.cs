@@ -12,14 +12,6 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private IEnumerable<DataColor> _colors;
 
-        public void OnNavigatedTo()
-        {
-            if (!_isInitialized)
-                InitializeViewModel();
-        }
-
-        public void OnNavigatedFrom() { }
-
         private void InitializeViewModel()
         {
             var random = new Random();
@@ -47,12 +39,19 @@ namespace WinState.ViewModels.Pages
 
         public Task OnNavigatedToAsync()
         {
-            throw new NotImplementedException();
+
+            if (!_isInitialized)
+            {
+                InitializeViewModel();
+            }
+            return Task.CompletedTask;
+            //throw new NotImplementedException();
         }
 
         public Task OnNavigatedFromAsync()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
+            //throw new NotImplementedException();
         }
     }
 }
