@@ -6,6 +6,7 @@ using WinState.Views.Windows;
 using Wpf.Ui.Abstractions;
 using System.Diagnostics;
 using Wpf.Ui.Tray;
+using System.Windows.Navigation;
 
 namespace WinState.Services
 {
@@ -51,9 +52,10 @@ namespace WinState.Services
                 _navigationWindow = (
                     _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
                 )!;
-                _navigationWindow!.ShowWindow();
 
-                _navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
+               (_navigationWindow as MainWindow).Visibility = Visibility.Hidden;
+                //_navigationWindow!.ShowWindow();
+                //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 
             var notifyIconManager =

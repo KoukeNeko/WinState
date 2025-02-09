@@ -22,13 +22,14 @@ namespace WinState.Views.Windows
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
+            //this.Visibility = Visibility.Hidden;
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
 
             //啟動後，最小化視窗到系統圖示列
-            this.WindowState = System.Windows.WindowState.Minimized;
-            this.Hide();
+            //this.WindowState = System.Windows.WindowState.Minimized;
+            //this.Hide();
         }
 
         #region INavigationWindow methods
@@ -71,10 +72,12 @@ namespace WinState.Views.Windows
         /// </summary>
         private void TitleBar_MinimizeClicked(object sender, RoutedEventArgs? e)
         {
+            this.WindowState = WindowState.Normal;
+            Visibility = Visibility.Hidden;
             // 先將視窗狀態設為最小化
-            this.WindowState = WindowState.Minimized;
+            //this.WindowState = WindowState.Minimized;
             // 隱藏視窗，使其不出現在工作列上
-            this.Hide();
+            //this.Hide();
         }
 
         /// <summary>
@@ -82,10 +85,10 @@ namespace WinState.Views.Windows
         /// </summary>
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
-            if (this.WindowState != WindowState.Minimized && !this.IsVisible)
-            {
-                this.Show();
-            }
+            //if (this.WindowState != WindowState.Minimized && !this.IsVisible)
+            //{
+            //    this.Show();
+            //}
         }
 
         /// <summary>
