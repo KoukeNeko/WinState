@@ -1,9 +1,6 @@
-﻿using System.Diagnostics;
+﻿using LibreHardwareMonitor.Hardware;
+using System.Diagnostics;
 using System.Management;
-using System.Net.NetworkInformation;
-using System.Timers;
-using LibreHardwareMonitor.Hardware;
-using LibreHardwareMonitor.Hardware.Cpu;
 
 namespace WinState.Services
 {
@@ -140,7 +137,7 @@ namespace WinState.Services
                             // 依據實際情況，Sensor 名稱可能為 "Upload Speed" 與 "Download Speed"
                             if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Upload Speed")
                             {
-                               
+
                                 _networkUploadSensor = sensor;
                             }
                             else if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Download Speed")
@@ -160,6 +157,35 @@ namespace WinState.Services
         /// <returns>流量最大的網卡名稱，如果查詢失敗則傳回空字串</returns>
         private string GetActiveNetworkAdapterDescription()
         {
+            // 定義一個區域函式，用來判斷指定的網卡 instance name 是否為一般使用的實體網卡，
+            // 若名稱中包含排除的關鍵字，則認定該 adapter 為虛擬或特殊網卡，不會被當作一般使用。
+            bool IsUsableNetworkAdapter(string instanceName)
+            {
+                // 定義不希望被列出的關鍵字（依需求可擴充或調整）
+                string[] excludedKeywords = new string[]
+                {
+                "WAN Miniport",
+                "6to4 Adapter",
+                "Microsoft IP-HTTPS",
+                //"Hyper-V Virtual",
+                "Microsoft Kernel Debug",
+                "Teredo Tunneling",
+                //"Bluetooth Device",
+                "Network Monitor"
+                };
+
+                // 如果 instance name 包含任何一個排除關鍵字，則回傳 false
+                foreach (var keyword in excludedKeywords)
+                {
+                    if (instanceName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             string activeAdapter = string.Empty;
             double maxBytesReceived = 0;
 
@@ -167,23 +193,27 @@ namespace WinState.Services
             {
                 // 使用 WMI 查詢 Win32_PerfFormattedData_Tcpip_NetworkInterface 類別，
                 // 該類別包含了所有有 TCP/IP 使用的網卡（包含虛擬網卡）的即時效能數據。
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Name, BytesReceivedPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface"))
+                using ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT Name, BytesReceivedPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface");
+                foreach (ManagementObject obj in searcher.Get())
                 {
-                    foreach (ManagementObject obj in searcher.Get())
+                    // 取得網卡名稱
+                    string name = obj["Name"]?.ToString() ?? "";
+
+                    // 判斷網卡是否符合一般使用的條件（過濾掉虛擬/特殊網卡）
+                    if (!IsUsableNetworkAdapter(name))
                     {
-                        // 取得網卡名稱
-                        string name = obj["Name"]?.ToString() ?? "";
+                        continue; // 不符合的就跳過
+                    }
 
-                        // 嘗試解析 BytesReceivedPerSec，若失敗則視為 0
-                        double bytesReceived = 0;
-                        double.TryParse(obj["BytesReceivedPerSec"]?.ToString(), out bytesReceived);
+                    // 嘗試解析 BytesReceivedPerSec，若解析失敗則視為 0
+                    double bytesReceived = 0;
+                    double.TryParse(obj["BytesReceivedPerSec"]?.ToString(), out bytesReceived);
 
-                        // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新
-                        if (bytesReceived > maxBytesReceived)
-                        {
-                            maxBytesReceived = bytesReceived;
-                            activeAdapter = name;
-                        }
+                    // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新 activeAdapter
+                    if (bytesReceived > maxBytesReceived)
+                    {
+                        maxBytesReceived = bytesReceived;
+                        activeAdapter = name;
                     }
                 }
             }
@@ -195,13 +225,12 @@ namespace WinState.Services
             return activeAdapter;
         }
 
+
         /// <summary>
         /// 初始化網路計數器，只需要做一次
         /// </summary>
         private void InitializeNetworkCounters()
         {
-
-
 
             try
             {
@@ -209,8 +238,8 @@ namespace WinState.Services
                 string networkAdapterName = GetNetworkAdapterName();
 
                 // 使用該網卡名稱初始化 PerformanceCounter
-                _uploadCounter = new PerformanceCounter("Network Interface", "Bytes Sent/sec", networkAdapterName);
-                _downloadCounter = new PerformanceCounter("Network Interface", "Bytes Received/sec", networkAdapterName);
+                _uploadCounter = new PerformanceCounter("Network Adapter", "Bytes Sent/sec", networkAdapterName);
+                _downloadCounter = new PerformanceCounter("Network Adapter", "Bytes Received/sec", networkAdapterName);
 
                 // 第一次讀取通常為 0，先呼叫一次 NextValue() 以便後續計算較準
                 _uploadCounter.NextValue();
@@ -386,12 +415,15 @@ namespace WinState.Services
             return (0, 0, "bps", "bps");
         }
 
-
-
-
+        /// <summary>
+        /// 取得網路介面的 PerformanceCounter 實例名稱，
+        /// 根據 GetActiveNetworkAdapterDescription() 所取得的活躍網卡描述來比對，
+        /// 若找不到符合條件的實例名稱，則預設回傳 "_Total"。
+        /// </summary>
+        /// <returns>網卡實例名稱字串</returns>
         private string GetNetworkAdapterName()
         {
-            // 如果已經快取過，就直接回傳
+            // 如果已快取過網卡名稱，直接回傳快取值
             if (!string.IsNullOrEmpty(_cachedNetworkInterface))
             {
                 return _cachedNetworkInterface;
@@ -399,37 +431,44 @@ namespace WinState.Services
 
             try
             {
-                // 取得所有 PerformanceCounter 中的網路介面實例名稱
+                // 取得 "Network Interface" 類別下的所有實例名稱
                 var category = new PerformanceCounterCategory("Network Adapter");
                 var instanceNames = category.GetInstanceNames();
 
-                // 列印所有 instance 名稱供除錯使用
+                // 輸出所有 instance 名稱供除錯參考
                 foreach (var name in instanceNames)
                 {
                     Debug.WriteLine("Instance Name: " + name);
                 }
 
-                // 取得一個活動中的網卡描述（例如從 GetActiveNetworkAdapterDescription()）
+                // 透過 GetActiveNetworkAdapterDescription() 取得活躍網卡的描述，
+                // 該方法已內部過濾掉不會一般使用的虛擬或特殊網卡。
                 string activeAdapterDescription = GetActiveNetworkAdapterDescription();
+                Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
 
-                // 嘗試在 PerformanceCounter 的實例中比對描述文字
+                // 嘗試從所有 instance 名稱中找出包含活躍網卡描述的項目
                 _cachedNetworkInterface = instanceNames
-                    .FirstOrDefault(name => name.Contains(activeAdapterDescription, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
 
-                // 若比對失敗，則預設使用第一個實例
-                if (string.IsNullOrEmpty(_cachedNetworkInterface) && instanceNames.Any())
+                // 如果找不到符合條件的 instance，則使用預設的 "_Total"
+                if (string.IsNullOrEmpty(_cachedNetworkInterface))
                 {
-                    _cachedNetworkInterface = instanceNames.First();
+                    _cachedNetworkInterface = "_Total";
                 }
+
+                Debug.WriteLine("Chosen Network Instance: " + _cachedNetworkInterface);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
-                _cachedNetworkInterface = "_Total"; // 當作總和來顯示
+                _cachedNetworkInterface = "_Total";
             }
 
             return _cachedNetworkInterface;
         }
+
+
+
 
         private double GetCpuPowerFromHardwareMonitor()
         {
