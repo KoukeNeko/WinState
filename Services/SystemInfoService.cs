@@ -226,53 +226,57 @@ namespace WinState.Services
         }
 
         /// <summary>
-        /// 利用傳入的 PerformanceCounterCategory 查詢所有網卡（包括虛擬網卡）的實例，
+        /// 利用傳入的 PerformanceCounterCategory 查詢所有網卡（以 PerformanceCounter 的 instance name），
         /// 並根據 "Bytes Received/sec" 的數值挑選出流量最大的網卡，
-        /// 該網卡的 instance name 將作為後續 PerformanceCounter 的依據。
+        /// 該網卡的 instance name 將作為後續 PerformanceCounter 的依據，
+        /// 以避免使用友好名稱（Friendly Name）。
         /// </summary>
         /// <param name="category">用於查詢網卡的 PerformanceCounterCategory，通常為 "Network Adapter"</param>
         /// <returns>流量最大的網卡的 instance name，如果查詢失敗則傳回空字串</returns>
         private string GetActiveNetworkAdapterDescription(PerformanceCounterCategory category)
         {
-            // 取得此 category 下所有的實例名稱
+            // 取得該 category 下所有的 instance 名稱
             string[] instanceNames = category.GetInstanceNames();
 
-            // 建立一個容器，儲存每個符合條件的網卡名稱及其 Bytes Received/sec 的數值
-            var adapterData = new List<(string Name, float BytesReceived)>();
+            // 用來儲存每個符合條件的網卡資訊：instance name 與其 Bytes Received/sec 數值
+            var adapterData = new List<(string InstanceName, float BytesReceived)>();
 
             // 依序處理每個 instance
-            foreach (var instanceName in instanceNames)
+            foreach (var instance in instanceNames)
             {
-                // 使用 IsUsableNetworkAdapter 判斷該 instance 是否為一般使用的網卡
-                if (!IsUsableNetworkAdapter(instanceName))
+                // 過濾掉不符合一般使用的網卡（例如包含排除關鍵字的 adapter）
+                if (!IsUsableNetworkAdapter(instance))
                     continue;
 
                 try
                 {
-                    // 建立 PerformanceCounter，讀取 "Bytes Received/sec" 計數器的值
-                    using (PerformanceCounter counter = new PerformanceCounter(category.CategoryName, "Bytes Received/sec", instanceName))
+                    // 建立 PerformanceCounter 讀取 "Bytes Received/sec" 數值
+                    using (PerformanceCounter counter = new PerformanceCounter(category.CategoryName, "Bytes Received/sec", instance))
                     {
-                        // 取得目前的值
+                        // 先讀取一次來初始化計數器
+                        counter.NextValue();
+                        // 延遲一段時間，以便計算出正確的速率（這裡等待 1 秒）
+                        System.Threading.Thread.Sleep(1000);
                         float bytesReceived = counter.NextValue();
-                        adapterData.Add((instanceName, bytesReceived));
 
-                        // 輸出除錯訊息
-                        Debug.WriteLine($"Adapter: {instanceName}, Bytes Received/sec: {bytesReceived}");
+                        adapterData.Add((instance, bytesReceived));
+
+                        // 除錯輸出：顯示該 adapter 的 instance name 與 Bytes Received/sec 數值
+                        Debug.WriteLine($"Adapter: {instance}, Bytes Received/sec: {bytesReceived}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error reading counter for adapter {instanceName}: {ex.Message}");
+                    Debug.WriteLine($"Error reading counter for adapter {instance}: {ex.Message}");
                 }
             }
 
-            // 若有符合條件的網卡，挑選出 Bytes Received/sec 最高者
+            // 若有符合條件的網卡，選出 Bytes Received/sec 最高者的 instance name
             if (adapterData.Any())
             {
-                var activeAdapter = adapterData.OrderByDescending(a => a.BytesReceived).First();
-                return activeAdapter.Name;
+                var bestAdapter = adapterData.OrderByDescending(a => a.BytesReceived).First();
+                return bestAdapter.InstanceName;
             }
-
             return string.Empty;
         }
 
