@@ -1,6 +1,7 @@
 ﻿using LibreHardwareMonitor.Hardware;
 using System.Diagnostics;
 using System.Management;
+using System.Net.NetworkInformation;
 
 namespace WinState.Services
 {
@@ -151,99 +152,119 @@ namespace WinState.Services
         }
 
         /// <summary>
-        /// 利用 WMI 查詢所有網卡（包括虛擬網卡）的效能資料，
-        /// 並依據 BytesReceivedPerSec 選出流量最大的網卡，其名稱將作為後續 PerformanceCounter 的實例名稱。
+        /// 判斷指定網卡描述是否為一般使用的網卡，
+        /// 若描述中包含排除關鍵字（例如虛擬或特殊網卡關鍵字），則視為不合格。
         /// </summary>
-        /// <returns>流量最大的網卡名稱，如果查詢失敗則傳回空字串</returns>
-        private string GetActiveNetworkAdapterDescription()
+        /// <param name="description">網卡的描述（例如 NetworkInterface.Description）</param>
+        /// <returns>若為一般使用的網卡則回傳 true，否則回傳 false</returns>
+        private bool IsUsableNetworkAdapter(string description)
         {
-            // 定義一個區域函式，用來判斷指定的網卡 instance name 是否為一般使用的實體網卡，
-            // 若名稱中包含排除的關鍵字，則認定該 adapter 為虛擬或特殊網卡，不會被當作一般使用。
-            bool IsUsableNetworkAdapter(string instanceName)
+            // 定義不希望列出的關鍵字（依需求調整）
+            string[] excludedKeywords = new string[]
             {
-                // 定義不希望被列出的關鍵字（依需求可擴充或調整）
-                string[] excludedKeywords = new string[]
-                {
-                "WAN Miniport",
-                "6to4 Adapter",
-                "Microsoft IP-HTTPS",
-                //"Hyper-V Virtual",
-                "Microsoft Kernel Debug",
-                "Teredo Tunneling",
-                //"Bluetooth Device",
-                "Network Monitor"
-                };
+        "WAN Miniport",
+        "6to4 Adapter",
+        "Microsoft IP-HTTPS",
+        "Microsoft Kernel Debug",
+        "Teredo Tunneling",
+        "Network Monitor"
+            };
 
-                // 如果 instance name 包含任何一個排除關鍵字，則回傳 false
-                foreach (var keyword in excludedKeywords)
-                {
-                    if (instanceName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+            foreach (var keyword in excludedKeywords)
+            {
+                if (description.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return false;
             }
+            return true;
+        }
 
-            string activeAdapter = string.Empty;
-            double maxBytesTotal = 0;
+        /// <summary>
+        /// 從 PerformanceCounter 中取得網路介面的實例名稱，
+        /// 利用 GetActiveNetworkAdapterDescription() 所取得的活躍網卡描述來比對，
+        /// 若找不到符合條件的，則預設回傳 "_Total"（表示所有網卡的總和）。
+        /// </summary>
+        /// <returns>網卡實例名稱字串</returns>
+        private string GetNetworkAdapterName()
+        {
+            if (!string.IsNullOrEmpty(_cachedNetworkInterface))
+                return _cachedNetworkInterface;
 
             try
             {
-                // 使用 WMI 查詢 Win32_PerfFormattedData_Tcpip_NetworkInterface 類別，
-                // 該類別包含了所有有 TCP/IP 使用的網卡（包含虛擬網卡）的即時效能數據。
-                using ManagementObjectSearcher searcher = new("SELECT Name, BytesTotalPerSec FROM Win32_PerfFormattedData_Tcpip_NetworkInterface");
-                foreach (ManagementObject obj in searcher.Get().Cast<ManagementObject>())
+                // 取得 PerformanceCounterCategory 中所有的網卡實例名稱
+                var category = new PerformanceCounterCategory("Network Adapter");
+                var instanceNames = category.GetInstanceNames();
+
+                // 除錯輸出：列出所有取得的 instance 名稱
+                foreach (var name in instanceNames)
                 {
-                    // 取得網卡名稱
-                    string name = obj["Name"]?.ToString() ?? "";
-
-                    // 判斷網卡是否符合一般使用的條件（過濾掉虛擬/特殊網卡）
-                    if (!IsUsableNetworkAdapter(name))
-                    {
-                        continue; // 不符合的就跳過
-                    }
-
-                    // 嘗試解析 BytesTotalPerSec，若解析失敗則視為 0
-                    _ = double.TryParse(obj["BytesTotalPerSec"]?.ToString(), out double bytesTotal);
-
-                    // DEBUG 輸出：網卡名稱與收到的位元組數
-                    Debug.WriteLine($"Network Adapter: {name}, Bytes Total/sec: {bytesTotal}");
-
-                    // 如果此網卡收到的位元組數比目前記錄的最大值還大，則更新 activeAdapter
-                    if (bytesTotal > maxBytesTotal)
-                    {
-                        maxBytesTotal = bytesTotal;
-                        activeAdapter = name;
-                    }
+                    Debug.WriteLine("Instance Name: " + name);
                 }
+
+                // 利用 NetworkInterface API 取得活躍網卡的描述（已過濾掉虛擬/特殊網卡）
+                string activeAdapterDescription = GetActiveNetworkAdapterDescription();
+                Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
+
+                // 從 PerformanceCounter 的 instance 名稱中，找出包含該描述的項目（不區分大小寫）
+                _cachedNetworkInterface = instanceNames
+                    .FirstOrDefault(name => name.IndexOf(activeAdapterDescription, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                // 若比對不到，則退回使用 "_Total"
+                if (string.IsNullOrEmpty(_cachedNetworkInterface))
+                    _cachedNetworkInterface = "_Total";
+
+                Debug.WriteLine("Chosen Network Instance: " + _cachedNetworkInterface);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Error retrieving network adapter performance: " + ex.Message);
+                Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
+                _cachedNetworkInterface = "_Total";
             }
 
-            return activeAdapter;
+            return _cachedNetworkInterface;
+        }
+
+        /// <summary>
+        /// 透過 System.Net.NetworkInformation 取得目前活躍且一般使用的網卡描述，
+        /// 依據網卡狀態、流量與描述過濾條件來選出流量最大的網卡。
+        /// </summary>
+        /// <returns>活躍網卡的描述字串，如果找不到則回傳空字串</returns>
+        private string GetActiveNetworkAdapterDescription()
+        {
+            var adapters = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(ni => ni.OperationalStatus == OperationalStatus.Up &&
+                             ni.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                             IsUsableNetworkAdapter(ni.Description))
+                .OrderByDescending(ni => ni.GetIPv4Statistics().BytesReceived)
+                .ToList();
+
+            // DEBUG show the BytesReceived
+            foreach (var adapter in adapters)
+            {
+                Debug.WriteLine($"Adapter: {adapter.Description}, BytesReceived: {adapter.GetIPv4Statistics().BytesReceived}");
+            }
+
+            if (adapters.Count != 0)
+                return adapters.First().Description;
+            return string.Empty;
         }
 
 
         /// <summary>
-        /// 初始化網路計數器，只需要做一次
+        /// 初始化網路計數器，使用 PerformanceCounter 讀取網路上傳與下載數據。
         /// </summary>
         private void InitializeNetworkCounters()
         {
-
             try
             {
-                // 透過前面的方法取得實際的網卡名稱
+                // 透過 GetNetworkAdapterName() 取得實際要使用的網卡實例名稱
                 string networkAdapterName = GetNetworkAdapterName();
 
-                // 使用該網卡名稱初始化 PerformanceCounter
+                // 利用該網卡名稱初始化 PerformanceCounter，讀取「Bytes Sent/sec」與「Bytes Received/sec」
                 _uploadCounter = new PerformanceCounter("Network Adapter", "Bytes Sent/sec", networkAdapterName);
                 _downloadCounter = new PerformanceCounter("Network Adapter", "Bytes Received/sec", networkAdapterName);
 
-                // 第一次讀取通常為 0，先呼叫一次 NextValue() 以便後續計算較準
+                // 第一次讀取通常為 0，先呼叫一次 NextValue() 以便後續取樣更準
                 _uploadCounter.NextValue();
                 _downloadCounter.NextValue();
             }
@@ -347,37 +368,32 @@ namespace WinState.Services
         }
 
         /// <summary>
-        /// 利用 PerformanceCounter 取得網路上傳與下載的數值，並將數值轉換成工作管理員類似的格式（以位元/秒顯示）。
+        /// 利用 PerformanceCounter 取得網路上傳與下載的數值，
+        /// 並將數值轉換成與工作管理員類似的格式（以位元/秒顯示）。
         /// </summary>
         /// <returns>
         /// 回傳一個 Tuple，包含：上傳速率、下載速率、上傳單位、下載單位。
         /// </returns>
         private (double Upload, double Download, string UploadUnit, string DownloadUnit) GetNetworkUsage()
         {
-            // 檢查 PerformanceCounter 是否初始化成功
             if (_uploadCounter != null && _downloadCounter != null)
             {
-                // 取得當前上傳與下載的數值，單位為「位元組/秒」
+                // 取得「位元組/秒」的數值
                 double uploadBytesPerSec = _uploadCounter.NextValue();
                 double downloadBytesPerSec = _downloadCounter.NextValue();
 
-                // 將「位元組/秒」轉換成「位元/秒」
+                // 轉換為「位元/秒」
                 double uploadBitsPerSec = uploadBytesPerSec * 8;
                 double downloadBitsPerSec = downloadBytesPerSec * 8;
 
-                // 輸出除錯訊息到 Visual Studio 的 Output 視窗
                 Debug.WriteLine("Debug - Upload Bits/sec: " + uploadBitsPerSec);
                 Debug.WriteLine("Debug - Download Bits/sec: " + downloadBitsPerSec);
 
-                // 預設單位皆為 bit/s
+                // 預設單位皆為 bps
                 string uploadUnit = "bps";
                 string downloadUnit = "bps";
 
-                /*
-                 * 將讀取到的數值依據大小轉換成較易閱讀的單位：
-                 * 如果數值太大，則轉換為 Kbps, Mbps 或 Gbps，
-                 * 注意：這裡以 1000 為進位單位（Task Manager 常用 Mbps 等）。
-                 */
+                // 根據數值大小轉換單位：Kbps, Mbps 或 Gbps（以 1000 為進位）
                 if (uploadBitsPerSec >= 1_000_000_000)
                 {
                     uploadBitsPerSec /= 1_000_000_000;
@@ -412,63 +428,8 @@ namespace WinState.Services
 
                 return (uploadBitsPerSec, downloadBitsPerSec, uploadUnit, downloadUnit);
             }
-
-            // 若 PerformanceCounter 尚未初始化，則回傳 0 與預設單位
             return (0, 0, "bps", "bps");
         }
-
-        /// <summary>
-        /// 取得網路介面的 PerformanceCounter 實例名稱，
-        /// 根據 GetActiveNetworkAdapterDescription() 所取得的活躍網卡描述來比對，
-        /// 若找不到符合條件的實例名稱，則預設回傳 "_Total"。
-        /// </summary>
-        /// <returns>網卡實例名稱字串</returns>
-        private string GetNetworkAdapterName()
-        {
-            // 如果已快取過網卡名稱，直接回傳快取值
-            if (!string.IsNullOrEmpty(_cachedNetworkInterface))
-            {
-                return _cachedNetworkInterface;
-            }
-
-            try
-            {
-                // 取得 "Network Interface" 類別下的所有實例名稱
-                var category = new PerformanceCounterCategory("Network Adapter");
-                var instanceNames = category.GetInstanceNames();
-
-                // 輸出所有 instance 名稱供除錯參考
-                foreach (var name in instanceNames)
-                {
-                    Debug.WriteLine("Instance Name: " + name);
-                }
-
-                // 透過 GetActiveNetworkAdapterDescription() 取得活躍網卡的描述，
-                // 該方法已內部過濾掉不會一般使用的虛擬或特殊網卡。
-                string activeAdapterDescription = GetActiveNetworkAdapterDescription();
-                Debug.WriteLine("Active Adapter Description: " + activeAdapterDescription);
-
-                // 嘗試從所有 instance 名稱中找出包含活躍網卡描述的項目
-                _cachedNetworkInterface = instanceNames.FirstOrDefault(name => name.Contains(activeAdapterDescription, StringComparison.OrdinalIgnoreCase));
-
-                // 如果找不到符合條件的 instance，則使用預設的 "_Total"
-                if (string.IsNullOrEmpty(_cachedNetworkInterface))
-                {
-                    _cachedNetworkInterface = "_Total";
-                }
-
-                Debug.WriteLine("Chosen Network Instance: " + _cachedNetworkInterface);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
-                _cachedNetworkInterface = "_Total";
-            }
-
-            return _cachedNetworkInterface;
-        }
-
-
 
 
         private double GetCpuPowerFromHardwareMonitor()
