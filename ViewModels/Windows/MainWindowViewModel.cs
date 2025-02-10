@@ -176,6 +176,10 @@ namespace WinState.ViewModels.Windows
                     else
                     {
                         SystemCommands.MinimizeWindow(mainWindow);
+                        // 等待一段時間讓動畫完成
+                        await Task.Delay(200);
+
+                        mainWindow.Visibility = Visibility.Hidden;
                         //mainWindow.Visibility = Visibility.Hidden;
                         //_navigationWindow!.CloseWindow();
                         //mainWindow.Hide();
