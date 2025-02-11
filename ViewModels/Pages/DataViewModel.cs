@@ -1,5 +1,6 @@
 ﻿using System.Windows.Media;
 using WinState.Models;
+using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Controls;
 
 namespace WinState.ViewModels.Pages
@@ -9,15 +10,7 @@ namespace WinState.ViewModels.Pages
         private bool _isInitialized = false;
 
         [ObservableProperty]
-        private IEnumerable<DataColor> _colors;
-
-        public void OnNavigatedTo()
-        {
-            if (!_isInitialized)
-                InitializeViewModel();
-        }
-
-        public void OnNavigatedFrom() { }
+        private IEnumerable<DataColor>? _colors;
 
         private void InitializeViewModel()
         {
@@ -42,6 +35,23 @@ namespace WinState.ViewModels.Pages
             Colors = colorCollection;
 
             _isInitialized = true;
+        }
+
+        public Task OnNavigatedToAsync()
+        {
+
+            if (!_isInitialized)
+            {
+                InitializeViewModel();
+            }
+            return Task.CompletedTask;
+            //throw new NotImplementedException();
+        }
+
+        public Task OnNavigatedFromAsync()
+        {
+            return Task.CompletedTask;
+            //throw new NotImplementedException();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Wpf.Ui.Appearance;
+﻿using Wpf.Ui.Abstractions.Controls;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace WinState.ViewModels.Pages
@@ -58,6 +59,16 @@ namespace WinState.ViewModels.Pages
 
                     break;
             }
+        }
+
+        public Task OnNavigatedToAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task OnNavigatedFromAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using WinState.ViewModels.Windows;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
@@ -11,7 +12,7 @@ namespace WinState.Views.Windows
 
         public MainWindow(
             MainWindowViewModel viewModel,
-            IPageService pageService,
+            INavigationViewPageProvider pageService,
             INavigationService navigationService
         )
         {
@@ -21,9 +22,11 @@ namespace WinState.Views.Windows
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
+            //this.Visibility = Visibility.Hidden;
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
+
         }
 
         #region INavigationWindow methods
@@ -32,7 +35,7 @@ namespace WinState.Views.Windows
 
         public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-        public void SetPageService(IPageService pageService) => RootNavigation.SetPageService(pageService);
+        public void SetPageService(INavigationViewPageProvider pageService) => RootNavigation.SetPageProviderService(pageService);
 
         public void ShowWindow() => Show();
 
@@ -59,6 +62,19 @@ namespace WinState.Views.Windows
         public void SetServiceProvider(IServiceProvider serviceProvider)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 當點選 TitleBar 的最小化按鈕時，隱藏主視窗，達成最小化到系統托盤效果。
+        /// </summary>
+        private async void TitleBar_MinimizeClicked(object sender, RoutedEventArgs? e)
+        {
+            SystemCommands.MinimizeWindow(this);
+
+            // 等待一段時間讓動畫完成
+            await Task.Delay(200);
+
+            Visibility = Visibility.Hidden;
         }
     }
 }
