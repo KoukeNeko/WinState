@@ -70,6 +70,8 @@ namespace WinState.ViewModels.Windows
         public string NetworkUploadUnit => _systemInfoService.NetworkUploadUnit;
         public string NetworkDownloadUnit => _systemInfoService.NetworkDownloadUnit;
         public double CpuPower => _systemInfoService.CpuPower;
+        public double NetworkDownloadText => _systemInfoService.DownloadSpeeds[_systemInfoService.PrimaryExternalInterface];
+        public double NetworkUploadText => _systemInfoService.UploadSpeeds[_systemInfoService.PrimaryExternalInterface];
 
         NotifyIcon CPU;
         NotifyIcon GPU;
@@ -260,10 +262,29 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(NetworkUploadUnit));
             OnPropertyChanged(nameof(NetworkDownloadUnit));
             OnPropertyChanged(nameof(CpuPower));
+
+
+            OnPropertyChanged(nameof(NetworkDownloadText));
+            OnPropertyChanged(nameof(NetworkUploadText));
         }
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         extern static bool DestroyIcon(IntPtr handle);
+
+        private static string SpeedHumanReadable(long bytes)
+        {
+            string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
+            int counter = 0;
+            double number = bytes * 8; // 將 bytes 轉換為 bits
+
+            while (number >= 1000 && counter < suffixes.Length - 1)
+            {
+                counter++;
+                number /= 1000;
+            }
+
+            return string.Format("{0:0.##} {1}", number, suffixes[counter]);
+        }
 
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
@@ -302,12 +323,14 @@ namespace WinState.ViewModels.Windows
                         DISK.Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%";
                     }
                     break;
-                case "NetworkUpload":
+                case "NetworkUploadText":
                     if (NETWORK.Icon != null)
                     {
+                        long download = _systemInfoService.DownloadSpeeds[_systemInfoService.PrimaryExternalInterface];
+                        long upload = _systemInfoService.UploadSpeeds[_systemInfoService.PrimaryExternalInterface];
                         DestroyIcon(NETWORK.Icon.Handle);
-                        NETWORK.Icon = CreateTextIcon("NET", Math.Max(_systemInfoService.NetworkUpload, _systemInfoService.NetworkDownload).ToString());
-                        NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + " " + _systemInfoService.NetworkUploadUnit + " / " + _systemInfoService.NetworkDownload.ToString() + " " + _systemInfoService.NetworkDownloadUnit;
+                        NETWORK.Icon = CreateTextIcon("NET", Math.Max(upload, download).ToString());
+                        NETWORK.Text = _systemInfoService.PrimaryExternalInterface + "\nNET: " + SpeedHumanReadable(upload) + " / " + SpeedHumanReadable(download);
                     }
                     break;
                 case "CpuPower":
