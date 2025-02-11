@@ -75,18 +75,21 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
 
-            //
-            // 以下改用 ToolStripMenuItem 而非 WPF 的 MenuItem
-            //
+            // 用來建立每個 NotifyIcon 中「Exit」選單項目的共用函式
+            ToolStripMenuItem CreateExitMenuItem()
+            {
+                // 右鍵 NotifyIcon 關閉程式
+                var exitMenuItem = new ToolStripMenuItem("Exit");
+                exitMenuItem.Click += (sender, e) =>
+                {
+                    System.Windows.Application.Current.Shutdown();
+                    Debug.WriteLine("Exit clicked");
+                };
+                return exitMenuItem;
+            }
 
             // CPU NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemCpu = new ToolStripMenuItem("Exit");
-            exitMenuItemCpu.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemCpu = CreateExitMenuItem();
             CPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
@@ -97,13 +100,7 @@ namespace WinState.ViewModels.Windows
             CPU.ContextMenuStrip.Items.Add(exitMenuItemCpu);
 
             // GPU NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemGpu = new ToolStripMenuItem("Exit");
-            exitMenuItemGpu.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemGpu = CreateExitMenuItem();
             GPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
@@ -114,13 +111,7 @@ namespace WinState.ViewModels.Windows
             GPU.ContextMenuStrip.Items.Add(exitMenuItemGpu);
 
             // RAM NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemRam = new ToolStripMenuItem("Exit");
-            exitMenuItemRam.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemRam = CreateExitMenuItem();
             RAM = new NotifyIcon
             {
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
@@ -131,13 +122,7 @@ namespace WinState.ViewModels.Windows
             RAM.ContextMenuStrip.Items.Add(exitMenuItemRam);
 
             // DISK NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemDisk = new ToolStripMenuItem("Exit");
-            exitMenuItemDisk.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemDisk = CreateExitMenuItem();
             DISK = new NotifyIcon
             {
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
@@ -148,13 +133,7 @@ namespace WinState.ViewModels.Windows
             DISK.ContextMenuStrip.Items.Add(exitMenuItemDisk);
 
             // NETWORK NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemNet = new ToolStripMenuItem("Exit");
-            exitMenuItemNet.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemNet = CreateExitMenuItem();
             NETWORK = new NotifyIcon
             {
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
@@ -165,13 +144,7 @@ namespace WinState.ViewModels.Windows
             NETWORK.ContextMenuStrip.Items.Add(exitMenuItemNet);
 
             // POWER NotifyIcon
-            // 右鍵 NotifyIcon 關閉程式
-            var exitMenuItemPower = new ToolStripMenuItem("Exit");
-            exitMenuItemPower.Click += (sender, e) =>
-            {
-                System.Windows.Application.Current.Shutdown();
-                Debug.WriteLine("Exit clicked");
-            };
+            var exitMenuItemPower = CreateExitMenuItem();
             POWER = new NotifyIcon
             {
                 Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
@@ -234,6 +207,7 @@ namespace WinState.ViewModels.Windows
                     }
                 }
             }
+
             using var bitmap = new Bitmap(64, 64);
             using Graphics g = Graphics.FromImage(bitmap);
             g.Clear(Color.Transparent);
@@ -244,7 +218,8 @@ namespace WinState.ViewModels.Windows
             using (var subtitle = new System.Drawing.Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
             {
                 Brush brush = new SolidBrush(Color.White);
-                if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK") && double.TryParse(text2, out double value))
+                if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK")
+                    && double.TryParse(text2, out double value))
                 {
                     if (value >= 90)
                     {
@@ -292,6 +267,7 @@ namespace WinState.ViewModels.Windows
         protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
             switch (propertyName)
             {
                 case nameof(CpuUsage):
