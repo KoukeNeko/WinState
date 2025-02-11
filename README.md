@@ -3,6 +3,9 @@
 <p align="center">
   <img src="Assets/WinState-icon-512.png" alt="WinState Logo" width="128">
 </p>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1c0ec4a4-85c4-4f5e-af2e-a81d5a60f897" alt="screenshot">
+</p>
 
 [English](#english) | [繁體中文](#繁體中文)
 
