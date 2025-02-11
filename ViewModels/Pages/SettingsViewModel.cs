@@ -14,12 +14,6 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
 
-        public void OnNavigatedTo()
-        {
-            if (!_isInitialized)
-                InitializeViewModel();
-        }
-
         public void OnNavigatedFrom() { }
 
         private void InitializeViewModel()
@@ -63,7 +57,11 @@ namespace WinState.ViewModels.Pages
 
         public Task OnNavigatedToAsync()
         {
-            throw new NotImplementedException();
+
+            if (!_isInitialized){
+                InitializeViewModel();
+            }
+            return Task.CompletedTask;
         }
 
         public Task OnNavigatedFromAsync()

@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using WinState.Services;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Tray;
 
 namespace WinState.ViewModels.Windows
 {
@@ -89,6 +90,12 @@ namespace WinState.ViewModels.Windows
                 };
                 return exitMenuItem;
             }
+
+
+            ContextMenuLoader cml = new ContextMenuLoader();
+
+            NotifyIconService ns = new NotifyIconService();
+            
 
             // CPU NotifyIcon
             var exitMenuItemCpu = CreateExitMenuItem();
