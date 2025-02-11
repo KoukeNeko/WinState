@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Management;
 using System.Net.NetworkInformation;
+using System.Timers;
 
 namespace WinState.Services
 {
@@ -43,6 +44,16 @@ namespace WinState.Services
 
         public event EventHandler? DataUpdated;
 
+
+
+        public Dictionary<string, long> UploadSpeeds { get; private set; } = new Dictionary<string, long>();
+        public Dictionary<string, long> DownloadSpeeds { get; private set; } = new Dictionary<string, long>();
+        private Dictionary<string, long> previousSent = new Dictionary<string, long>();
+        private Dictionary<string, long> previousReceived = new Dictionary<string, long>();
+
+        public string PrimaryExternalInterface { get; private set; } = "";
+
+
         public SystemInfoService()
         {
             // 每 1 秒觸發
@@ -67,6 +78,88 @@ namespace WinState.Services
 
             // 預先準備好網路 PerformanceCounter
             InitializeNetworkCounters();
+
+            //ShowNetworkInterfaces();
+
+            InitializePreviousValues();
+        }
+
+
+        private void InitializePreviousValues()
+        {
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface adapter in nics)
+            {
+                if (adapter.OperationalStatus != OperationalStatus.Up)
+                    continue;
+
+                IPInterfaceStatistics stats = adapter.GetIPStatistics();
+                previousSent[adapter.Description] = stats.BytesSent;
+                previousReceived[adapter.Description] = stats.BytesReceived;
+            }
+        }
+
+        private void UpdateNetworkSpeeds()
+        {
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+            if (nics == null || nics.Length < 1)
+            {
+                Debug.WriteLine("No network interfaces found.");
+                return;
+            }
+
+            string maxInterface = "";
+            long maxTraffic = 0;
+
+            foreach (NetworkInterface adapter in nics)
+            {
+                if (adapter.OperationalStatus != OperationalStatus.Up || adapter.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                    continue;
+
+                IPInterfaceStatistics stats = adapter.GetIPStatistics();
+                long uploadSpeed = stats.BytesSent - previousSent.GetValueOrDefault(adapter.Description, stats.BytesSent);
+                long downloadSpeed = stats.BytesReceived - previousReceived.GetValueOrDefault(adapter.Description, stats.BytesReceived);
+                long totalTraffic = uploadSpeed + downloadSpeed;
+
+                UploadSpeeds[adapter.Description] = uploadSpeed;
+                DownloadSpeeds[adapter.Description] = downloadSpeed;
+
+                previousSent[adapter.Description] = stats.BytesSent;
+                previousReceived[adapter.Description] = stats.BytesReceived;
+
+                if (totalTraffic > maxTraffic)
+                {
+                    maxTraffic = totalTraffic;
+                    maxInterface = adapter.Description;
+                }
+
+                Debug.WriteLine(adapter.Description);
+                Debug.WriteLine("=================================");
+                Debug.WriteLine("  Interface type: {0}", adapter.NetworkInterfaceType);
+                Debug.WriteLine("  Physical Address: {0}", adapter.GetPhysicalAddress());
+                Debug.WriteLine("  Upload Speed: " + SpeedHumanReadable(uploadSpeed));
+                Debug.WriteLine("  Download Speed: " + SpeedHumanReadable(downloadSpeed));
+                Debug.WriteLine("  Operational status: {0}\n", adapter.OperationalStatus);
+            }
+
+            PrimaryExternalInterface = maxInterface;
+            Debug.WriteLine("Primary External Interface: " + PrimaryExternalInterface);
+            Debug.WriteLine("-------------------------------------");
+        }
+
+        private static string SpeedHumanReadable(long bytes)
+        {
+            string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
+            int counter = 0;
+            double number = bytes * 8; // 將 bytes 轉換為 bits
+
+            while (number >= 1000 && counter < suffixes.Length - 1)
+            {
+                counter++;
+                number /= 1000;
+            }
+
+            return string.Format("{0:0.##} {1}", number, suffixes[counter]);
         }
 
         /// <summary>
@@ -210,8 +303,7 @@ namespace WinState.Services
                     _cachedNetworkInterface = "_Total";
 
                 Debug.WriteLine("Chosen Network Instance: " + _cachedNetworkInterface);
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting network adapter name: {ex.Message}");
                 _cachedNetworkInterface = "_Total";
@@ -219,6 +311,50 @@ namespace WinState.Services
 
             return _cachedNetworkInterface;
         }
+
+        public static void ShowNetworkInterfaces()
+        {
+            IPGlobalProperties computerProperties = IPGlobalProperties.GetIPGlobalProperties();
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+
+
+            Debug.WriteLine("Interface information for {0}.{1}     ",
+                    computerProperties.HostName, computerProperties.DomainName);
+            if (nics == null || nics.Length < 1)
+            {
+                Debug.WriteLine("  No network interfaces found.");
+                return;
+            }
+
+            Debug.WriteLine("  Number of interfaces .................... : {0}", nics.Length);
+            foreach (NetworkInterface adapter in nics)
+            {
+
+                IPInterfaceStatistics ips = adapter.GetIPStatistics();
+
+                Debug.WriteLine("");
+                Debug.WriteLine(adapter.Description);
+                Debug.WriteLine(String.Empty.PadLeft(adapter.Description.Length, '='));
+                Debug.WriteLine("  Interface type .......................... : {0}", adapter.NetworkInterfaceType);
+                Debug.WriteLine("  Physical Address ........................ : {0}", adapter.GetPhysicalAddress());
+                Debug.WriteLine("  Interface BytesSent .......................... : " + SpeedHumanReadable(ips.BytesSent));
+                Debug.WriteLine("  Interface BytesReceived .......................... : " + SpeedHumanReadable(ips.BytesReceived));
+                Debug.WriteLine("  Operational status ...................... : {0}", adapter.OperationalStatus);
+
+                //ShowIPAddresses(properties);
+
+                // The following information is not useful for loopback adapters.
+                if (adapter.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+                //ShowInterfaceStatistics(adapter);
+
+                Debug.WriteLine("");
+            }
+        }
+
+
 
         /// <summary>
         /// 利用傳入的 PerformanceCounterCategory 查詢所有網卡（以 PerformanceCounter 的 instance name），
@@ -259,8 +395,7 @@ namespace WinState.Services
                         // 除錯輸出：顯示該 adapter 的 instance name 與 Bytes Received/sec 數值
                         Debug.WriteLine($"Adapter: {instance}, Bytes Received/sec: {bytesReceived}");
                     }
-                }
-                catch (Exception ex)
+                } catch (Exception ex)
                 {
                     Debug.WriteLine($"Error reading counter for adapter {instance}: {ex.Message}");
                 }
@@ -294,8 +429,7 @@ namespace WinState.Services
                 // 第一次讀取通常為 0，先呼叫一次 NextValue() 以便後續取樣更準
                 _uploadCounter.NextValue();
                 _downloadCounter.NextValue();
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error initializing network counters: {ex.Message}");
             }
@@ -329,10 +463,11 @@ namespace WinState.Services
                 // Get CPU power consumption
                 CpuPower = GetCpuPowerFromHardwareMonitor();
 
+                UpdateNetworkSpeeds();
+
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
+            } catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating system info: {ex.Message}");
             }
