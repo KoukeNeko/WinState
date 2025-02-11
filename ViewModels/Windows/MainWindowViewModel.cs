@@ -1,15 +1,12 @@
-﻿using Microsoft.Extensions.Hosting;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using WinState.Services;
-using WinState.Views.Windows;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
-using Wpf.Ui.Tray;
 
 namespace WinState.ViewModels.Windows
 {
@@ -36,20 +33,14 @@ namespace WinState.ViewModels.Windows
         };
 
         [ObservableProperty]
-        private ObservableCollection<object> _footerMenuItems =
-        [
+        private ObservableCollection<object> _footerMenuItems = new()
+        {
             new NavigationViewItem()
             {
                 Content = "Settings",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
                 TargetPageType = typeof(Views.Pages.SettingsPage)
             }
-        ];
-
-        [ObservableProperty]
-        private ObservableCollection<MenuItem> _trayMenuItems = new()
-        {
-            new MenuItem { Header = "Home", Tag = "tray_home" }
         };
 
         // ---------------------------
@@ -84,15 +75,35 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
 
+            //
+            // 以下改用 ToolStripMenuItem 而非 WPF 的 MenuItem
+            //
+
+            // CPU NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemCpu = new ToolStripMenuItem("Exit");
+            exitMenuItemCpu.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             CPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("CPU", _systemInfoService.CpuUsage.ToString()),
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip(),
             };
-            // 原先的註解和邏輯，移到方法裡之後，這裡就只需要掛載事件
             CPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            CPU.ContextMenuStrip.Items.Add(exitMenuItemCpu);
 
+            // GPU NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemGpu = new ToolStripMenuItem("Exit");
+            exitMenuItemGpu.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             GPU = new NotifyIcon
             {
                 Icon = CreateTextIcon("GPU", _systemInfoService.GpuUsage.ToString()),
@@ -100,7 +111,16 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             GPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            GPU.ContextMenuStrip.Items.Add(exitMenuItemGpu);
 
+            // RAM NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemRam = new ToolStripMenuItem("Exit");
+            exitMenuItemRam.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             RAM = new NotifyIcon
             {
                 Icon = CreateTextIcon("RAM", _systemInfoService.RamUsage.ToString()),
@@ -108,7 +128,16 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             RAM.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            RAM.ContextMenuStrip.Items.Add(exitMenuItemRam);
 
+            // DISK NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemDisk = new ToolStripMenuItem("Exit");
+            exitMenuItemDisk.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             DISK = new NotifyIcon
             {
                 Icon = CreateTextIcon("DISK", _systemInfoService.DiskUsage.ToString()),
@@ -116,7 +145,16 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             DISK.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            DISK.ContextMenuStrip.Items.Add(exitMenuItemDisk);
 
+            // NETWORK NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemNet = new ToolStripMenuItem("Exit");
+            exitMenuItemNet.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             NETWORK = new NotifyIcon
             {
                 Icon = CreateTextIcon("NET", _systemInfoService.NetworkUpload.ToString()),
@@ -124,7 +162,16 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             NETWORK.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            NETWORK.ContextMenuStrip.Items.Add(exitMenuItemNet);
 
+            // POWER NotifyIcon
+            // 右鍵 NotifyIcon 關閉程式
+            var exitMenuItemPower = new ToolStripMenuItem("Exit");
+            exitMenuItemPower.Click += (sender, e) =>
+            {
+                System.Windows.Application.Current.Shutdown();
+                Debug.WriteLine("Exit clicked");
+            };
             POWER = new NotifyIcon
             {
                 Icon = CreateTextIcon("PWR", _systemInfoService.CpuPower.ToString()),
@@ -132,38 +179,21 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             POWER.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
-
-
-            foreach (var item in _trayMenuItems)
-            {
-                CPU.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
-            }
-
-            _trayMenuItems.Clear();
-
-            foreach (var item in _trayMenuItems)
-            {
-                CPU.ContextMenuStrip.Items.Add(new ToolStripMenuItem(item.Header.ToString()));
-            }
-
-            _trayMenuItems.Clear();
+            POWER.ContextMenuStrip.Items.Add(exitMenuItemPower);
         }
-
 
         private static async void NotifyIcon_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-
                 var _navigationWindow = App.GetService<INavigationWindow>();
 
                 // 當 NotifyIcon 被左鍵點選時，還原或隱藏主視窗
-                // 可透過 App.Current.MainWindow 或其他方式取得 MainWindow 實例
                 if (System.Windows.Application.Current.MainWindow is WinState.Views.Windows.MainWindow mainWindow)
                 {
-                    if (mainWindow.Visibility == Visibility.Hidden)
+                    if (mainWindow.Visibility == System.Windows.Visibility.Hidden)
                     {
-                        mainWindow.Visibility = Visibility.Visible;
+                        mainWindow.Visibility = System.Windows.Visibility.Visible;
 
                         await Task.Delay(50);
                         _navigationWindow!.ShowWindow();
@@ -171,19 +201,13 @@ namespace WinState.ViewModels.Windows
 
                         mainWindow.Activate();
                         SystemCommands.RestoreWindow(mainWindow);
-                        //mainWindow.RestoreWindowFromTray();
                     }
                     else
                     {
                         SystemCommands.MinimizeWindow(mainWindow);
-                        // 等待一段時間讓動畫完成
                         await Task.Delay(200);
 
-                        mainWindow.Visibility = Visibility.Hidden;
-                        //mainWindow.Visibility = Visibility.Hidden;
-                        //_navigationWindow!.CloseWindow();
-                        //mainWindow.Hide();
-                        //mainWindow.WindowState = WindowState.Minimized;
+                        mainWindow.Visibility = System.Windows.Visibility.Hidden;
                     }
                 }
                 else
@@ -270,15 +294,15 @@ namespace WinState.ViewModels.Windows
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             switch (propertyName)
             {
-                case "CpuUsage":
+                case nameof(CpuUsage):
                     if (CPU.Icon != null)
                     {
-                        _ = DestroyIcon(CPU.Icon.Handle);
+                        DestroyIcon(CPU.Icon.Handle);
                         CPU.Icon = CreateTextIcon("CPU", CpuUsage.ToString());
                         CPU.Text = "CPU: " + _systemInfoService.CpuUsage.ToString() + "%";
                     }
                     break;
-                case "GpuUsage":
+                case nameof(GpuUsage):
                     if (GPU.Icon != null)
                     {
                         DestroyIcon(GPU.Icon.Handle);
@@ -286,7 +310,7 @@ namespace WinState.ViewModels.Windows
                         GPU.Text = "GPU: " + _systemInfoService.GpuUsage.ToString() + "%";
                     }
                     break;
-                case "RamUsage":
+                case nameof(RamUsage):
                     if (RAM.Icon != null)
                     {
                         DestroyIcon(RAM.Icon.Handle);
@@ -294,7 +318,7 @@ namespace WinState.ViewModels.Windows
                         RAM.Text = "RAM: " + _systemInfoService.RamUsage.ToString() + "%";
                     }
                     break;
-                case "DiskUsage":
+                case nameof(DiskUsage):
                     if (DISK.Icon != null)
                     {
                         DestroyIcon(DISK.Icon.Handle);
@@ -302,15 +326,21 @@ namespace WinState.ViewModels.Windows
                         DISK.Text = "DISK: " + _systemInfoService.DiskUsage.ToString() + "%";
                     }
                     break;
-                case "NetworkUpload":
+                case nameof(NetworkUpload):
+                case nameof(NetworkDownload):
                     if (NETWORK.Icon != null)
                     {
                         DestroyIcon(NETWORK.Icon.Handle);
-                        NETWORK.Icon = CreateTextIcon("NET", Math.Max(_systemInfoService.NetworkUpload, _systemInfoService.NetworkDownload).ToString());
-                        NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + " " + _systemInfoService.NetworkUploadUnit + " / " + _systemInfoService.NetworkDownload.ToString() + " " + _systemInfoService.NetworkDownloadUnit;
+                        NETWORK.Icon = CreateTextIcon(
+                            "NET",
+                            // 顯示上/下行中較大的那一個數值
+                            Math.Max(_systemInfoService.NetworkUpload, _systemInfoService.NetworkDownload).ToString()
+                        );
+                        NETWORK.Text = "NET: " + _systemInfoService.NetworkUpload.ToString() + " " + _systemInfoService.NetworkUploadUnit
+                                       + " / " + _systemInfoService.NetworkDownload.ToString() + " " + _systemInfoService.NetworkDownloadUnit;
                     }
                     break;
-                case "CpuPower":
+                case nameof(CpuPower):
                     if (POWER.Icon != null)
                     {
                         DestroyIcon(POWER.Icon.Handle);
