@@ -106,6 +106,7 @@ namespace WinState.ViewModels.Windows
                 ContextMenuStrip = new ContextMenuStrip(),
             };
             CPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
+            CPU.MouseClick += NotifyIcon_MouseClick;
             CPU.ContextMenuStrip.Items.Add(exitMenuItemCpu);
 
             // GPU NotifyIcon
@@ -163,6 +164,37 @@ namespace WinState.ViewModels.Windows
             POWER.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
             POWER.ContextMenuStrip.Items.Add(exitMenuItemPower);
         }
+
+        private void NotifyIcon_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                // 取得目前滑鼠位置（螢幕座標）
+                System.Drawing.Point pos = System.Windows.Forms.Cursor.Position;
+
+                // 建立並顯示自訂 WPF 視窗
+                PopupWindow customWindow = new PopupWindow();
+
+                // 若 PopupWindow 沒有固定大小，可先設定寬高（或確保在 XAML 中有定義）
+                customWindow.Width = 300;
+                customWindow.Height = 200;
+
+                // 計算位置：假設 icon 的位置為游標位置，
+                // 使視窗水平置中，並垂直向上偏移視窗高度加上10個像素
+                customWindow.Left = pos.X - (customWindow.Width / 2);
+                customWindow.Top = pos.Y - customWindow.Height - 10;
+
+                // 自行處理失去焦點的行為
+                customWindow.Deactivated += (s, args) =>
+                {
+                    // 根據需求決定是否關閉視窗，例如：
+                    customWindow.Close();
+                };
+
+                customWindow.Show();
+            }
+        }
+
 
         private static async void NotifyIcon_MouseDoubleClick(object? sender, MouseEventArgs e)
         {

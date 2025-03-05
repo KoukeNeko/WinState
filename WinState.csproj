@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
     <PackageReference Include="System.Management" Version="9.0.1" />
     <PackageReference Include="WPF-UI" Version="4.0.0" />
@@ -37,5 +38,9 @@
    <ItemGroup>
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
+
+   <ItemGroup>
+     <Folder Include="ViewModels\Popup\" />
+   </ItemGroup>
 
 </Project>
