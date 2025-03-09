@@ -227,16 +227,17 @@ namespace WinState.ViewModels.Windows
                 PopupWindow customWindow = new PopupWindow
                 {
                     Width = 300,
-                    Height = 200
+                    Height = 600
                 };
+
+                // 印出彈出視窗的寬高
+                Debug.WriteLine($"Popup window size: {customWindow.Width} x {customWindow.Height}");
 
                 // 計算圖示中心位置
                 int iconCenterX = iconRect.left + ((iconRect.right - iconRect.left) / 2);
                 // 將視窗水平置中於圖示，並讓其出現在圖示上方（可根據需要調整偏移量）
-                //customWindow.Left = iconCenterX - (customWindow.Width / 2);
-                //customWindow.Top = iconRect.top - customWindow.Height - 10;
-                customWindow.Left = iconRect.left;
-                customWindow.Top = iconRect.top;
+                customWindow.Left = iconCenterX - (customWindow.Width / 2);
+                customWindow.Top = iconRect.top - customWindow.Height - 10;
 
                 // 當彈出視窗失去焦點時自動關閉
                 customWindow.Deactivated += (s, args) => customWindow.Close();
