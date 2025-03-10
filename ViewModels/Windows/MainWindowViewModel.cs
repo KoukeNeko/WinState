@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Forms;
+using WinState.Helpers;
 using WinState.Services;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
@@ -96,7 +98,7 @@ namespace WinState.ViewModels.Windows
             ContextMenuLoader cml = new ContextMenuLoader();
 
             NotifyIconService ns = new NotifyIconService();
-            
+
 
             // CPU NotifyIcon
             var exitMenuItemCpu = CreateExitMenuItem();
@@ -109,6 +111,8 @@ namespace WinState.ViewModels.Windows
             CPU.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
             CPU.MouseClick += NotifyIcon_MouseClick;
             CPU.ContextMenuStrip.Items.Add(exitMenuItemCpu);
+
+
 
             // GPU NotifyIcon
             var exitMenuItemGpu = CreateExitMenuItem();
@@ -165,53 +169,7 @@ namespace WinState.ViewModels.Windows
             POWER.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
             POWER.ContextMenuStrip.Items.Add(exitMenuItemPower);
         }
-
-        // 使用 Shell_NotifyIconGetRect API 取得通知圖示的位置
-        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-        private static extern int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct NOTIFYICONIDENTIFIER
-        {
-            public uint cbSize;
-            public IntPtr hWnd;
-            public uint uID;
-            public Guid guidItem;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RECT
-        {
-            public int left;
-            public int top;
-            public int right;
-            public int bottom;
-        }
-
-        // 此方法嘗試根據 NotifyIcon 取得螢幕位置
-        // 注意：由於 NotifyIcon 本身不公開 hWnd 與 uID，因此此處採用 Process.MainWindowHandle 與 uID = 0 作示範
-        private static RECT GetNotifyIconRect(NotifyIcon icon)
-        {
-            var id = new NOTIFYICONIDENTIFIER
-            {
-                cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONIDENTIFIER)),
-                hWnd = Process.GetCurrentProcess().MainWindowHandle,
-                uID = 0, // 若你有自訂的識別值請調整此處
-                guidItem = Guid.Empty
-            };
-
-            if (Shell_NotifyIconGetRect(ref id, out RECT rect) == 0)
-            {
-                return rect;
-            }
-            else
-            {
-                // 備援機制：若取得失敗，以目前滑鼠位置估算
-                System.Drawing.Point pos = System.Windows.Forms.Cursor.Position;
-                return new RECT { left = pos.X, top = pos.Y, right = pos.X + 16, bottom = pos.Y + 16 };
-            }
-        }
-
+        PopupWindow customWindow;
         //讓 PopupWindow 顯示在通知圖示上方
         private void NotifyIcon_MouseClick(object sender, MouseEventArgs e)
         {
@@ -221,26 +179,32 @@ namespace WinState.ViewModels.Windows
             if (e.Button == MouseButtons.Left)
             {
                 // 以 CPU 的 NotifyIcon 為例取得圖示位置
-                RECT iconRect = GetNotifyIconRect(CPU);
+                Rectangle iconRect = NotifyIconHelper.GetIconRect((NotifyIcon)sender);
 
-                // 建立你提供的 PopupWindow 實例
-                PopupWindow customWindow = new PopupWindow
+                if (customWindow == null)
                 {
-                    Width = 300,
-                    Height = 600
-                };
+                    // 建立你提供的 PopupWindow 實例
+                    customWindow = new PopupWindow
+                    {
+                        Width = 300,
+                        Height = 600
+                    };
+                    // 當彈出視窗失去焦點時自動關閉
+                    customWindow.Deactivated += (s, args) =>
+                    {
+                        //customWindow.Close();
+                    };
+                }
 
                 // 印出彈出視窗的寬高
                 Debug.WriteLine($"Popup window size: {customWindow.Width} x {customWindow.Height}");
 
                 // 計算圖示中心位置
-                int iconCenterX = iconRect.left + ((iconRect.right - iconRect.left) / 2);
+                int iconCenterX = iconRect.Left + ((iconRect.Right - iconRect.Left) / 2);
                 // 將視窗水平置中於圖示，並讓其出現在圖示上方（可根據需要調整偏移量）
                 customWindow.Left = iconCenterX - (customWindow.Width / 2);
-                customWindow.Top = iconRect.top - customWindow.Height - 10;
+                customWindow.Top = iconRect.Top - customWindow.Height - 10;
 
-                // 當彈出視窗失去焦點時自動關閉
-                customWindow.Deactivated += (s, args) => customWindow.Close();
 
                 customWindow.Show();
             }
