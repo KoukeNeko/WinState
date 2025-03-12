@@ -28,6 +28,5 @@ namespace WinState.ViewModels.Windows
         {
             this.Close();
         }
-
     }
 }

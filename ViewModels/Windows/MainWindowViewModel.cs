@@ -169,6 +169,7 @@ namespace WinState.ViewModels.Windows
             POWER.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
             POWER.ContextMenuStrip.Items.Add(exitMenuItemPower);
         }
+
         PopupWindow customWindow;
         //讓 PopupWindow 顯示在通知圖示上方
         private void NotifyIcon_MouseClick(object sender, MouseEventArgs e)
@@ -192,7 +193,8 @@ namespace WinState.ViewModels.Windows
                     // 當彈出視窗失去焦點時自動關閉
                     customWindow.Deactivated += (s, args) =>
                     {
-                        //customWindow.Close();
+                        customWindow.Close();
+                        customWindow = null;
                     };
                 }
 
