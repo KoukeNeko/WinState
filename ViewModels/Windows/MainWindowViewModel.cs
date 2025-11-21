@@ -266,14 +266,22 @@ namespace WinState.ViewModels.Windows
                 }
             }
 
-            using var bitmap = new Bitmap(64, 64);
+            // Use SystemInformation.SmallIconSize to get the correct icon size for the current DPI
+            int iconWidth = SystemInformation.SmallIconSize.Width;
+            int iconHeight = SystemInformation.SmallIconSize.Height;
+
+            using var bitmap = new Bitmap(iconWidth, iconHeight);
             using Graphics g = Graphics.FromImage(bitmap);
             g.Clear(Color.Transparent);
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-            using (var title = new System.Drawing.Font("Arial", 20, System.Drawing.FontStyle.Bold))
-            using (var subtitle = new System.Drawing.Font("Arial", text2.Length >= 3 ? 25f : 35f, System.Drawing.FontStyle.Regular))
+            // Calculate font sizes dynamically based on icon height
+            float titleFontSize = iconHeight * 0.30f; // ~30% of height
+            float subtitleFontSize = iconHeight * (text2.Length >= 3 ? 0.35f : 0.50f); // ~35-50% of height
+
+            using (var title = new System.Drawing.Font("Arial", titleFontSize, System.Drawing.FontStyle.Bold))
+            using (var subtitle = new System.Drawing.Font("Arial", subtitleFontSize, System.Drawing.FontStyle.Regular))
             {
                 Brush brush = new SolidBrush(Color.White);
                 if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK")
@@ -293,8 +301,28 @@ namespace WinState.ViewModels.Windows
                     }
                 }
 
-                g.DrawString(text1, title, brush, new PointF(-6, -5.0f));
-                g.DrawString(text2, subtitle, brush, new PointF(-8, text2.Length >= 3 ? 29 : 22f));
+                // Adjust drawing coordinates to center the text
+                // These offsets might need fine-tuning depending on the specific font and look
+                float titleY = -iconHeight * 0.05f; 
+                float subtitleY = iconHeight * 0.35f;
+
+                // Center text horizontally
+                SizeF titleSize = g.MeasureString(text1, title);
+                SizeF subtitleSize = g.MeasureString(text2, subtitle);
+
+                float titleX = (iconWidth - titleSize.Width) / 2;
+                float subtitleX = (iconWidth - subtitleSize.Width) / 2;
+
+                // Draw strings with centered coordinates
+                // Note: The original code used hardcoded negative offsets, we'll try to center it more logically now
+                // but keep it tight.
+                
+                // Reverting to a logic similar to original but scaled, to ensure it looks similar
+                // Original: 64x64, Title Y: -5, Subtitle Y: 22/29
+                // Ratio: -0.08, 0.34/0.45
+                
+                g.DrawString(text1, title, brush, new PointF(titleX, -iconHeight * 0.08f));
+                g.DrawString(text2, subtitle, brush, new PointF(subtitleX, iconHeight * (text2.Length >= 3 ? 0.40f : 0.30f)));
             }
 
             return Icon.FromHandle(bitmap.GetHicon());
