@@ -964,13 +964,13 @@
                 
                 <TextBlock Text="SENSORS" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="500">
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="900">
                     <ItemsControl ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
                         <ItemsControl.GroupStyle>
                             <GroupStyle>
                                 <GroupStyle.HeaderTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12" TextWrapping="Wrap"/>
                                     </DataTemplate>
                                 </GroupStyle.HeaderTemplate>
                             </GroupStyle>
@@ -984,7 +984,7 @@
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                                         <TextBlock Text="{Binding Value}" Foreground="White" FontWeight="Bold" FontSize="12"/>
