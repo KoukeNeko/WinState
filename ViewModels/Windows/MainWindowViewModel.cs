@@ -280,9 +280,9 @@ namespace WinState.ViewModels.Windows
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             // Use Pixel units for font size to ensure consistency across DPI settings
-            // Reduce font size slightly to ensure it fits
-            float titleFontSize = iconHeight * 0.28f; 
-            float subtitleFontSize = iconHeight * (text2.Length >= 3 ? 0.32f : 0.45f);
+            // Increased font size for better readability
+            float titleFontSize = iconHeight * 0.35f; 
+            float subtitleFontSize = iconHeight * (text2.Length >= 3 ? 0.40f : 0.55f);
 
             using (var title = new System.Drawing.Font("Arial", titleFontSize, System.Drawing.FontStyle.Bold, GraphicsUnit.Pixel))
             using (var subtitle = new System.Drawing.Font("Arial", subtitleFontSize, System.Drawing.FontStyle.Regular, GraphicsUnit.Pixel))
@@ -319,8 +319,10 @@ namespace WinState.ViewModels.Windows
                     float topHeight = iconHeight * 0.4f;
                     float bottomHeight = iconHeight * 0.6f;
 
-                    RectangleF topRect = new RectangleF(0, 0, iconWidth, topHeight);
-                    RectangleF bottomRect = new RectangleF(0, topHeight - (iconHeight * 0.05f), iconWidth, bottomHeight); // Overlap slightly to tighten
+                    // Move top rect up slightly to reduce gap
+                    RectangleF topRect = new RectangleF(0, -iconHeight * 0.05f, iconWidth, topHeight);
+                    // Move bottom rect up to overlap and fit larger text
+                    RectangleF bottomRect = new RectangleF(0, topHeight - (iconHeight * 0.1f), iconWidth, bottomHeight);
 
                     g.DrawString(text1, title, brush, topRect, stringFormat);
                     g.DrawString(text2, subtitle, brush, bottomRect, stringFormat);
