@@ -104,6 +104,20 @@
             </Style.Triggers>
         </Style>
 
+        <Style TargetType="ProgressBar">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid x:Name="TemplateRoot">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                            <Border x:Name="PART_Track"/>
+                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" CornerRadius="2"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <local:RamDashConverter x:Key="RamDashConverter"/>
     </UserControl.Resources>
 
@@ -303,54 +317,32 @@
                 <!-- Header -->
                 <TextBlock Text="RAM" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
-                <!-- Gauges -->
-                <Grid Grid.Row="1" Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <!-- Memory Pressure Gauge (3 Levels) -->
-                    <Grid Grid.Column="0" Width="80" Height="80" HorizontalAlignment="Center">
-                        <!-- Background Arc -->
-                        <Path Stroke="#333" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 15,70 A 35,35 0 1 1 65,70" />
-                        
-                        <!-- Level 1 (Low) - Green (0-33%) -->
-                        <Path Stroke="#2ECC71" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 15,70 A 35,35 0 0 1 28,25" />
-                        
-                        <!-- Level 2 (Medium) - Yellow (33-66%) -->
-                        <Path Stroke="#F1C40F" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 28,25 A 35,35 0 0 1 52,25" />
-                        
-                        <!-- Level 3 (High) - Red (66-100%) -->
-                        <Path Stroke="#E74C3C" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 52,25 A 35,35 0 0 1 65,70" />
-                        
-                        <!-- Pressure Indicator Needle -->
-                        <Path Fill="#3399FF" Data="M 0,0 L 12,6 L 0,12 Z" Width="12" Height="12" 
-                              HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,70,0,0"
-                              RenderTransformOrigin="0,0.5">
-                             <Path.RenderTransform>
-                                 <RotateTransform Angle="{Binding RamPressureAngle}"/>
-                             </Path.RenderTransform>
-                        </Path>
+                <!-- Bars -->
+                <StackPanel Grid.Row="1" Margin="10,0,10,15">
+                    <!-- Memory Pressure -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Pressure" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding RamPressure, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="{Binding RamPressureBrush}" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding RamPressure, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                     </Grid>
 
-                    <!-- Main RAM Gauge -->
-                    <Grid Grid.Column="1" Width="80" Height="80" HorizontalAlignment="Center">
-                        <Ellipse Stroke="#333" StrokeThickness="8" Width="80" Height="80"/>
-                        <Ellipse Stroke="#3399FF" StrokeThickness="8" Width="80" Height="80"
-                                 StrokeDashArray="{Binding RamStrokeDashArray}"
-                                 StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
-                            <Ellipse.RenderTransform>
-                                <RotateTransform Angle="-90"/>
-                            </Ellipse.RenderTransform>
-                        </Ellipse>
-                        <TextBlock Text="{Binding RamUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <!-- Memory Usage -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Usage" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding RamUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                     </Grid>
-                </Grid>
+                </StackPanel>
 
                 <TextBlock Grid.Row="2" Text="Usage history" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
 

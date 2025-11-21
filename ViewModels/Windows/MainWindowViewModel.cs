@@ -194,10 +194,10 @@ namespace WinState.ViewModels.Windows
         private PointCollection _ramHistoryPoints = new PointCollection();
 
         [ObservableProperty]
-        private double _ramPressureAngle = -135;
+        private double _ramPressure;
 
         [ObservableProperty]
-        private DoubleCollection _ramStrokeDashArray = new DoubleCollection { 0, 100 };
+        private Brush _ramPressureBrush = Brushes.Green;
 
         private Queue<double> _ramHistory = new Queue<double>();
 
@@ -443,14 +443,20 @@ namespace WinState.ViewModels.Windows
             if (points.CanFreeze) points.Freeze();
             RamHistoryPoints = points;
 
-            // Update Pressure Gauge Angle (-135 to 135)
-            RamPressureAngle = (RamUsage / 100.0 * 270.0) - 135.0;
+            // Update Pressure (Commit Charge %)
+            if (_systemInfoService.RamCommitLimit > 0)
+            {
+                RamPressure = (double)_systemInfoService.RamCommitted / _systemInfoService.RamCommitLimit * 100.0;
+            }
+            else
+            {
+                RamPressure = 0;
+            }
 
-            // Update Usage Circle (Circumference approx 226 for r=36)
-            double circumference = 2 * Math.PI * 36;
-            double dash = (RamUsage / 100.0) * circumference;
-            double gap = circumference - dash;
-            RamStrokeDashArray = new DoubleCollection { dash, gap };
+            // Update Pressure Color
+            if (RamPressure < 60) RamPressureBrush = new SolidColorBrush(Color.FromRgb(46, 204, 113)); // Green
+            else if (RamPressure < 85) RamPressureBrush = new SolidColorBrush(Color.FromRgb(241, 196, 15)); // Yellow
+            else RamPressureBrush = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
 
 
             var processes = _systemInfoService.GetTopMemoryProcesses();
