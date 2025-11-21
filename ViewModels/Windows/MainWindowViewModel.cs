@@ -152,6 +152,9 @@ namespace WinState.ViewModels.Windows
             
             // Initialize RAM history
             for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);
+            
+            // Initialize tray icons to prevent binding errors
+            UpdateTrayIcons();
         }
         
         // ... (OnDataUpdated is fine)
