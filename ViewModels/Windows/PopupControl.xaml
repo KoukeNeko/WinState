@@ -127,6 +127,12 @@
         </Style>
 
         <local:RamDashConverter x:Key="RamDashConverter"/>
+
+        <CollectionViewSource x:Key="SensorsViewSource" Source="{Binding DetailedSensors}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="Category"/>
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
     </UserControl.Resources>
 
     <Border Background="#1E1E1E"
@@ -959,20 +965,26 @@
                 <TextBlock Text="SENSORS" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="500">
-                    <ItemsControl ItemsSource="{Binding DetailedSensors}">
+                    <ItemsControl ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
+                        <ItemsControl.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12"/>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ItemsControl.GroupStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,4">
+                                <Grid Margin="10,2">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Category}" Foreground="#888888" FontSize="10" VerticalAlignment="Center" Margin="0,0,8,0" Width="60" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
+                                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                     
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                                         <TextBlock Text="{Binding Value}" Foreground="White" FontWeight="Bold" FontSize="12"/>
