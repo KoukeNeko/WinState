@@ -306,6 +306,13 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
                         <TextBlock Grid.Row="0" Text="Details" Foreground="#888" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
@@ -325,26 +332,72 @@
                         </StackPanel>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RamAppString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
-                        <!-- Wired -->
+                        <!-- Wired (Non-Paged Pool) -->
                         <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FFA500" Margin="0,0,5,0"/>
                             <TextBlock Text="Wired:" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RamWiredString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
-                        <!-- Compressed -->
+                        <!-- Paged Pool -->
                         <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF9933" Margin="0,0,5,0"/>
+                            <TextBlock Text="Paged Pool:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RamPagedPoolString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Compressed -->
+                        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FF3333" Margin="0,0,5,0"/>
                             <TextBlock Text="Compressed:" Foreground="#888"/>
                         </StackPanel>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RamCompressedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RamCompressedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Cache -->
+                        <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#33CCFF" Margin="0,0,5,0"/>
+                            <TextBlock Text="Cache:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding RamCacheString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Standby -->
+                        <StackPanel Grid.Row="8" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#99CCFF" Margin="0,0,5,0"/>
+                            <TextBlock Text="Standby:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding RamStandbyString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Modified -->
+                        <StackPanel Grid.Row="9" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF6699" Margin="0,0,5,0"/>
+                            <TextBlock Text="Modified:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding RamModifiedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Available -->
+                        <StackPanel Grid.Row="10" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#99FF99" Margin="0,0,5,0"/>
+                            <TextBlock Text="Available:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RamAvailableString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                         
                          <!-- Free -->
-                        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,2">
+                        <StackPanel Grid.Row="11" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#CCCCCC" Margin="0,0,5,0"/>
                             <TextBlock Text="Free:" Foreground="#888"/>
                         </StackPanel>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RamFreeString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding RamFreeString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Committed -->
+                        <StackPanel Grid.Row="12" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFCC00" Margin="0,0,5,0"/>
+                            <TextBlock Text="Committed:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding RamCommittedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Commit Limit -->
+                        <TextBlock Grid.Row="13" Text="Commit Limit:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding RamCommitLimitString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                     </Grid>
 
                     <!-- Top Processes -->

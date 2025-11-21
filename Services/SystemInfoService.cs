@@ -36,6 +36,12 @@ namespace WinState.Services
         private PerformanceCounter? _ramAvailableCounter;
         private PerformanceCounter? _ramCompressedCounter;
         private PerformanceCounter? _ramWiredCounter; // Non-paged pool
+        private PerformanceCounter? _ramCacheCounter;
+        private PerformanceCounter? _ramStandbyCounter;
+        private PerformanceCounter? _ramModifiedCounter;
+        private PerformanceCounter? _ramPagedPoolCounter;
+        private PerformanceCounter? _ramCommitLimitCounter;
+        private PerformanceCounter? _ramCommittedCounter;
 
         // 各種監控屬性 (0~100 或實際值)
         public double CpuUsage { get; private set; }
@@ -44,17 +50,24 @@ namespace WinState.Services
         public double DiskUsage { get; private set; }
         public double NetworkUpload { get; private set; }
         public double NetworkDownload { get; private set; }
-        public string NetworkUploadUnit { get; private set; }
-        public string NetworkDownloadUnit { get; private set; }
+        public string NetworkUploadUnit { get; private set; } = "bps";
+        public string NetworkDownloadUnit { get; private set; } = "bps";
         public double CpuPower { get; private set; }
 
-        // RAM Details (in Bytes)
+        // RAM Properties (in bytes)
         public long RamTotal { get; private set; }
         public long RamUsed { get; private set; }
         public long RamFree { get; private set; }
         public long RamCompressed { get; private set; }
         public long RamWired { get; private set; } // Non-paged pool
-        public long RamApp { get; private set; }
+        public long RamApp { get; private set; } // Approximated
+        public long RamCache { get; private set; }
+        public long RamStandby { get; private set; }
+        public long RamModified { get; private set; }
+        public long RamPagedPool { get; private set; }
+        public long RamAvailable { get; private set; }
+        public long RamCommitLimit { get; private set; }
+        public long RamCommitted { get; private set; }
 
         public struct MemoryProcessInfo
         {
@@ -117,8 +130,15 @@ namespace WinState.Services
             {
                 _ramAvailableCounter = new PerformanceCounter("Memory", "Available Bytes");
                 _ramWiredCounter = new PerformanceCounter("Memory", "Pool Nonpaged Bytes");
-                // Compressed memory might not be available on all OS versions
+                _ramPagedPoolCounter = new PerformanceCounter("Memory", "Pool Paged Bytes");
+                _ramCacheCounter = new PerformanceCounter("Memory", "Cache Bytes");
+                _ramCommittedCounter = new PerformanceCounter("Memory", "Committed Bytes");
+                _ramCommitLimitCounter = new PerformanceCounter("Memory", "Commit Limit");
+                
+                // These might not be available on all OS versions
                 try { _ramCompressedCounter = new PerformanceCounter("Memory", "Compressed Bytes In Use"); } catch { }
+                try { _ramStandbyCounter = new PerformanceCounter("Memory", "Standby Cache Normal Priority Bytes"); } catch { }
+                try { _ramModifiedCounter = new PerformanceCounter("Memory", "Modified Page List Bytes"); } catch { }
                 
                 RamTotal = (long)new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory;
             }
@@ -813,14 +833,43 @@ namespace WinState.Services
             {
                 if (_ramAvailableCounter != null)
                 {
-                    RamFree = (long)_ramAvailableCounter.NextValue();
-                    RamUsed = RamTotal - RamFree;
+                    RamAvailable = (long)_ramAvailableCounter.NextValue();
+                    RamFree = RamAvailable; // Available is the same as free for simplicity
+                    RamUsed = RamTotal - RamAvailable;
                     RamUsage = (double)RamUsed / RamTotal * 100.0;
                 }
 
                 if (_ramWiredCounter != null)
                 {
                     RamWired = (long)_ramWiredCounter.NextValue();
+                }
+
+                if (_ramPagedPoolCounter != null)
+                {
+                    RamPagedPool = (long)_ramPagedPoolCounter.NextValue();
+                }
+
+                if (_ramCacheCounter != null)
+                {
+                    RamCache = (long)_ramCacheCounter.NextValue();
+                }
+
+                if (_ramStandbyCounter != null)
+                {
+                    RamStandby = (long)_ramStandbyCounter.NextValue();
+                }
+                else
+                {
+                    RamStandby = 0;
+                }
+
+                if (_ramModifiedCounter != null)
+                {
+                    RamModified = (long)_ramModifiedCounter.NextValue();
+                }
+                else
+                {
+                    RamModified = 0;
                 }
 
                 if (_ramCompressedCounter != null)
@@ -832,8 +881,18 @@ namespace WinState.Services
                     RamCompressed = 0;
                 }
 
-                // App memory approximation
-                RamApp = RamUsed - RamWired - RamCompressed;
+                if (_ramCommittedCounter != null)
+                {
+                    RamCommitted = (long)_ramCommittedCounter.NextValue();
+                }
+
+                if (_ramCommitLimitCounter != null)
+                {
+                    RamCommitLimit = (long)_ramCommitLimitCounter.NextValue();
+                }
+
+                // App memory approximation (In Use - Wired - Compressed - Cache)
+                RamApp = RamUsed - RamWired - RamCompressed - RamPagedPool;
                 if (RamApp < 0) RamApp = 0;
 
                 UpdateTopMemoryProcesses();

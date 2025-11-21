@@ -136,6 +136,13 @@ namespace WinState.ViewModels.Windows
         public string RamCompressedString => BytesToReadable(_systemInfoService.RamCompressed);
         public string RamAppString => BytesToReadable(_systemInfoService.RamApp);
         public string RamWiredString => BytesToReadable(_systemInfoService.RamWired);
+        public string RamCacheString => BytesToReadable(_systemInfoService.RamCache);
+        public string RamStandbyString => BytesToReadable(_systemInfoService.RamStandby);
+        public string RamModifiedString => BytesToReadable(_systemInfoService.RamModified);
+        public string RamPagedPoolString => BytesToReadable(_systemInfoService.RamPagedPool);
+        public string RamAvailableString => BytesToReadable(_systemInfoService.RamAvailable);
+        public string RamCommittedString => BytesToReadable(_systemInfoService.RamCommitted);
+        public string RamCommitLimitString => BytesToReadable(_systemInfoService.RamCommitLimit);
 
         [ObservableProperty]
         private PointCollection _ramHistoryPoints = new PointCollection();
@@ -324,6 +331,13 @@ namespace WinState.ViewModels.Windows
             OnPropertyChanged(nameof(RamCompressedString));
             OnPropertyChanged(nameof(RamAppString));
             OnPropertyChanged(nameof(RamWiredString));
+            OnPropertyChanged(nameof(RamCacheString));
+            OnPropertyChanged(nameof(RamStandbyString));
+            OnPropertyChanged(nameof(RamModifiedString));
+            OnPropertyChanged(nameof(RamPagedPoolString));
+            OnPropertyChanged(nameof(RamAvailableString));
+            OnPropertyChanged(nameof(RamCommittedString));
+            OnPropertyChanged(nameof(RamCommitLimitString));
 
             // Update History
             _ramHistory.Enqueue(RamUsage);
