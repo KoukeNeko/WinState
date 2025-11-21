@@ -133,6 +133,8 @@ namespace WinState.Services
             public long UsedSize;
             public bool IsReading;
             public bool IsWriting;
+            public long ReadSpeed; // Bytes/sec
+            public long WriteSpeed; // Bytes/sec
         }
 
         private List<DiskInfo> _cachedDiskInfo = new List<DiskInfo>();
@@ -1329,7 +1331,8 @@ namespace WinState.Services
         {
             try
             {
-                var drives = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).ToList();
+                // Get all drives, not just Fixed
+                var drives = DriveInfo.GetDrives().ToList();
                 var newInfoList = new List<DiskInfo>();
 
                 foreach (var drive in drives)
@@ -1355,11 +1358,13 @@ namespace WinState.Services
                             if (counter.ReadCounter != null)
                             {
                                 float val = counter.ReadCounter.NextValue();
+                                info.ReadSpeed = (long)val;
                                 if (val > 1024) info.IsReading = true; // Threshold 1KB/s
                             }
                             if (counter.WriteCounter != null)
                             {
                                 float val = counter.WriteCounter.NextValue();
+                                info.WriteSpeed = (long)val;
                                 if (val > 1024) info.IsWriting = true;
                             }
                         }

@@ -734,9 +734,12 @@ namespace WinState.ViewModels.Windows
                 
                 vm.ReadIndicatorBrush = info.IsReading ? Brushes.DodgerBlue : Brushes.Gray;
                 vm.WriteIndicatorBrush = info.IsWriting ? Brushes.Red : Brushes.Gray;
+
+                // Update Per-Disk Graph
+                vm.UpdateGraph(info.ReadSpeed, info.WriteSpeed);
             }
 
-            // 2. Update Disk Graph & Stats
+            // 2. Update Disk Graph & Stats (Global)
             double currentRead = _systemInfoService.TotalDiskRead;
             double currentWrite = _systemInfoService.TotalDiskWrite;
 
@@ -847,7 +850,7 @@ namespace WinState.ViewModels.Windows
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         extern static bool DestroyIcon(IntPtr handle);
 
-        private static string SpeedHumanReadable(long bytes)
+        public static string SpeedHumanReadable(long bytes)
         {
             string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
             int counter = 0;
@@ -1001,5 +1004,87 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private Brush _readIndicatorBrush = Brushes.Gray;
         [ObservableProperty] private Brush _writeIndicatorBrush = Brushes.Gray;
         [ObservableProperty] private string _diskFreeSpaceString = "";
+
+        // Graph Properties
+        [ObservableProperty] private PointCollection _readHistoryPoints = new PointCollection();
+        [ObservableProperty] private PointCollection _writeHistoryPoints = new PointCollection();
+        [ObservableProperty] private string _peakReadString = "0M";
+        [ObservableProperty] private string _peakWriteString = "0M";
+        [ObservableProperty] private string _readSpeedString = "0 B/s";
+        [ObservableProperty] private string _writeSpeedString = "0 B/s";
+
+        // Internal History
+        private Queue<double> _readHistory = new Queue<double>();
+        private Queue<double> _writeHistory = new Queue<double>();
+        private double _maxReadSeen = 1024;
+        private double _maxWriteSeen = 1024;
+
+        public void UpdateGraph(double readBytes, double writeBytes)
+        {
+            // Update Speed Strings
+            ReadSpeedString = MainWindowViewModel.SpeedHumanReadable((long)readBytes) + "/s";
+            WriteSpeedString = MainWindowViewModel.SpeedHumanReadable((long)writeBytes) + "/s";
+
+            // Update History
+            _readHistory.Enqueue(readBytes);
+            _writeHistory.Enqueue(writeBytes);
+            if (_readHistory.Count > 60) _readHistory.Dequeue();
+            if (_writeHistory.Count > 60) _writeHistory.Dequeue();
+
+            // Update Max
+            double localMaxRead = _readHistory.Max();
+            double localMaxWrite = _writeHistory.Max();
+
+            if (localMaxRead > _maxReadSeen) _maxReadSeen = localMaxRead;
+            else _maxReadSeen = _maxReadSeen * 0.95 + localMaxRead * 0.05;
+
+            if (localMaxWrite > _maxWriteSeen) _maxWriteSeen = localMaxWrite;
+            else _maxWriteSeen = _maxWriteSeen * 0.95 + localMaxWrite * 0.05;
+
+            PeakReadString = MainWindowViewModel.SpeedHumanReadable((long)_maxReadSeen);
+            PeakWriteString = MainWindowViewModel.SpeedHumanReadable((long)_maxWriteSeen);
+
+            // Generate Points
+            double scaleRead = Math.Max(_maxReadSeen, 1024);
+            double scaleWrite = Math.Max(_maxWriteSeen, 1024);
+            
+            double graphHeight = 20; // Smaller height as requested
+            double graphWidth = 280;
+            double step = graphWidth / 59.0;
+
+            var readPoints = new PointCollection();
+            var writePoints = new PointCollection();
+
+            readPoints.Add(new System.Windows.Point(0, graphHeight));
+            writePoints.Add(new System.Windows.Point(0, graphHeight));
+
+            var rArr = _readHistory.ToArray();
+            var wArr = _writeHistory.ToArray();
+            int x = 0;
+
+            for (int i = 0; i < rArr.Length; i++)
+            {
+                double rVal = rArr[i];
+                double wVal = wArr[i];
+
+                // Read (Blue) goes UP
+                double yRead = graphHeight - (rVal / scaleRead * graphHeight);
+                // Write (Red) goes DOWN
+                double yWrite = graphHeight + (wVal / scaleWrite * graphHeight);
+
+                readPoints.Add(new System.Windows.Point(x * step, yRead));
+                writePoints.Add(new System.Windows.Point(x * step, yWrite));
+                x++;
+            }
+
+            readPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+            writePoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+
+            if (readPoints.CanFreeze) readPoints.Freeze();
+            if (writePoints.CanFreeze) writePoints.Freeze();
+
+            ReadHistoryPoints = readPoints;
+            WriteHistoryPoints = writePoints;
+        }
     }
 }
