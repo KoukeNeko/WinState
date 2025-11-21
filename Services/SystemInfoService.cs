@@ -459,43 +459,70 @@ namespace WinState.Services
             public int Id { get; set; }
         }
 
+        private Dictionary<int, (TimeSpan TotalProcessorTime, DateTime Time)> _previousProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
+        private List<ProcessInfo> _cachedTopProcesses = new List<ProcessInfo>();
+
         public List<ProcessInfo> GetTopProcesses(int count = 5)
         {
-            var processList = new List<ProcessInfo>();
+            return _cachedTopProcesses; // Return the cached list calculated in UpdateDataAsync
+        }
+
+        private void UpdateProcessCpuUsage()
+        {
             try
             {
-                var processes = Process.GetProcesses();
-                // Note: Getting CPU usage for all processes can be slow and resource intensive if done incorrectly.
-                // For a simple implementation, we might rely on a cached approach or WMI, but Process.TotalProcessorTime is cumulative.
-                // To get % usage, we need to sample twice. This is complex for a simple call.
-                // Alternative: Use PerformanceCounter("Process", "% Processor Time", processName).
-                // But creating counters for all processes is heavy.
-                
-                // Simplified approach for now: Just list top memory usage or handle CPU differently?
-                // The user wants CPU.
-                // Let's try a simplified approach:
-                // We can't easily get instantaneous CPU % for all processes without monitoring them.
-                // However, we can use a static helper or a library if available.
-                // Since we are using LibreHardwareMonitor, let's see if it provides process info? No, it's hardware.
-                
-                // Let's stick to a basic implementation or maybe just skip exact % for now and show top processes by some other metric if CPU is too hard?
-                // Actually, we can use a loop to calculate it, but it takes time.
-                // Let's try to use a lightweight approach if possible.
-                // For now, let's return a dummy list or a basic list based on a quick heuristic if possible, 
-                // OR implement a proper Process monitor class.
-                // Given the constraints, I will implement a basic "ProcessMonitor" helper inside this service later if needed.
-                // For this step, I'll return an empty list or basic info to get the structure ready.
-                
-                // actually, let's try to get top processes by just sorting by TotalProcessorTime (which favors long running processes) 
-                // is NOT what we want (we want current usage).
-                // A common trick is to use WMI "Win32_PerfFormattedData_PerfProc_Process".
-                
-                // Let's use a simplified placeholder for now to not block the build, and refine it in the next step.
-                return new List<ProcessInfo>(); 
+                var currentProcesses = Process.GetProcesses();
+                var newProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
+                var processInfos = new List<ProcessInfo>();
+                var now = DateTime.Now;
+
+                foreach (var process in currentProcesses)
+                {
+                    try
+                    {
+                        if (process.Id == 0) continue; // Skip Idle process
+
+                        var totalProcessorTime = process.TotalProcessorTime;
+                        newProcessTimes[process.Id] = (totalProcessorTime, now);
+
+                        if (_previousProcessTimes.TryGetValue(process.Id, out var previous))
+                        {
+                            var timeDelta = (now - previous.Time).TotalMilliseconds;
+                            var cpuDelta = (totalProcessorTime - previous.TotalProcessorTime).TotalMilliseconds;
+
+                            if (timeDelta > 0)
+                            {
+                                // Calculate CPU usage percentage
+                                // Note: This is usage across ALL cores. To get % of total capacity, divide by Environment.ProcessorCount.
+                                // However, Task Manager usually shows % of total capacity.
+                                double usage = (cpuDelta / timeDelta) * 100.0 / Environment.ProcessorCount;
+                                
+                                if (usage > 0)
+                                {
+                                    processInfos.Add(new ProcessInfo
+                                    {
+                                        Name = process.ProcessName,
+                                        Id = process.Id,
+                                        CpuUsage = usage
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Access denied or process exited
+                    }
+                }
+
+                _previousProcessTimes = newProcessTimes;
+
+                // Sort by CPU usage descending and take top N
+                _cachedTopProcesses = processInfos.OrderByDescending(p => p.CpuUsage).Take(5).ToList();
             }
-            catch
+            catch (Exception ex)
             {
-                return new List<ProcessInfo>();
+                Debug.WriteLine($"Error updating process CPU usage: {ex.Message}");
             }
         }
 
@@ -549,6 +576,9 @@ namespace WinState.Services
 
                 // Get CPU power consumption
                 CpuPower = GetCpuPowerFromHardwareMonitor();
+
+                // Update Process CPU Usage
+                UpdateProcessCpuUsage();
 
                 UpdateNetworkSpeeds();
 
