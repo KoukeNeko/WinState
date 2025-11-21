@@ -11,6 +11,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Collections.Concurrent;
 using System.IO;
+using WinState.Models;
 
 namespace WinState.Services
 {
@@ -18,6 +19,9 @@ namespace WinState.Services
     {
         private readonly System.Timers.Timer _timer;
         private readonly Computer _computer;
+
+        public List<SensorItem> DetailedSensors { get; private set; } = new List<SensorItem>();
+        private List<ISensor> _allDetailedSensors = new List<ISensor>();
 
         // 預先快取 CPU、GPU、Disk 對應的 Hardware 物件
         private IHardware? _cpuHardware;
@@ -176,7 +180,9 @@ namespace WinState.Services
                 IsGpuEnabled = true,
                 IsStorageEnabled = true,
                 IsControllerEnabled = true,
-                IsNetworkEnabled = true
+                IsNetworkEnabled = true,
+                IsBatteryEnabled = true,
+                IsPsuEnabled = true
             };
             _computer.Open();
 
@@ -350,8 +356,28 @@ namespace WinState.Services
         /// </summary>
         private void InitializeHardwareAndSensors()
         {
+            _allDetailedSensors.Clear();
+
             foreach (var hardware in _computer.Hardware)
             {
+                hardware.Update(); // Ensure sensors are populated
+
+                // Collect detailed sensors for Power View
+                foreach (var sensor in hardware.Sensors)
+                {
+                    if (sensor.SensorType == SensorType.Temperature ||
+                        sensor.SensorType == SensorType.Fan ||
+                        sensor.SensorType == SensorType.Voltage ||
+                        sensor.SensorType == SensorType.Power ||
+                        sensor.SensorType == SensorType.Current ||
+                        sensor.SensorType == SensorType.Energy ||
+                        sensor.SensorType == SensorType.Level || // Battery level
+                        (sensor.SensorType == SensorType.Load && (hardware.HardwareType == HardwareType.Cpu || hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd || hardware.HardwareType == HardwareType.Memory)))
+                    {
+                        _allDetailedSensors.Add(sensor);
+                    }
+                }
+
                 // 以硬體類型區分，預先找出 CPU、GPU、Disk
                 switch (hardware.HardwareType)
                 {
@@ -359,9 +385,6 @@ namespace WinState.Services
                         _cpuHardware = hardware;
                         CpuName = hardware.Name;
 
-                        // 預先找出 CPU 的 "CPU Total" Load Sensor 與 Power Sensor
-                        hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
-                        
                         // Clear existing core sensors if any (though this is init)
                         _cpuCoreSensors.Clear();
                         CpuCoresHistory.Clear();
@@ -408,7 +431,6 @@ namespace WinState.Services
                     case HardwareType.GpuNvidia:
                     case HardwareType.GpuAmd:
                         _gpuHardware = hardware; // 若有多張 GPU，這裡可改用 List 來收集
-                        hardware.Update();
                         foreach (var sensor in hardware.Sensors)
                         {
                             if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core")
@@ -420,7 +442,6 @@ namespace WinState.Services
 
                     case HardwareType.Storage:
                         _diskHardwares.Add(hardware);
-                        hardware.Update();
                         // 這裡會把所有 "Load" 型別的 Sensor 都收集起來
                         // 如果實務上只想收集某幾個特定 Sensor，請自行篩選
                         foreach (var sensor in hardware.Sensors)
@@ -826,6 +847,8 @@ namespace WinState.Services
         {
             try
             {
+                UpdateDetailedSensors();
+
                 // Get CPU usage
                 CpuUsage = GetCpuUsage();
 
@@ -902,6 +925,7 @@ namespace WinState.Services
                 UpdateTopNetworkProcesses();
                 UpdateDiskData();
                 UpdateTopDiskProcesses();
+                UpdateDetailedSensors();
 
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
@@ -1439,6 +1463,76 @@ namespace WinState.Services
         public List<DiskProcessInfo> GetTopDiskProcesses()
         {
             return _cachedTopDiskProcesses;
+        }
+
+        private void UpdateDetailedSensors()
+        {
+            // Update all hardware to ensure we have latest values
+            foreach (var hardware in _computer.Hardware)
+            {
+                hardware.Update();
+            }
+
+            var newList = new List<SensorItem>();
+            foreach (var sensor in _allDetailedSensors)
+            {
+                string unit = "";
+                string valueStr = "";
+                string category = sensor.Hardware.Name;
+                
+                if (sensor.Value.HasValue)
+                {
+                    double val = sensor.Value.Value;
+                    switch (sensor.SensorType)
+                    {
+                        case SensorType.Temperature:
+                            unit = "°C";
+                            valueStr = $"{val:F1}";
+                            break;
+                        case SensorType.Fan:
+                            unit = "RPM";
+                            valueStr = $"{val:F0}";
+                            break;
+                        case SensorType.Voltage:
+                            unit = "V";
+                            valueStr = $"{val:F3}";
+                            break;
+                        case SensorType.Power:
+                            unit = "W";
+                            valueStr = $"{val:F1}";
+                            break;
+                        case SensorType.Current:
+                            unit = "A";
+                            valueStr = $"{val:F2}";
+                            break;
+                        case SensorType.Energy:
+                            unit = "mWh";
+                            valueStr = $"{val:F0}";
+                            break;
+                        case SensorType.Level:
+                            unit = "%";
+                            valueStr = $"{val:F0}";
+                            break;
+                        case SensorType.Load:
+                            unit = "%";
+                            valueStr = $"{val:F1}";
+                            break;
+                    }
+                    
+                    newList.Add(new SensorItem
+                    {
+                        Name = sensor.Name,
+                        Value = valueStr,
+                        Unit = unit,
+                        Category = category,
+                        SensorType = sensor.SensorType.ToString(),
+                        RawValue = val,
+                        Min = sensor.Min ?? 0,
+                        Max = sensor.Max ?? 0
+                    });
+                }
+            }
+            DetailedSensors = newList;
         }
     }
 }

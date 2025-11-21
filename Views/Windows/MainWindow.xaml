@@ -63,7 +63,7 @@
                         ToolTipText="{Binding ViewModel.NetworkToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="PowerNotifyIcon"
-                        Tag="ALL"
+                        Tag="POWER"
                         IconSource="{Binding ViewModel.PowerIcon}"
                         ToolTipText="{Binding ViewModel.PowerToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />

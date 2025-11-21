@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
 using WinState.Helpers;
+using WinState.Models;
 using WinState.Services;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
@@ -135,6 +136,7 @@ namespace WinState.ViewModels.Windows
         public ObservableCollection<CoreUsageViewModel> Cores { get; private set; } = new ObservableCollection<CoreUsageViewModel>();
 
         public double CpuUsage => _systemInfoService.CpuUsage;
+        public List<SensorItem> DetailedSensors => _systemInfoService.DetailedSensors;
         public double GpuUsage => _systemInfoService.GpuUsage;
         public double RamUsage => _systemInfoService.RamUsage;
         public double DiskUsage => _systemInfoService.DiskUsage;
@@ -286,6 +288,7 @@ namespace WinState.ViewModels.Windows
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
                 OnPropertyChanged(nameof(CpuUsage));
+                OnPropertyChanged(nameof(DetailedSensors));
                 OnPropertyChanged(nameof(GpuUsage));
                 OnPropertyChanged(nameof(RamUsage));
                 OnPropertyChanged(nameof(DiskUsage));
