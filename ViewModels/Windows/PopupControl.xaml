@@ -133,6 +133,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <!-- Header -->
@@ -188,8 +189,32 @@
                     <TextBlock Text="{Binding CpuUsage, StringFormat={}Total: {0:0}%}" Foreground="White" FontSize="12" FontWeight="Bold" Margin="20,0,0,0"/>
                 </StackPanel>
 
+                <!-- Cores Bar Chart -->
+                <ItemsControl Grid.Row="3" ItemsSource="{Binding Cores}" Margin="0,0,0,15">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="2" ToolTip="{Binding CurrentUsage, StringFormat={}{0:0}%}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <ProgressBar Value="{Binding CurrentUsage}" Maximum="100" Width="40" Height="6" Background="#252525" Foreground="#3399FF" BorderThickness="0">
+                                    <ProgressBar.LayoutTransform>
+                                        <RotateTransform Angle="-90"/>
+                                    </ProgressBar.LayoutTransform>
+                                </ProgressBar>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
                 <!-- Process List -->
-                <Grid Grid.Row="3">
+                <Grid Grid.Row="4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>

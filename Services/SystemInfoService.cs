@@ -255,6 +255,11 @@ namespace WinState.Services
                         _cpuHardware = hardware;
                         // 預先找出 CPU 的 "CPU Total" Load Sensor 與 Power Sensor
                         hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
+                        
+                        // Clear existing core sensors if any (though this is init)
+                        _cpuCoreSensors.Clear();
+                        CpuCoresHistory.Clear();
+
                         foreach (var sensor in hardware.Sensors)
                         {
                             // CPU Usage
@@ -268,6 +273,13 @@ namespace WinState.Services
                                 || sensor.Name == "CPU PPT" || sensor.Name == "Package"))
                             {
                                 _cpuPowerSensor = sensor;
+                            }
+                            // CPU Cores
+                            if (sensor.SensorType == SensorType.Load && sensor.Name.StartsWith("CPU Core #"))
+                            {
+                                _cpuCoreSensors.Add(sensor);
+                                int index = _cpuCoreSensors.Count - 1;
+                                CpuCoresHistory[index] = new Queue<double>();
                             }
                         }
                         break;
