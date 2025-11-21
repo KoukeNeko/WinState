@@ -6,6 +6,8 @@
     xmlns:local="clr-namespace:WinState.Views.Windows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:tb="http://www.hardcodet.net/taskbar"
+    xmlns:viewmodels="clr-namespace:WinState.ViewModels.Windows"
     Title="{Binding ViewModel.ApplicationTitle, Mode=OneWay}"
     Width="1100"
     Height="650"
@@ -21,6 +23,10 @@
     WindowCornerPreference="Round"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
+    <ui:FluentWindow.Resources>
+        <viewmodels:PopupControl x:Key="SharedPopup" x:Shared="False" />
+    </ui:FluentWindow.Resources>
+
     <ui:FluentWindow.InputBindings>
         <KeyBinding
             Key="F"
@@ -29,6 +35,31 @@
     </ui:FluentWindow.InputBindings>
 
     <Grid>
+        <tb:TaskbarIcon x:Name="CpuNotifyIcon"
+                        IconSource="{Binding ViewModel.CpuIcon}"
+                        ToolTipText="{Binding ViewModel.CpuToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+        <tb:TaskbarIcon x:Name="GpuNotifyIcon"
+                        IconSource="{Binding ViewModel.GpuIcon}"
+                        ToolTipText="{Binding ViewModel.GpuToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+        <tb:TaskbarIcon x:Name="RamNotifyIcon"
+                        IconSource="{Binding ViewModel.RamIcon}"
+                        ToolTipText="{Binding ViewModel.RamToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+        <tb:TaskbarIcon x:Name="DiskNotifyIcon"
+                        IconSource="{Binding ViewModel.DiskIcon}"
+                        ToolTipText="{Binding ViewModel.DiskToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+        <tb:TaskbarIcon x:Name="NetworkNotifyIcon"
+                        IconSource="{Binding ViewModel.NetworkIcon}"
+                        ToolTipText="{Binding ViewModel.NetworkToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+        <tb:TaskbarIcon x:Name="PowerNotifyIcon"
+                        IconSource="{Binding ViewModel.PowerIcon}"
+                        ToolTipText="{Binding ViewModel.PowerToolTip}"
+                        TrayPopup="{StaticResource SharedPopup}" />
+
         <ui:TitleBar
             x:Name="TitleBar"
             Title="{Binding ViewModel.ApplicationTitle}"
