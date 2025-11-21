@@ -157,6 +157,8 @@ namespace WinState.Services
             public double Temperature;
             public double RemainingLife; // 0-100
             public double PowerOnHours;
+            public double TotalReads; // GB
+            public double TotalWrites; // GB
         }
 
         private List<DiskInfo> _cachedDiskInfo = new List<DiskInfo>();
@@ -1461,10 +1463,14 @@ namespace WinState.Services
                                 {
                                     if (sensor.SensorType == SensorType.Temperature)
                                         info.Temperature = sensor.Value ?? 0;
-                                    else if (sensor.Name.Contains("Remaining Life") || sensor.Name.Contains("Life Left"))
+                                    else if (sensor.Name.Contains("Remaining Life") || sensor.Name.Contains("Life Left") || sensor.Name.Contains("Available Spare"))
                                         info.RemainingLife = sensor.Value ?? 0;
                                     else if (sensor.Name.Contains("Power On Hours"))
                                         info.PowerOnHours = sensor.Value ?? 0;
+                                    else if (sensor.Name.Contains("Data Read") || sensor.Name.Contains("Total Host Reads"))
+                                        info.TotalReads = sensor.Value ?? 0;
+                                    else if (sensor.Name.Contains("Data Written") || sensor.Name.Contains("Total Host Writes"))
+                                        info.TotalWrites = sensor.Value ?? 0;
                                 }
                             }
                         }

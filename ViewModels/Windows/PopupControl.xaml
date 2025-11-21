@@ -839,7 +839,7 @@
                                     </StackPanel>
 
                                     <!-- Hours -->
-                                    <StackPanel Orientation="Horizontal">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
                                         <StackPanel.Style>
                                             <Style TargetType="StackPanel">
                                                 <Style.Triggers>
@@ -851,6 +851,36 @@
                                         </StackPanel.Style>
                                         <TextBlock Text="Hours:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
                                         <TextBlock Text="{Binding PowerOnHoursString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Reads -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TotalReadsString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="R:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding TotalReadsString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Writes -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TotalWritesString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="W:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding TotalWritesString}" Foreground="White" FontSize="10"/>
                                     </StackPanel>
                                 </StackPanel>
 

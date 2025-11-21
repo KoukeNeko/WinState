@@ -757,8 +757,9 @@ namespace WinState.ViewModels.Windows
                 vm.Model = info.Model;
                 vm.TemperatureString = info.Temperature > 0 ? $"{info.Temperature:F0}°C" : "";
                 vm.HealthString = info.RemainingLife > 0 ? $"{info.RemainingLife:F0}%" : "";
-                vm.PowerOnHoursString = info.PowerOnHours > 0 ? $"{info.PowerOnHours / 24.0:F0}d" : ""; // Convert hours to days? Or keep hours. Let's use hours.
-                if (info.PowerOnHours > 0) vm.PowerOnHoursString = $"{info.PowerOnHours:F0}h";
+                vm.PowerOnHoursString = info.PowerOnHours > 0 ? $"{info.PowerOnHours:F0}h" : "";
+                vm.TotalReadsString = info.TotalReads > 0 ? $"{info.TotalReads:F0} GB" : "";
+                vm.TotalWritesString = info.TotalWrites > 0 ? $"{info.TotalWrites:F0} GB" : "";
 
                 // Update Per-Disk Graph
                 vm.UpdateGraph(info.ReadSpeed, info.WriteSpeed);
@@ -1035,6 +1036,8 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private string _temperatureString = "";
         [ObservableProperty] private string _healthString = "";
         [ObservableProperty] private string _powerOnHoursString = "";
+        [ObservableProperty] private string _totalReadsString = "";
+        [ObservableProperty] private string _totalWritesString = "";
 
         // Graph Properties
         [ObservableProperty] private PointCollection _readHistoryPoints = new PointCollection();
