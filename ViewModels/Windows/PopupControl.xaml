@@ -249,12 +249,12 @@
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid Columns="2" VerticalAlignment="Top"/>
+                                <StackPanel />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,2,10,2">
+                                <Grid Margin="0,2">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
