@@ -305,6 +305,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
                         <TextBlock Grid.Row="0" Text="Details" Foreground="#888" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
@@ -372,16 +373,6 @@
                                         </Border>
                                         
                                         <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding MemoryUsage, Converter={StaticResource RamDashConverter}}" Foreground="White" FontSize="12" FontWeight="Bold"/> 
-                                        <!-- Wait, RamDashConverter is for dash array. Need BytesToReadable converter or bind to a string property in VM? 
-                                             The VM has MemoryProcessInfo struct. I should add a formatted string property to it or use a converter.
-                                             I'll assume I can add a converter or just bind to MemoryUsage and use StringFormat? 
-                                             StringFormat only formats numbers, not bytes to GB.
-                                             I'll use a simple binding for now and maybe add a BytesConverter later.
-                                             Actually, I can't use StringFormat for complex logic.
-                                             I'll update SystemInfoService to have a FormattedMemoryUsage string in the struct?
-                                             Or add a BytesToStringConverter.
-                                        -->
                                         <TextBlock Grid.Column="2" Text="{Binding FormattedMemoryUsage}" Foreground="White" FontSize="12" FontWeight="Bold"/>
                                     </Grid>
                                 </DataTemplate>
