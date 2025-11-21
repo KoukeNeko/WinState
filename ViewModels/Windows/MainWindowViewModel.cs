@@ -270,18 +270,22 @@ namespace WinState.ViewModels.Windows
             int iconWidth = SystemInformation.SmallIconSize.Width;
             int iconHeight = SystemInformation.SmallIconSize.Height;
 
+            // Debug logging to check the actual size being used
+            // File.AppendAllText("debug_log.txt", $"Icon Size: {iconWidth}x{iconHeight}\n");
+
             using var bitmap = new Bitmap(iconWidth, iconHeight);
             using Graphics g = Graphics.FromImage(bitmap);
             g.Clear(Color.Transparent);
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
-            // Calculate font sizes dynamically based on icon height
-            float titleFontSize = iconHeight * 0.30f; // ~30% of height
-            float subtitleFontSize = iconHeight * (text2.Length >= 3 ? 0.35f : 0.50f); // ~35-50% of height
+            // Use Pixel units for font size to ensure consistency across DPI settings
+            // Reduce font size slightly to ensure it fits
+            float titleFontSize = iconHeight * 0.28f; 
+            float subtitleFontSize = iconHeight * (text2.Length >= 3 ? 0.32f : 0.45f);
 
-            using (var title = new System.Drawing.Font("Arial", titleFontSize, System.Drawing.FontStyle.Bold))
-            using (var subtitle = new System.Drawing.Font("Arial", subtitleFontSize, System.Drawing.FontStyle.Regular))
+            using (var title = new System.Drawing.Font("Arial", titleFontSize, System.Drawing.FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var subtitle = new System.Drawing.Font("Arial", subtitleFontSize, System.Drawing.FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 Brush brush = new SolidBrush(Color.White);
                 if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK")
@@ -301,28 +305,26 @@ namespace WinState.ViewModels.Windows
                     }
                 }
 
-                // Adjust drawing coordinates to center the text
-                // These offsets might need fine-tuning depending on the specific font and look
-                float titleY = -iconHeight * 0.05f; 
-                float subtitleY = iconHeight * 0.35f;
+                // Use StringFormat to center text vertically and horizontally
+                using (var stringFormat = new StringFormat())
+                {
+                    stringFormat.Alignment = StringAlignment.Center;
+                    stringFormat.LineAlignment = StringAlignment.Center;
 
-                // Center text horizontally
-                SizeF titleSize = g.MeasureString(text1, title);
-                SizeF subtitleSize = g.MeasureString(text2, subtitle);
+                    // Define rectangles for top and bottom halves
+                    // Top half for Title (e.g., CPU)
+                    // Bottom half for Value (e.g., 10)
+                    
+                    // Adjust heights to give more space to the value
+                    float topHeight = iconHeight * 0.4f;
+                    float bottomHeight = iconHeight * 0.6f;
 
-                float titleX = (iconWidth - titleSize.Width) / 2;
-                float subtitleX = (iconWidth - subtitleSize.Width) / 2;
+                    RectangleF topRect = new RectangleF(0, 0, iconWidth, topHeight);
+                    RectangleF bottomRect = new RectangleF(0, topHeight - (iconHeight * 0.05f), iconWidth, bottomHeight); // Overlap slightly to tighten
 
-                // Draw strings with centered coordinates
-                // Note: The original code used hardcoded negative offsets, we'll try to center it more logically now
-                // but keep it tight.
-                
-                // Reverting to a logic similar to original but scaled, to ensure it looks similar
-                // Original: 64x64, Title Y: -5, Subtitle Y: 22/29
-                // Ratio: -0.08, 0.34/0.45
-                
-                g.DrawString(text1, title, brush, new PointF(titleX, -iconHeight * 0.08f));
-                g.DrawString(text2, subtitle, brush, new PointF(subtitleX, iconHeight * (text2.Length >= 3 ? 0.40f : 0.30f)));
+                    g.DrawString(text1, title, brush, topRect, stringFormat);
+                    g.DrawString(text2, subtitle, brush, bottomRect, stringFormat);
+                }
             }
 
             return Icon.FromHandle(bitmap.GetHicon());
