@@ -561,14 +561,47 @@ namespace WinState.Services
             public string Name { get; set; }
             public double CpuUsage { get; set; }
             public int Id { get; set; }
+            public Drawing.Icon? Icon { get; set; }
         }
 
         private Dictionary<int, (TimeSpan TotalProcessorTime, DateTime Time)> _previousProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
         private List<ProcessInfo> _cachedTopProcesses = new List<ProcessInfo>();
+        private Dictionary<string, Drawing.Icon> _processIconCache = new Dictionary<string, Drawing.Icon>();
 
         public List<ProcessInfo> GetTopProcesses(int count = 5)
         {
             return _cachedTopProcesses; // Return the cached list calculated in UpdateDataAsync
+        }
+
+        private Drawing.Icon? GetProcessIcon(Process process)
+        {
+            try
+            {
+                // Try cache first by process name (assuming same name = same icon usually)
+                // Or by path if possible, but MainModule.FileName can throw.
+                // Let's try by Name first for safety/speed, though not 100% accurate if different exes have same name.
+                if (_processIconCache.TryGetValue(process.ProcessName, out var cachedIcon))
+                {
+                    return cachedIcon;
+                }
+
+                // Try to extract icon
+                // We need the file path.
+                string? path = null;
+                try { path = process.MainModule?.FileName; } catch { }
+
+                if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
+                {
+                    var icon = Drawing.Icon.ExtractAssociatedIcon(path);
+                    if (icon != null)
+                    {
+                        _processIconCache[process.ProcessName] = icon;
+                        return icon;
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         private void UpdateProcessCpuUsage()
@@ -607,7 +640,8 @@ namespace WinState.Services
                                     {
                                         Name = process.ProcessName,
                                         Id = process.Id,
-                                        CpuUsage = usage
+                                        CpuUsage = usage,
+                                        Icon = GetProcessIcon(process)
                                     });
                                 }
                             }

@@ -261,10 +261,23 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <!-- Icon Placeholder -->
-                                    <Border Width="16" Height="16" Background="#333" CornerRadius="2" Margin="0,0,8,0">
-                                        <TextBlock Text=">" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
-                                    </Border>
+                                    <!-- Icon -->
+                                    <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                        <Border Background="#333" CornerRadius="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text=">" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                        </Border>
+                                        <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Grid>
                                     
                                     <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Grid.Column="2" Text="{Binding CpuUsage, StringFormat={}{0:0.0}%}" Foreground="White" FontSize="12" FontWeight="Bold"/>

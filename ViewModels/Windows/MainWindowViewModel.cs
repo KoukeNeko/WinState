@@ -16,6 +16,13 @@ using System.Windows.Media.Imaging;
 
 namespace WinState.ViewModels.Windows
 {
+    public class ProcessViewModel
+    {
+        public string Name { get; set; }
+        public double CpuUsage { get; set; }
+        public ImageSource? Icon { get; set; }
+    }
+
     public class CoreUsageViewModel : INotifyPropertyChanged
     {
         public int CoreIndex { get; set; }
@@ -311,7 +318,7 @@ namespace WinState.ViewModels.Windows
         private PointCollection _cpuKernelHistoryPoints = new PointCollection();
 
         [ObservableProperty]
-        private ObservableCollection<SystemInfoService.ProcessInfo> _topProcesses = new ObservableCollection<SystemInfoService.ProcessInfo>();
+        private ObservableCollection<ProcessViewModel> _topProcesses = new ObservableCollection<ProcessViewModel>();
 
         private void UpdateCpuHistory()
         {
@@ -359,7 +366,22 @@ namespace WinState.ViewModels.Windows
             TopProcesses.Clear();
             foreach (var p in processes)
             {
-                TopProcesses.Add(p);
+                ImageSource? iconSrc = null;
+                if (p.Icon != null)
+                {
+                    try
+                    {
+                        iconSrc = ToImageSource(p.Icon);
+                    }
+                    catch { }
+                }
+
+                TopProcesses.Add(new ProcessViewModel
+                {
+                    Name = p.Name,
+                    CpuUsage = p.CpuUsage,
+                    Icon = iconSrc
+                });
             }
         }
 
