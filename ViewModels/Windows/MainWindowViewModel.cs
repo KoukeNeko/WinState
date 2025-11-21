@@ -138,6 +138,14 @@ namespace WinState.ViewModels.Windows
         public double CpuUsage => _systemInfoService.CpuUsage;
         public List<SensorItem> DetailedSensors => _systemInfoService.DetailedSensors;
         public double GpuUsage => _systemInfoService.GpuUsage;
+        public double GpuMemoryUsage => _systemInfoService.GpuMemoryUsage;
+        public long GpuMemoryUsed => _systemInfoService.GpuMemoryUsed;
+        public long GpuMemoryTotal => _systemInfoService.GpuMemoryTotal;
+        public double GpuTemperature => _systemInfoService.GpuTemperature;
+        public double GpuClock => _systemInfoService.GpuClock;
+
+        public string GpuMemoryUsedString => BytesToReadable(_systemInfoService.GpuMemoryUsed);
+        public string GpuMemoryTotalString => BytesToReadable(_systemInfoService.GpuMemoryTotal);
         public double RamUsage => _systemInfoService.RamUsage;
         public double DiskUsage => _systemInfoService.DiskUsage;
         public double NetworkUpload => _systemInfoService.NetworkUpload;
@@ -290,6 +298,13 @@ namespace WinState.ViewModels.Windows
                 OnPropertyChanged(nameof(CpuUsage));
                 OnPropertyChanged(nameof(DetailedSensors));
                 OnPropertyChanged(nameof(GpuUsage));
+                OnPropertyChanged(nameof(GpuMemoryUsage));
+                OnPropertyChanged(nameof(GpuMemoryUsed));
+                OnPropertyChanged(nameof(GpuMemoryTotal));
+                OnPropertyChanged(nameof(GpuTemperature));
+                OnPropertyChanged(nameof(GpuClock));
+                OnPropertyChanged(nameof(GpuMemoryUsedString));
+                OnPropertyChanged(nameof(GpuMemoryTotalString));
                 OnPropertyChanged(nameof(RamUsage));
                 OnPropertyChanged(nameof(DiskUsage));
                 OnPropertyChanged(nameof(NetworkUpload));

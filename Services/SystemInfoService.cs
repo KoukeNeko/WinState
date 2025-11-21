@@ -41,6 +41,13 @@ namespace WinState.Services
         private ISensor? _networkUploadSensor;
         private ISensor? _networkDownloadSensor;
 
+        // GPU Sensors
+        private ISensor? _gpuMemoryLoadSensor;
+        private ISensor? _gpuMemoryUsedSensor;
+        private ISensor? _gpuMemoryTotalSensor;
+        private ISensor? _gpuTemperatureSensor;
+        private ISensor? _gpuClockSensor;
+
         // Network Counters
         private PerformanceCounter? _uploadCounter;
         private PerformanceCounter? _downloadCounter;
@@ -60,6 +67,11 @@ namespace WinState.Services
         // 各種監控屬性 (0~100 或實際值)
         public double CpuUsage { get; private set; }
         public double GpuUsage { get; private set; }
+        public double GpuMemoryUsage { get; private set; }
+        public long GpuMemoryUsed { get; private set; }
+        public long GpuMemoryTotal { get; private set; }
+        public double GpuTemperature { get; private set; }
+        public double GpuClock { get; private set; }
         public double RamUsage { get; private set; }
         public double DiskUsage { get; private set; }
         public double NetworkUpload { get; private set; }
@@ -436,6 +448,31 @@ namespace WinState.Services
                             if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core")
                             {
                                 _gpuCoreLoadSensor = sensor;
+                            }
+                            // GPU Memory Load
+                            if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Memory")
+                            {
+                                _gpuMemoryLoadSensor = sensor;
+                            }
+                            // GPU Memory Used
+                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Used" || sensor.Name.Contains("Memory Used")))
+                            {
+                                _gpuMemoryUsedSensor = sensor;
+                            }
+                            // GPU Memory Total
+                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Total" || sensor.Name.Contains("Memory Total")))
+                            {
+                                _gpuMemoryTotalSensor = sensor;
+                            }
+                            // GPU Temperature
+                            if (sensor.SensorType == SensorType.Temperature && _gpuTemperatureSensor == null)
+                            {
+                                _gpuTemperatureSensor = sensor;
+                            }
+                            // GPU Clock
+                            if (sensor.SensorType == SensorType.Clock && _gpuClockSensor == null && sensor.Name.Contains("Core"))
+                            {
+                                _gpuClockSensor = sensor;
                             }
                         }
                         break;
@@ -853,7 +890,7 @@ namespace WinState.Services
                 CpuUsage = GetCpuUsage();
 
                 // Get GPU usage
-                GpuUsage = GetGpuUsage();
+                UpdateGpuData();
 
                 // Get RAM usage
                 UpdateRamData();
@@ -947,16 +984,21 @@ namespace WinState.Services
             return _cpuTotalLoadSensor.Value.GetValueOrDefault();
         }
 
-        private double GetGpuUsage()
+        private void UpdateGpuData()
         {
-            if (_gpuHardware == null || _gpuCoreLoadSensor == null)
-                return 0.0;
+            if (_gpuHardware == null) return;
 
-            // Update GPU hardware 一次
             _gpuHardware.Update();
 
-            // 直接讀取已快取的 Sensor
-            return _gpuCoreLoadSensor.Value.GetValueOrDefault();
+            if (_gpuCoreLoadSensor != null) GpuUsage = _gpuCoreLoadSensor.Value.GetValueOrDefault();
+            if (_gpuMemoryLoadSensor != null) GpuMemoryUsage = _gpuMemoryLoadSensor.Value.GetValueOrDefault();
+            
+            // LHM usually reports Memory Used/Total in MB
+            if (_gpuMemoryUsedSensor != null) GpuMemoryUsed = (long)(_gpuMemoryUsedSensor.Value.GetValueOrDefault() * 1024 * 1024); 
+            if (_gpuMemoryTotalSensor != null) GpuMemoryTotal = (long)(_gpuMemoryTotalSensor.Value.GetValueOrDefault() * 1024 * 1024);
+            
+            if (_gpuTemperatureSensor != null) GpuTemperature = _gpuTemperatureSensor.Value.GetValueOrDefault();
+            if (_gpuClockSensor != null) GpuClock = _gpuClockSensor.Value.GetValueOrDefault();
         }
 
         private double GetRamUsage()

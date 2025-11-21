@@ -943,14 +943,62 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding GpuUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}" FontSize="24"/>
-                    <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
+                <!-- Bars -->
+                <StackPanel Grid.Row="1" Margin="10,0,10,15">
+                    <!-- Processor Usage -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Processor" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding GpuUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding GpuUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                    </Grid>
+
+                    <!-- Memory Usage -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Video Memory" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding GpuMemoryUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#FF3333" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding GpuMemoryUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                    </Grid>
                 </StackPanel>
+
+                <!-- Details -->
+                <Grid Grid.Row="2" Margin="10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Memory Used -->
+                    <TextBlock Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Column="1" Text="{Binding GpuMemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                    <!-- Memory Total -->
+                    <TextBlock Grid.Row="1" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GpuMemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                    <!-- Temperature -->
+                    <TextBlock Grid.Row="2" Text="Temperature:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GpuTemperature, StringFormat={}{0:F1} °C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                </Grid>
             </Grid>
 
             <Rectangle Grid.Row="8" Style="{StaticResource SeparatorStyle}"/>
