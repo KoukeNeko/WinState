@@ -90,6 +90,14 @@ namespace WinState.ViewModels.Windows
         public ImageSource? Icon { get; set; }
     }
 
+    public class DiskProcessViewModel
+    {
+        public string Name { get; set; } = "";
+        public string Read { get; set; } = "";
+        public string Write { get; set; } = "";
+        public ImageSource? Icon { get; set; }
+    }
+
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -185,6 +193,9 @@ namespace WinState.ViewModels.Windows
 
         [ObservableProperty]
         private ObservableCollection<NetworkProcessViewModel> _topNetworkProcesses = new ObservableCollection<NetworkProcessViewModel>();
+
+        [ObservableProperty]
+        private ObservableCollection<DiskInfoViewModel> _disks = new ObservableCollection<DiskInfoViewModel>();
 
         // Network Properties
         public string LocalIpAddress => _systemInfoService.LocalIpAddress;
@@ -298,6 +309,7 @@ namespace WinState.ViewModels.Windows
                 UpdateCpuHistory();
                 UpdateRamDetails();
                 UpdateNetworkDetails();
+                UpdateDiskDetails();
                 UpdateCores();
                 UpdateTrayIcons();
             });
@@ -665,6 +677,158 @@ namespace WinState.ViewModels.Windows
             }
         }
 
+        // Disk Properties
+        [ObservableProperty]
+        private PointCollection _diskReadHistoryPoints = new PointCollection();
+        [ObservableProperty]
+        private PointCollection _diskWriteHistoryPoints = new PointCollection();
+        
+        [ObservableProperty]
+        private string _diskReadSpeedString = "0.0 MB/s";
+        [ObservableProperty]
+        private string _diskWriteSpeedString = "0.0 MB/s";
+        
+        [ObservableProperty]
+        private string _diskPeakReadString = "0M";
+        [ObservableProperty]
+        private string _diskPeakWriteString = "0M";
+
+        [ObservableProperty]
+        private ObservableCollection<DiskProcessViewModel> _topDiskProcesses = new ObservableCollection<DiskProcessViewModel>();
+
+        private Queue<double> _diskReadHistory = new Queue<double>();
+        private Queue<double> _diskWriteHistory = new Queue<double>();
+        private double _maxDiskReadSeen = 1024;
+        private double _maxDiskWriteSeen = 1024;
+
+        private void UpdateDiskDetails()
+        {
+            // 1. Update Disk List
+            var diskInfos = _systemInfoService.GetDiskInfo();
+            
+            if (Disks.Count != diskInfos.Count)
+            {
+                Disks.Clear();
+                foreach (var info in diskInfos)
+                {
+                    Disks.Add(new DiskInfoViewModel());
+                }
+            }
+
+            for (int i = 0; i < diskInfos.Count; i++)
+            {
+                var info = diskInfos[i];
+                var vm = Disks[i];
+
+                vm.Name = string.IsNullOrEmpty(info.Label) ? info.Name : info.Label;
+                vm.DriveName = info.Name;
+                
+                double totalGB = info.TotalSize / 1024.0 / 1024.0 / 1024.0;
+                double usedGB = info.UsedSize / 1024.0 / 1024.0 / 1024.0;
+                double freeGB = (info.TotalSize - info.UsedSize) / 1024.0 / 1024.0 / 1024.0;
+                
+                vm.UsedPercentage = (double)info.UsedSize / info.TotalSize * 100.0;
+                vm.UsedString = $"Used {usedGB:F2} GB from {totalGB:F2} GB";
+                vm.PercentageString = $"{vm.UsedPercentage:F0}%";
+                vm.DiskFreeSpaceString = $"{freeGB:F1} GB free";
+                
+                vm.ReadIndicatorBrush = info.IsReading ? Brushes.DodgerBlue : Brushes.Gray;
+                vm.WriteIndicatorBrush = info.IsWriting ? Brushes.Red : Brushes.Gray;
+            }
+
+            // 2. Update Disk Graph & Stats
+            double currentRead = _systemInfoService.TotalDiskRead;
+            double currentWrite = _systemInfoService.TotalDiskWrite;
+
+            DiskReadSpeedString = SpeedHumanReadable( (long)currentRead ) + "/s";
+            DiskWriteSpeedString = SpeedHumanReadable( (long)currentWrite ) + "/s";
+
+            _diskReadHistory.Enqueue(currentRead);
+            _diskWriteHistory.Enqueue(currentWrite);
+            if (_diskReadHistory.Count > 60) _diskReadHistory.Dequeue();
+            if (_diskWriteHistory.Count > 60) _diskWriteHistory.Dequeue();
+
+            double localMaxRead = _diskReadHistory.Max();
+            double localMaxWrite = _diskWriteHistory.Max();
+
+            if (localMaxRead > _maxDiskReadSeen) _maxDiskReadSeen = localMaxRead;
+            else _maxDiskReadSeen = _maxDiskReadSeen * 0.95 + localMaxRead * 0.05;
+
+            if (localMaxWrite > _maxDiskWriteSeen) _maxDiskWriteSeen = localMaxWrite;
+            else _maxDiskWriteSeen = _maxDiskWriteSeen * 0.95 + localMaxWrite * 0.05;
+
+            // Update Peak Strings
+            DiskPeakReadString = SpeedHumanReadable((long)_maxDiskReadSeen);
+            DiskPeakWriteString = SpeedHumanReadable((long)_maxDiskWriteSeen);
+
+            // Generate Graph Points
+            double scaleRead = Math.Max(_maxDiskReadSeen, 1024);
+            double scaleWrite = Math.Max(_maxDiskWriteSeen, 1024);
+            
+            double graphHeight = 40;
+            double graphWidth = 280;
+            double step = graphWidth / 59.0;
+
+            var readPoints = new PointCollection();
+            var writePoints = new PointCollection();
+
+            readPoints.Add(new System.Windows.Point(0, graphHeight));
+            writePoints.Add(new System.Windows.Point(0, graphHeight));
+
+            var rArr = _diskReadHistory.ToArray();
+            var wArr = _diskWriteHistory.ToArray();
+            int x = 0;
+
+            for (int i = 0; i < rArr.Length; i++)
+            {
+                double rVal = rArr[i];
+                double wVal = wArr[i];
+
+                // Read (Blue) goes UP
+                double yRead = graphHeight - (rVal / scaleRead * graphHeight);
+                // Write (Red) goes DOWN
+                double yWrite = graphHeight + (wVal / scaleWrite * graphHeight);
+
+                readPoints.Add(new System.Windows.Point(x * step, yRead));
+                writePoints.Add(new System.Windows.Point(x * step, yWrite));
+                x++;
+            }
+
+            readPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+            writePoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+
+            if (readPoints.CanFreeze) readPoints.Freeze();
+            if (writePoints.CanFreeze) writePoints.Freeze();
+
+            DiskReadHistoryPoints = readPoints;
+            DiskWriteHistoryPoints = writePoints;
+
+            // 3. Update Top Disk Processes
+            var diskProcesses = _systemInfoService.GetTopDiskProcesses();
+            TopDiskProcesses.Clear();
+            foreach (var p in diskProcesses)
+            {
+                ImageSource? iconSrc = null;
+                if (p.Icon != null)
+                {
+                    try { iconSrc = ToImageSource(p.Icon, false); } catch { }
+                }
+
+                TopDiskProcesses.Add(new DiskProcessViewModel
+                {
+                    Name = p.Name,
+                    Read = p.FormattedRead,
+                    Write = p.FormattedWrite,
+                    Icon = iconSrc
+                });
+            }
+            
+            while (TopDiskProcesses.Count < 15)
+            {
+                TopDiskProcesses.Add(new DiskProcessViewModel { Name = "", Read = "", Write = "", Icon = null });
+            }
+        }
+
         private static string BytesToReadable(long bytes)
         {
             string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
@@ -825,5 +989,17 @@ namespace WinState.ViewModels.Windows
 
             return Drawing.Icon.FromHandle(bitmap.GetHicon());
         }
+    }
+
+    public partial class DiskInfoViewModel : ObservableObject
+    {
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private string _driveName = "";
+        [ObservableProperty] private double _usedPercentage;
+        [ObservableProperty] private string _usedString = "";
+        [ObservableProperty] private string _percentageString = "";
+        [ObservableProperty] private Brush _readIndicatorBrush = Brushes.Gray;
+        [ObservableProperty] private Brush _writeIndicatorBrush = Brushes.Gray;
+        [ObservableProperty] private string _diskFreeSpaceString = "";
     }
 }

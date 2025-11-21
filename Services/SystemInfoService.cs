@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace WinState.Services
 {
@@ -106,6 +107,44 @@ namespace WinState.Services
             public Drawing.Icon? Icon { get; set; }
         }
 
+        // Disk Process Tracking
+        private readonly ConcurrentDictionary<int, (long Read, long Write)> _processDiskUsage = new();
+
+        public struct DiskProcessInfo
+        {
+            public string Name { get; set; }
+            public int Id { get; set; }
+            public long ReadSpeed { get; set; }
+            public long WriteSpeed { get; set; }
+            public string FormattedRead { get; set; }
+            public string FormattedWrite { get; set; }
+            public Drawing.Icon? Icon { get; set; }
+        }
+
+        private List<DiskProcessInfo> _cachedTopDiskProcesses = new List<DiskProcessInfo>();
+        public long TotalDiskRead { get; private set; }
+        public long TotalDiskWrite { get; private set; }
+
+        public struct DiskInfo
+        {
+            public string Name; // e.g. "C:\"
+            public string Label; // e.g. "Windows"
+            public long TotalSize;
+            public long UsedSize;
+            public bool IsReading;
+            public bool IsWriting;
+        }
+
+        private List<DiskInfo> _cachedDiskInfo = new List<DiskInfo>();
+        
+        private class DiskCounter
+        {
+            public string DriveName { get; set; } = "";
+            public PerformanceCounter? ReadCounter { get; set; }
+            public PerformanceCounter? WriteCounter { get; set; }
+        }
+        private List<DiskCounter> _diskCounters = new List<DiskCounter>();
+
         private List<NetworkProcessInfo> _cachedTopNetworkProcesses = new List<NetworkProcessInfo>();
 
         public Dictionary<string, long> UploadSpeeds { get; private set; } = new Dictionary<string, long>();
@@ -150,6 +189,7 @@ namespace WinState.Services
             InitializePreviousValues();
             InitializeCpuCounters();
             InitializeRamCounters();
+            InitializeDiskCounters();
             
             // Initialize ETW for per-process network monitoring
             InitializeEtwSession();
@@ -637,8 +677,6 @@ namespace WinState.Services
             try
             {
                 // Try cache first by process name (assuming same name = same icon usually)
-                // Or by path if possible, but MainModule.FileName can throw.
-                // Let's try by Name first for safety/speed, though not 100% accurate if different exes have same name.
                 if (_processIconCache.TryGetValue(process.ProcessName, out var cachedIcon))
                 {
                     return cachedIcon;
@@ -647,7 +685,16 @@ namespace WinState.Services
                 // Try to extract icon
                 // We need the file path.
                 string? path = null;
-                try { path = process.MainModule?.FileName; } catch { }
+                try 
+                { 
+                    // This often throws Win32Exception for system/elevated processes
+                    path = process.MainModule?.FileName; 
+                } 
+                catch 
+                {
+                    // Ignore access denied
+                    return null;
+                }
 
                 if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
                 {
@@ -676,7 +723,7 @@ namespace WinState.Services
                 {
                     try
                     {
-                        if (process.Id == 0) continue; // Skip Idle process
+                        if (process.Id == 0 || process.Id == 4) continue; // Skip Idle and System process
 
                         var totalProcessorTime = process.TotalProcessorTime;
                         newProcessTimes[process.Id] = (totalProcessorTime, now);
@@ -719,8 +766,16 @@ namespace WinState.Services
                 
                 // Update System Counts
                 ProcessCount = currentProcesses.Length;
-                ThreadCount = currentProcesses.Sum(p => p.Threads.Count);
-                HandleCount = currentProcesses.Sum(p => p.HandleCount);
+                
+                int totalThreads = 0;
+                int totalHandles = 0;
+                foreach (var p in currentProcesses)
+                {
+                    try { totalThreads += p.Threads.Count; } catch { }
+                    try { totalHandles += p.HandleCount; } catch { }
+                }
+                ThreadCount = totalThreads;
+                HandleCount = totalHandles;
             }
             catch (Exception ex)
             {
@@ -843,6 +898,8 @@ namespace WinState.Services
 
                 UpdateNetworkSpeeds();
                 UpdateTopNetworkProcesses();
+                UpdateDiskData();
+                UpdateTopDiskProcesses();
 
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
@@ -1082,7 +1139,13 @@ namespace WinState.Services
                 {
                     try
                     {
-                        if (p.Id == 0) continue;
+                        if (p.Id == 0 || p.Id == 4) continue;
+                        
+                        // Optimization: Don't get icon for every process every second.
+                        // Only get it if it's likely to be in the top list?
+                        // But we don't know if it's in the top list until we sort.
+                        // However, GetProcessIcon has a cache.
+                        
                         memProcesses.Add(new MemoryProcessInfo
                         {
                             Name = p.ProcessName,
@@ -1117,8 +1180,12 @@ namespace WinState.Services
                     // Note: This requires Admin privileges. The app manifest should request requireAdministrator.
                     _etwSession = new TraceEventSession("WinStateNetworkMonitor");
                     
-                    _etwSession.EnableKernelProvider(KernelTraceEventParser.Keywords.NetworkTCPIP);
+                    _etwSession.EnableKernelProvider(
+                        KernelTraceEventParser.Keywords.NetworkTCPIP | 
+                        KernelTraceEventParser.Keywords.DiskIO
+                    );
 
+                    // Network Events
                     _etwSession.Source.Kernel.TcpIpRecv += data =>
                     {
                         _processNetworkUsage.AddOrUpdate(data.ProcessID, 
@@ -1146,6 +1213,21 @@ namespace WinState.Services
                             (key, old) => (old.Upload + data.size, old.Download));
                     };
 
+                    // Disk Events
+                    _etwSession.Source.Kernel.DiskIORead += data =>
+                    {
+                        _processDiskUsage.AddOrUpdate(data.ProcessID,
+                            (data.TransferSize, 0),
+                            (key, old) => (old.Read + data.TransferSize, old.Write));
+                    };
+                    
+                    _etwSession.Source.Kernel.DiskIOWrite += data =>
+                    {
+                        _processDiskUsage.AddOrUpdate(data.ProcessID,
+                            (0, data.TransferSize),
+                            (key, old) => (old.Read, old.Write + data.TransferSize));
+                    };
+
                     _etwSession.Source.Process();
                 }
                 catch (Exception ex)
@@ -1171,7 +1253,7 @@ namespace WinState.Services
                 
                 foreach (var kvp in snapshot)
                 {
-                    if (kvp.Key == 0) continue; // System Idle Process
+                    if (kvp.Key == 0 || kvp.Key == 4) continue; // System Idle Process and System
                     if (kvp.Value.Upload == 0 && kvp.Value.Download == 0) continue;
 
                     try 
@@ -1188,7 +1270,7 @@ namespace WinState.Services
                             Icon = GetProcessIcon(p)
                         });
                     }
-                    catch 
+                    catch (Exception)
                     { 
                         // Process might have exited or access denied
                     }
@@ -1208,6 +1290,150 @@ namespace WinState.Services
         public List<NetworkProcessInfo> GetTopNetworkProcesses()
         {
             return _cachedTopNetworkProcesses;
+        }
+
+        private void InitializeDiskCounters()
+        {
+            try
+            {
+                var drives = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).ToList();
+                foreach (var drive in drives)
+                {
+                    try
+                    {
+                        string instanceName = drive.Name.Replace("\\", ""); // "C:\" -> "C:"
+                        var dc = new DiskCounter
+                        {
+                            DriveName = drive.Name,
+                            ReadCounter = new PerformanceCounter("LogicalDisk", "Disk Read Bytes/sec", instanceName),
+                            WriteCounter = new PerformanceCounter("LogicalDisk", "Disk Write Bytes/sec", instanceName)
+                        };
+                        // Initialize counters
+                        dc.ReadCounter.NextValue();
+                        dc.WriteCounter.NextValue();
+                        _diskCounters.Add(dc);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to init counters for {drive.Name}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing disk counters: {ex.Message}");
+            }
+        }
+
+        private void UpdateDiskData()
+        {
+            try
+            {
+                var drives = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).ToList();
+                var newInfoList = new List<DiskInfo>();
+
+                foreach (var drive in drives)
+                {
+                    try
+                    {
+                        if (!drive.IsReady) continue;
+
+                        var info = new DiskInfo
+                        {
+                            Name = drive.Name,
+                            Label = string.IsNullOrEmpty(drive.VolumeLabel) ? "Local Disk" : drive.VolumeLabel,
+                            TotalSize = drive.TotalSize,
+                            UsedSize = drive.TotalSize - drive.TotalFreeSpace,
+                            IsReading = false,
+                            IsWriting = false
+                        };
+
+                        // Check activity
+                        var counter = _diskCounters.FirstOrDefault(c => c.DriveName == drive.Name);
+                        if (counter != null)
+                        {
+                            if (counter.ReadCounter != null)
+                            {
+                                float val = counter.ReadCounter.NextValue();
+                                if (val > 1024) info.IsReading = true; // Threshold 1KB/s
+                            }
+                            if (counter.WriteCounter != null)
+                            {
+                                float val = counter.WriteCounter.NextValue();
+                                if (val > 1024) info.IsWriting = true;
+                            }
+                        }
+
+                        newInfoList.Add(info);
+                    }
+                    catch { }
+                }
+                _cachedDiskInfo = newInfoList;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating disk data: {ex.Message}");
+            }
+        }
+
+        public List<DiskInfo> GetDiskInfo()
+        {
+            return _cachedDiskInfo;
+        }
+
+        private void UpdateTopDiskProcesses()
+        {
+            try
+            {
+                var snapshot = new Dictionary<int, (long Read, long Write)>(_processDiskUsage);
+                _processDiskUsage.Clear();
+
+                var diskProcesses = new List<DiskProcessInfo>();
+                long totalRead = 0;
+                long totalWrite = 0;
+
+                foreach (var kvp in snapshot)
+                {
+                    totalRead += kvp.Value.Read;
+                    totalWrite += kvp.Value.Write;
+
+                    if (kvp.Key == 0 || kvp.Key == 4) continue;
+                    if (kvp.Value.Read == 0 && kvp.Value.Write == 0) continue;
+
+                    try
+                    {
+                        var p = Process.GetProcessById(kvp.Key);
+                        diskProcesses.Add(new DiskProcessInfo
+                        {
+                            Name = p.ProcessName,
+                            Id = p.Id,
+                            ReadSpeed = kvp.Value.Read,
+                            WriteSpeed = kvp.Value.Write,
+                            FormattedRead = BytesToReadable(kvp.Value.Read) + "/s",
+                            FormattedWrite = BytesToReadable(kvp.Value.Write) + "/s",
+                            Icon = GetProcessIcon(p)
+                        });
+                    }
+                    catch { }
+                }
+
+                TotalDiskRead = totalRead;
+                TotalDiskWrite = totalWrite;
+
+                _cachedTopDiskProcesses = diskProcesses
+                    .OrderByDescending(p => p.ReadSpeed + p.WriteSpeed)
+                    .Take(15)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating disk processes: {ex.Message}");
+            }
+        }
+
+        public List<DiskProcessInfo> GetTopDiskProcesses()
+        {
+            return _cachedTopDiskProcesses;
         }
     }
 }
