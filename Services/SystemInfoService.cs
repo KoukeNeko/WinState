@@ -725,7 +725,7 @@ namespace WinState.Services
 
         private Dictionary<int, (TimeSpan TotalProcessorTime, DateTime Time)> _previousProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
         private List<ProcessInfo> _cachedTopProcesses = new List<ProcessInfo>();
-        private Dictionary<string, Drawing.Icon> _processIconCache = new Dictionary<string, Drawing.Icon>();
+        private Dictionary<string, Drawing.Icon?> _processIconCache = new Dictionary<string, Drawing.Icon?>();
 
         public List<ProcessInfo> GetTopProcesses(int count = 5)
         {
@@ -753,6 +753,8 @@ namespace WinState.Services
                 catch 
                 {
                     // Ignore access denied
+                    // Cache failure to avoid repeated exceptions
+                    _processIconCache[process.ProcessName] = null;
                     return null;
                 }
 
@@ -767,6 +769,9 @@ namespace WinState.Services
                 }
             }
             catch { }
+            
+            // Cache failure
+            try { _processIconCache[process.ProcessName] = null; } catch { }
             return null;
         }
 
@@ -776,7 +781,8 @@ namespace WinState.Services
             {
                 var currentProcesses = Process.GetProcesses();
                 var newProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
-                var processInfos = new List<ProcessInfo>();
+                // Use temp list to hold process reference and calculated usage
+                var tempProcessInfos = new List<(Process Process, string Name, int Id, double CpuUsage)>();
                 var now = DateTime.Now;
 
                 foreach (var process in currentProcesses)
@@ -802,13 +808,7 @@ namespace WinState.Services
                                 
                                 if (usage > 0)
                                 {
-                                    processInfos.Add(new ProcessInfo
-                                    {
-                                        Name = process.ProcessName,
-                                        Id = process.Id,
-                                        CpuUsage = usage,
-                                        Icon = GetProcessIcon(process)
-                                    });
+                                    tempProcessInfos.Add((process, process.ProcessName, process.Id, usage));
                                 }
                             }
                         }
@@ -821,8 +821,21 @@ namespace WinState.Services
 
                 _previousProcessTimes = newProcessTimes;
 
-        // Sort by CPU usage descending and take top N
-                _cachedTopProcesses = processInfos.OrderByDescending(p => p.CpuUsage).Take(15).ToList();
+                // Sort by CPU usage descending and take top 15
+                var topList = tempProcessInfos.OrderByDescending(p => p.CpuUsage).Take(15).ToList();
+                
+                var resultList = new List<ProcessInfo>();
+                foreach (var item in topList)
+                {
+                    resultList.Add(new ProcessInfo
+                    {
+                        Name = item.Name,
+                        Id = item.Id,
+                        CpuUsage = item.CpuUsage,
+                        Icon = GetProcessIcon(item.Process)
+                    });
+                }
+                _cachedTopProcesses = resultList;
                 
                 // Update System Counts
                 ProcessCount = currentProcesses.Length;
@@ -1201,7 +1214,8 @@ namespace WinState.Services
             try
             {
                 var processes = Process.GetProcesses();
-                var memProcesses = new List<MemoryProcessInfo>();
+                // Use a temporary list to hold process reference and data needed for sorting
+                var tempProcesses = new List<(Process Process, string Name, int Id, long MemoryUsage)>();
 
                 foreach (var p in processes)
                 {
@@ -1209,24 +1223,28 @@ namespace WinState.Services
                     {
                         if (p.Id == 0 || p.Id == 4) continue;
                         
-                        // Optimization: Don't get icon for every process every second.
-                        // Only get it if it's likely to be in the top list?
-                        // But we don't know if it's in the top list until we sort.
-                        // However, GetProcessIcon has a cache.
-                        
-                        memProcesses.Add(new MemoryProcessInfo
-                        {
-                            Name = p.ProcessName,
-                            Id = p.Id,
-                            MemoryUsage = p.WorkingSet64,
-                            FormattedMemoryUsage = BytesToReadable(p.WorkingSet64),
-                            Icon = GetProcessIcon(p)
-                        });
+                        tempProcesses.Add((p, p.ProcessName, p.Id, p.WorkingSet64));
                     }
                     catch { }
                 }
 
-                _cachedTopMemoryProcesses = memProcesses.OrderByDescending(p => p.MemoryUsage).Take(15).ToList();
+                // Sort and take top 15
+                var topList = tempProcesses.OrderByDescending(x => x.MemoryUsage).Take(15).ToList();
+
+                var resultList = new List<MemoryProcessInfo>();
+                foreach (var item in topList)
+                {
+                    resultList.Add(new MemoryProcessInfo
+                    {
+                        Name = item.Name,
+                        Id = item.Id,
+                        MemoryUsage = item.MemoryUsage,
+                        FormattedMemoryUsage = BytesToReadable(item.MemoryUsage),
+                        Icon = GetProcessIcon(item.Process)
+                    });
+                }
+
+                _cachedTopMemoryProcesses = resultList;
             }
             catch (Exception ex)
             {
@@ -1313,7 +1331,7 @@ namespace WinState.Services
                 var snapshot = new Dictionary<int, (long Upload, long Download)>(_processNetworkUsage);
                 _processNetworkUsage.Clear();
 
-                var netProcesses = new List<NetworkProcessInfo>();
+                var tempNetProcesses = new List<(Process Process, string Name, int Id, long UploadSpeed, long DownloadSpeed)>();
                 
                 // We need to map Process IDs to Names. 
                 // Doing Process.GetProcessById for every ID every second might be heavy if there are many.
@@ -1327,16 +1345,7 @@ namespace WinState.Services
                     try 
                     {
                         var p = Process.GetProcessById(kvp.Key);
-                        netProcesses.Add(new NetworkProcessInfo
-                        {
-                            Name = p.ProcessName,
-                            Id = p.Id,
-                            UploadSpeed = kvp.Value.Upload,
-                            DownloadSpeed = kvp.Value.Download,
-                            FormattedUpload = BytesToReadable(kvp.Value.Upload) + "/s",
-                            FormattedDownload = BytesToReadable(kvp.Value.Download) + "/s",
-                            Icon = GetProcessIcon(p)
-                        });
+                        tempNetProcesses.Add((p, p.ProcessName, p.Id, kvp.Value.Upload, kvp.Value.Download));
                     }
                     catch (Exception)
                     { 
@@ -1344,10 +1353,24 @@ namespace WinState.Services
                     }
                 }
                 
-                _cachedTopNetworkProcesses = netProcesses
-                    .OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed)
-                    .Take(15)
-                    .ToList();
+                var topList = tempNetProcesses.OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed).Take(15).ToList();
+
+                var resultList = new List<NetworkProcessInfo>();
+                foreach (var item in topList)
+                {
+                    resultList.Add(new NetworkProcessInfo
+                    {
+                        Name = item.Name,
+                        Id = item.Id,
+                        UploadSpeed = item.UploadSpeed,
+                        DownloadSpeed = item.DownloadSpeed,
+                        FormattedUpload = BytesToReadable(item.UploadSpeed) + "/s",
+                        FormattedDownload = BytesToReadable(item.DownloadSpeed) + "/s",
+                        Icon = GetProcessIcon(item.Process)
+                    });
+                }
+
+                _cachedTopNetworkProcesses = resultList;
             }
             catch (Exception ex)
             {
@@ -1459,7 +1482,7 @@ namespace WinState.Services
                 var snapshot = new Dictionary<int, (long Read, long Write)>(_processDiskUsage);
                 _processDiskUsage.Clear();
 
-                var diskProcesses = new List<DiskProcessInfo>();
+                var tempDiskProcesses = new List<(Process Process, string Name, int Id, long ReadSpeed, long WriteSpeed)>();
                 long totalRead = 0;
                 long totalWrite = 0;
 
@@ -1474,16 +1497,7 @@ namespace WinState.Services
                     try
                     {
                         var p = Process.GetProcessById(kvp.Key);
-                        diskProcesses.Add(new DiskProcessInfo
-                        {
-                            Name = p.ProcessName,
-                            Id = p.Id,
-                            ReadSpeed = kvp.Value.Read,
-                            WriteSpeed = kvp.Value.Write,
-                            FormattedRead = BytesToReadable(kvp.Value.Read) + "/s",
-                            FormattedWrite = BytesToReadable(kvp.Value.Write) + "/s",
-                            Icon = GetProcessIcon(p)
-                        });
+                        tempDiskProcesses.Add((p, p.ProcessName, p.Id, kvp.Value.Read, kvp.Value.Write));
                     }
                     catch { }
                 }
@@ -1491,10 +1505,25 @@ namespace WinState.Services
                 TotalDiskRead = totalRead;
                 TotalDiskWrite = totalWrite;
 
-                _cachedTopDiskProcesses = diskProcesses
-                    .OrderByDescending(p => p.ReadSpeed + p.WriteSpeed)
-                    .Take(15)
-                    .ToList();
+                // Sort by Total Speed
+                var topList = tempDiskProcesses.OrderByDescending(p => p.ReadSpeed + p.WriteSpeed).Take(15).ToList();
+
+                var resultList = new List<DiskProcessInfo>();
+                foreach (var item in topList)
+                {
+                    resultList.Add(new DiskProcessInfo
+                    {
+                        Name = item.Name,
+                        Id = item.Id,
+                        ReadSpeed = item.ReadSpeed,
+                        WriteSpeed = item.WriteSpeed,
+                        FormattedRead = BytesToReadable(item.ReadSpeed) + "/s",
+                        FormattedWrite = BytesToReadable(item.WriteSpeed) + "/s",
+                        Icon = GetProcessIcon(item.Process)
+                    });
+                }
+
+                _cachedTopDiskProcesses = resultList;
             }
             catch (Exception ex)
             {
