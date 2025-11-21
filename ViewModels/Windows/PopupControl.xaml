@@ -513,7 +513,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
                         
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -702,7 +702,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
                         
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopNetworkProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -883,7 +883,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
                     
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopDiskProcesses}">
                         <ItemsControl.ItemsPanel>
@@ -1028,7 +1028,7 @@
                         </ItemsControl.GroupStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="10,2">
+                                <Grid Margin="0,2">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
