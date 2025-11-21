@@ -25,6 +25,11 @@
     mc:Ignorable="d">
     <ui:FluentWindow.Resources>
         <viewmodels:PopupControl x:Key="SharedPopup" x:Shared="False" />
+        <ContextMenu x:Key="TrayContextMenu">
+            <MenuItem Header="Settings" Command="{Binding ViewModel.OpenSettingsCommand}" />
+            <Separator />
+            <MenuItem Header="Exit" Command="{Binding ViewModel.ExitApplicationCommand}" />
+        </ContextMenu>
     </ui:FluentWindow.Resources>
 
     <ui:FluentWindow.InputBindings>
@@ -41,32 +46,38 @@
                         Tag="CPU"
                         IconSource="{Binding ViewModel.CpuIcon}"
                         ToolTipText="{Binding ViewModel.CpuToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
         <tb:TaskbarIcon x:Name="GpuNotifyIcon"
                         Tag="GPU"
                         IconSource="{Binding ViewModel.GpuIcon}"
                         ToolTipText="{Binding ViewModel.GpuToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
         <tb:TaskbarIcon x:Name="RamNotifyIcon"
                         Tag="RAM"
                         IconSource="{Binding ViewModel.RamIcon}"
                         ToolTipText="{Binding ViewModel.RamToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
         <tb:TaskbarIcon x:Name="DiskNotifyIcon"
                         Tag="DISK"
                         IconSource="{Binding ViewModel.DiskIcon}"
                         ToolTipText="{Binding ViewModel.DiskToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
         <tb:TaskbarIcon x:Name="NetworkNotifyIcon"
                         Tag="NET"
                         IconSource="{Binding ViewModel.NetworkIcon}"
                         ToolTipText="{Binding ViewModel.NetworkToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
         <tb:TaskbarIcon x:Name="PowerNotifyIcon"
                         Tag="POWER"
                         IconSource="{Binding ViewModel.PowerIcon}"
                         ToolTipText="{Binding ViewModel.PowerToolTip}"
-                        TrayLeftMouseUp="OnTrayIconClick" />
+                        TrayLeftMouseUp="OnTrayIconClick"
+                        ContextMenu="{StaticResource TrayContextMenu}" />
 
         <ui:TitleBar
             x:Name="TitleBar"

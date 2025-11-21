@@ -14,6 +14,7 @@ using Wpf.Ui.Controls;
 using Wpf.Ui.Tray;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using WinState.Views.Windows;
 
 namespace WinState.ViewModels.Windows
 {
@@ -280,6 +281,24 @@ namespace WinState.ViewModels.Windows
 
             // Initialize tray icons to prevent binding errors
             UpdateTrayIcons();
+        }
+
+        [RelayCommand]
+        private void OpenSettings()
+        {
+            if (System.Windows.Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.Show();
+                mainWindow.WindowState = WindowState.Normal;
+                mainWindow.Activate();
+                mainWindow.Navigate(typeof(Views.Pages.SettingsPage));
+            }
+        }
+
+        [RelayCommand]
+        private void ExitApplication()
+        {
+            System.Windows.Application.Current.Shutdown();
         }
         
         // ... (OnDataUpdated is fine)
