@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Management;
 using System.Net.NetworkInformation;
 using System.Timers;
+using Drawing = System.Drawing;
 
 namespace WinState.Services
 {
@@ -31,6 +32,11 @@ namespace WinState.Services
         private PerformanceCounter? _downloadCounter;
         private string? _cachedNetworkInterface;
 
+        // RAM Counters
+        private PerformanceCounter? _ramAvailableCounter;
+        private PerformanceCounter? _ramCompressedCounter;
+        private PerformanceCounter? _ramWiredCounter; // Non-paged pool
+
         // 各種監控屬性 (0~100 或實際值)
         public double CpuUsage { get; private set; }
         public double GpuUsage { get; private set; }
@@ -41,6 +47,25 @@ namespace WinState.Services
         public string NetworkUploadUnit { get; private set; }
         public string NetworkDownloadUnit { get; private set; }
         public double CpuPower { get; private set; }
+
+        // RAM Details (in Bytes)
+        public long RamTotal { get; private set; }
+        public long RamUsed { get; private set; }
+        public long RamFree { get; private set; }
+        public long RamCompressed { get; private set; }
+        public long RamWired { get; private set; } // Non-paged pool
+        public long RamApp { get; private set; }
+
+        public struct MemoryProcessInfo
+        {
+            public string Name { get; set; }
+            public long MemoryUsage { get; set; } // Bytes
+            public string FormattedMemoryUsage { get; set; }
+            public int Id { get; set; }
+            public Drawing.Icon? Icon { get; set; } // Optional: for later
+        }
+
+        private List<MemoryProcessInfo> _cachedTopMemoryProcesses = new List<MemoryProcessInfo>();
 
         public event EventHandler? DataUpdated;
 
@@ -83,6 +108,24 @@ namespace WinState.Services
 
             InitializePreviousValues();
             InitializeCpuCounters();
+            InitializeRamCounters();
+        }
+
+        private void InitializeRamCounters()
+        {
+            try
+            {
+                _ramAvailableCounter = new PerformanceCounter("Memory", "Available Bytes");
+                _ramWiredCounter = new PerformanceCounter("Memory", "Pool Nonpaged Bytes");
+                // Compressed memory might not be available on all OS versions
+                try { _ramCompressedCounter = new PerformanceCounter("Memory", "Compressed Bytes In Use"); } catch { }
+                
+                RamTotal = (long)new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing RAM counters: {ex.Message}");
+            }
         }
 
 
@@ -152,12 +195,27 @@ namespace WinState.Services
         {
             string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
             int counter = 0;
-            double number = bytes * 8; // 將 bytes 轉換為 bits
+            double number = bytes * 8; // Convert to bits
 
             while (number >= 1000 && counter < suffixes.Length - 1)
             {
                 counter++;
                 number /= 1000;
+            }
+
+            return string.Format("{0:0.##} {1}", number, suffixes[counter]);
+        }
+
+        private static string BytesToReadable(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            double number = bytes;
+
+            while (number >= 1024 && counter < suffixes.Length - 1)
+            {
+                counter++;
+                number /= 1024;
             }
 
             return string.Format("{0:0.##} {1}", number, suffixes[counter]);
@@ -534,7 +592,7 @@ namespace WinState.Services
                 GpuUsage = GetGpuUsage();
 
                 // Get RAM usage
-                RamUsage = GetRamUsage();
+                UpdateRamData();
 
                 // Get Disk usage
                 DiskUsage = GetDiskUsage();
@@ -748,6 +806,78 @@ namespace WinState.Services
             _computer.Close();
             _uploadCounter?.Close();
             _downloadCounter?.Close();
+        }
+        private void UpdateRamData()
+        {
+            try
+            {
+                if (_ramAvailableCounter != null)
+                {
+                    RamFree = (long)_ramAvailableCounter.NextValue();
+                    RamUsed = RamTotal - RamFree;
+                    RamUsage = (double)RamUsed / RamTotal * 100.0;
+                }
+
+                if (_ramWiredCounter != null)
+                {
+                    RamWired = (long)_ramWiredCounter.NextValue();
+                }
+
+                if (_ramCompressedCounter != null)
+                {
+                    RamCompressed = (long)_ramCompressedCounter.NextValue();
+                }
+                else
+                {
+                    RamCompressed = 0;
+                }
+
+                // App memory approximation
+                RamApp = RamUsed - RamWired - RamCompressed;
+                if (RamApp < 0) RamApp = 0;
+
+                UpdateTopMemoryProcesses();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating RAM data: {ex.Message}");
+            }
+        }
+
+        private void UpdateTopMemoryProcesses()
+        {
+            try
+            {
+                var processes = Process.GetProcesses();
+                var memProcesses = new List<MemoryProcessInfo>();
+
+                foreach (var p in processes)
+                {
+                    try
+                    {
+                        if (p.Id == 0) continue;
+                        memProcesses.Add(new MemoryProcessInfo
+                        {
+                            Name = p.ProcessName,
+                            Id = p.Id,
+                            MemoryUsage = p.WorkingSet64,
+                            FormattedMemoryUsage = BytesToReadable(p.WorkingSet64)
+                        });
+                    }
+                    catch { }
+                }
+
+                _cachedTopMemoryProcesses = memProcesses.OrderByDescending(p => p.MemoryUsage).Take(5).ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating top memory processes: {ex.Message}");
+            }
+        }
+
+        public List<MemoryProcessInfo> GetTopMemoryProcesses()
+        {
+            return _cachedTopMemoryProcesses;
         }
     }
 }

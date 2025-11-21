@@ -18,4 +18,6 @@ namespace WinState.ViewModels.Windows
             InitializeComponent();
         }
     }
+
+
 }

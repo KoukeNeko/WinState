@@ -126,6 +126,22 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty]
         private string _powerToolTip;
 
+        [ObservableProperty]
+        private ObservableCollection<SystemInfoService.MemoryProcessInfo> _topMemoryProcesses = new ObservableCollection<SystemInfoService.MemoryProcessInfo>();
+
+        // RAM Properties
+        public string RamTotalString => BytesToReadable(_systemInfoService.RamTotal);
+        public string RamUsedString => BytesToReadable(_systemInfoService.RamUsed);
+        public string RamFreeString => BytesToReadable(_systemInfoService.RamFree);
+        public string RamCompressedString => BytesToReadable(_systemInfoService.RamCompressed);
+        public string RamAppString => BytesToReadable(_systemInfoService.RamApp);
+        public string RamWiredString => BytesToReadable(_systemInfoService.RamWired);
+
+        [ObservableProperty]
+        private PointCollection _ramHistoryPoints = new PointCollection();
+
+        private Queue<double> _ramHistory = new Queue<double>();
+
         private const int MaxHistoryLength = 20;
 
         public MainWindowViewModel()
@@ -133,7 +149,14 @@ namespace WinState.ViewModels.Windows
             _systemInfoService = new SystemInfoService();
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
+            
+            // Initialize RAM history
+            for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);
         }
+        
+        // ... (OnDataUpdated is fine)
+
+
 
         private void OnDataUpdated(object? sender, EventArgs e)
         {
@@ -154,6 +177,7 @@ namespace WinState.ViewModels.Windows
                 OnPropertyChanged(nameof(NetworkUploadText));
 
                 UpdateCpuHistory();
+                UpdateRamDetails();
                 UpdateCores();
                 UpdateTrayIcons();
             });
@@ -287,6 +311,64 @@ namespace WinState.ViewModels.Windows
             {
                 TopProcesses.Add(p);
             }
+        }
+
+        private void UpdateRamDetails()
+        {
+            OnPropertyChanged(nameof(RamTotalString));
+            OnPropertyChanged(nameof(RamUsedString));
+            OnPropertyChanged(nameof(RamFreeString));
+            OnPropertyChanged(nameof(RamCompressedString));
+            OnPropertyChanged(nameof(RamAppString));
+            OnPropertyChanged(nameof(RamWiredString));
+
+            // Update History
+            _ramHistory.Enqueue(RamUsage);
+            if (_ramHistory.Count > 60) _ramHistory.Dequeue();
+
+            var points = new PointCollection();
+            double graphHeight = 100;
+            double graphWidth = 280;
+            double step = graphWidth / 59.0;
+            int x = 0;
+            
+            // Add bottom-left point for filled area
+            points.Add(new System.Windows.Point(0, graphHeight));
+
+            foreach (var val in _ramHistory)
+            {
+                double y = graphHeight - (val / 100.0 * graphHeight);
+                points.Add(new System.Windows.Point(x * step, y));
+                x++;
+            }
+            
+            // Add bottom-right point for filled area
+            points.Add(new System.Windows.Point(graphWidth, graphHeight));
+
+            if (points.CanFreeze) points.Freeze();
+            RamHistoryPoints = points;
+
+            var processes = _systemInfoService.GetTopMemoryProcesses();
+            TopMemoryProcesses.Clear();
+            foreach (var p in processes)
+            {
+                TopMemoryProcesses.Add(p);
+            }
+        }
+
+        private static string BytesToReadable(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            double number = bytes;
+
+            while (number >= 1024 && counter < suffixes.Length - 1)
+            {
+                counter++;
+                number /= 1024;
+            }
+
+            return string.Format("{0:0.##} {1}", number, suffixes[counter]);
         }
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]

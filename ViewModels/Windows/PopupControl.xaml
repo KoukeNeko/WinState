@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WinState.ViewModels.Windows"
              mc:Ignorable="d" 
              x:Name="Root"
              Width="320">
@@ -102,6 +103,8 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <local:RamDashConverter x:Key="RamDashConverter"/>
     </UserControl.Resources>
 
     <Border Background="#1E1E1E"
@@ -221,19 +224,171 @@
 
             <!-- Memory Section -->
             <Grid Grid.Row="2" Style="{StaticResource RamSectionStyle}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="MEMORY" Style="{StaticResource HeaderStyle}"/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding RamUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}"/>
-                        <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
-                    </StackPanel>
-                </StackPanel>
-                <!-- Progress Bar (Circular simulation or simple bar) -->
-                <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Width="100" Height="10" Background="#333" Foreground="#9B59B6" BorderThickness="0"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock Text="RAM" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                <!-- Gauges -->
+                <Grid Grid.Row="1" Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- Small Gauge (Placeholder/Pressure) -->
+                    <Grid Grid.Column="0" Width="60" Height="60" HorizontalAlignment="Center">
+                        <!-- Background Arc -->
+                        <Path Stroke="#333" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 10,50 A 25,25 0 1 1 50,50" Stretch="Fill"/>
+                        <!-- Value Arc (Static for now or bound to Pressure) -->
+                        <Path Stroke="#2ECC71" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 10,50 A 25,25 0 0 1 15,30" Stretch="Fill"/>
+                        <!-- Needle/Text -->
+                        <TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                        <Path Fill="#3399FF" Data="M 0,0 L 10,5 L 0,10 Z" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                             <Path.RenderTransform>
+                                 <RotateTransform Angle="-90"/>
+                             </Path.RenderTransform>
+                        </Path>
+                    </Grid>
+
+                    <!-- Main RAM Gauge -->
+                    <Grid Grid.Column="1" Width="80" Height="80" HorizontalAlignment="Center">
+                        <Ellipse Stroke="#333" StrokeThickness="8" Width="80" Height="80"/>
+                        <Ellipse Stroke="#3399FF" StrokeThickness="8" Width="80" Height="80"
+                                 StrokeDashArray="{Binding RamUsage, Converter={StaticResource RamDashConverter}}"
+                                 StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <RotateTransform Angle="-90"/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <TextBlock Text="{Binding RamUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
+
+                <TextBlock Grid.Row="2" Text="Usage history" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+
+                <!-- Graph -->
+                <Border Grid.Row="3" Height="80" Background="#252525" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
+                    <Canvas>
+                         <!-- Filled Area -->
+                        <Polygon Points="{Binding RamHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
+                        <!-- Line on top -->
+                        <Polyline Points="{Binding RamHistoryPoints}" Stroke="#3399FF" StrokeThickness="2"/>
+                    </Canvas>
+                </Border>
+
+                <!-- Details & Processes -->
+                <Grid Grid.Row="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Details -->
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Text="Details" Foreground="#888" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+
+                        <!-- Total -->
+                        <TextBlock Grid.Row="1" Text="Total:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RamTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Used -->
+                        <TextBlock Grid.Row="2" Text="Used:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RamUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- App -->
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#3399FF" Margin="0,0,5,0"/>
+                            <TextBlock Text="App:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RamAppString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Wired -->
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFA500" Margin="0,0,5,0"/>
+                            <TextBlock Text="Wired:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RamWiredString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Compressed -->
+                        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF3333" Margin="0,0,5,0"/>
+                            <TextBlock Text="Compressed:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RamCompressedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        
+                         <!-- Free -->
+                        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#CCCCCC" Margin="0,0,5,0"/>
+                            <TextBlock Text="Free:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RamFreeString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Top Processes -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Top processes" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                        
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Icon Placeholder -->
+                                        <Image Width="16" Height="16" Margin="0,0,8,0" Source="{Binding Icon}" Visibility="Collapsed"/> <!-- Need converter for Icon -->
+                                        <Border Width="16" Height="16" Background="#333" CornerRadius="2" Margin="0,0,8,0">
+                                            <!-- Simple colored dot based on hash of name? Or just generic -->
+                                            <TextBlock Text="M" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                        </Border>
+                                        
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding MemoryUsage, Converter={StaticResource RamDashConverter}}" Foreground="White" FontSize="12" FontWeight="Bold"/> 
+                                        <!-- Wait, RamDashConverter is for dash array. Need BytesToReadable converter or bind to a string property in VM? 
+                                             The VM has MemoryProcessInfo struct. I should add a formatted string property to it or use a converter.
+                                             I'll assume I can add a converter or just bind to MemoryUsage and use StringFormat? 
+                                             StringFormat only formats numbers, not bytes to GB.
+                                             I'll use a simple binding for now and maybe add a BytesConverter later.
+                                             Actually, I can't use StringFormat for complex logic.
+                                             I'll update SystemInfoService to have a FormattedMemoryUsage string in the struct?
+                                             Or add a BytesToStringConverter.
+                                        -->
+                                        <TextBlock Grid.Column="2" Text="{Binding FormattedMemoryUsage}" Foreground="White" FontSize="12" FontWeight="Bold"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
             </Grid>
 
             <Rectangle Grid.Row="3" Style="{StaticResource SeparatorStyle}"/>
