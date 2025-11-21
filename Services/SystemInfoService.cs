@@ -1028,13 +1028,14 @@ namespace WinState.Services
                             Name = p.ProcessName,
                             Id = p.Id,
                             MemoryUsage = p.WorkingSet64,
-                            FormattedMemoryUsage = BytesToReadable(p.WorkingSet64)
+                            FormattedMemoryUsage = BytesToReadable(p.WorkingSet64),
+                            Icon = GetProcessIcon(p)
                         });
                     }
                     catch { }
                 }
 
-                _cachedTopMemoryProcesses = memProcesses.OrderByDescending(p => p.MemoryUsage).Take(5).ToList();
+                _cachedTopMemoryProcesses = memProcesses.OrderByDescending(p => p.MemoryUsage).Take(15).ToList();
             }
             catch (Exception ex)
             {

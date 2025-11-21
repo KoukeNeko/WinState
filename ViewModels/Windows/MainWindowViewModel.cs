@@ -75,6 +75,13 @@ namespace WinState.ViewModels.Windows
         }
     }
 
+    public class MemoryProcessViewModel
+    {
+        public string Name { get; set; }
+        public string FormattedMemoryUsage { get; set; }
+        public ImageSource? Icon { get; set; }
+    }
+
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -166,7 +173,7 @@ namespace WinState.ViewModels.Windows
         private string _powerToolTip;
 
         [ObservableProperty]
-        private ObservableCollection<SystemInfoService.MemoryProcessInfo> _topMemoryProcesses = new ObservableCollection<SystemInfoService.MemoryProcessInfo>();
+        private ObservableCollection<MemoryProcessViewModel> _topMemoryProcesses = new ObservableCollection<MemoryProcessViewModel>();
 
         // RAM Properties
         public string RamTotalString => BytesToReadable(_systemInfoService.RamTotal);
@@ -185,6 +192,12 @@ namespace WinState.ViewModels.Windows
 
         [ObservableProperty]
         private PointCollection _ramHistoryPoints = new PointCollection();
+
+        [ObservableProperty]
+        private double _ramPressureAngle = -135;
+
+        [ObservableProperty]
+        private DoubleCollection _ramStrokeDashArray = new DoubleCollection { 0, 100 };
 
         private Queue<double> _ramHistory = new Queue<double>();
 
@@ -293,7 +306,7 @@ namespace WinState.ViewModels.Windows
             PowerToolTip = $"PWR: {CpuPower}W";
         }
 
-        private ImageSource ToImageSource(Drawing.Icon icon)
+        private ImageSource ToImageSource(Drawing.Icon icon, bool dispose = true)
         {
             try
             {
@@ -306,8 +319,11 @@ namespace WinState.ViewModels.Windows
             }
             finally
             {
-                DestroyIcon(icon.Handle);
-                icon.Dispose();
+                if (dispose)
+                {
+                    DestroyIcon(icon.Handle);
+                    icon.Dispose();
+                }
             }
         }
 
@@ -371,7 +387,7 @@ namespace WinState.ViewModels.Windows
                 {
                     try
                     {
-                        iconSrc = ToImageSource(p.Icon);
+                        iconSrc = ToImageSource(p.Icon, false);
                     }
                     catch { }
                 }
@@ -427,11 +443,36 @@ namespace WinState.ViewModels.Windows
             if (points.CanFreeze) points.Freeze();
             RamHistoryPoints = points;
 
+            // Update Pressure Gauge Angle (-135 to 135)
+            RamPressureAngle = (RamUsage / 100.0 * 270.0) - 135.0;
+
+            // Update Usage Circle (Circumference approx 226 for r=36)
+            double circumference = 2 * Math.PI * 36;
+            double dash = (RamUsage / 100.0) * circumference;
+            double gap = circumference - dash;
+            RamStrokeDashArray = new DoubleCollection { dash, gap };
+
+
             var processes = _systemInfoService.GetTopMemoryProcesses();
             TopMemoryProcesses.Clear();
             foreach (var p in processes)
             {
-                TopMemoryProcesses.Add(p);
+                ImageSource? iconSrc = null;
+                if (p.Icon != null)
+                {
+                    try
+                    {
+                        iconSrc = ToImageSource(p.Icon, false);
+                    }
+                    catch { }
+                }
+
+                TopMemoryProcesses.Add(new MemoryProcessViewModel
+                {
+                    Name = p.Name,
+                    FormattedMemoryUsage = p.FormattedMemoryUsage,
+                    Icon = iconSrc
+                });
             }
         }
 

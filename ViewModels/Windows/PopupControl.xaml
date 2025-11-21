@@ -333,7 +333,7 @@
                               HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,70,0,0"
                               RenderTransformOrigin="0,0.5">
                              <Path.RenderTransform>
-                                 <RotateTransform Angle="-135"/>
+                                 <RotateTransform Angle="{Binding RamPressureAngle}"/>
                              </Path.RenderTransform>
                         </Path>
                     </Grid>
@@ -342,7 +342,7 @@
                     <Grid Grid.Column="1" Width="80" Height="80" HorizontalAlignment="Center">
                         <Ellipse Stroke="#333" StrokeThickness="8" Width="80" Height="80"/>
                         <Ellipse Stroke="#3399FF" StrokeThickness="8" Width="80" Height="80"
-                                 StrokeDashArray="{Binding RamUsage, Converter={StaticResource RamDashConverter}}"
+                                 StrokeDashArray="{Binding RamStrokeDashArray}"
                                  StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
                             <Ellipse.RenderTransform>
                                 <RotateTransform Angle="-90"/>
@@ -491,6 +491,11 @@
                         <TextBlock Text="Top processes" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
                         
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="0,2">
@@ -500,12 +505,23 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         
-                                        <!-- Icon Placeholder -->
-                                        <Image Width="16" Height="16" Margin="0,0,8,0" Source="{Binding Icon}" Visibility="Collapsed"/> <!-- Need converter for Icon -->
-                                        <Border Width="16" Height="16" Background="#333" CornerRadius="2" Margin="0,0,8,0">
-                                            <!-- Simple colored dot based on hash of name? Or just generic -->
-                                            <TextBlock Text="M" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
-                                        </Border>
+                                        <!-- Icon -->
+                                        <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                            <Border Background="#333" CornerRadius="2">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="M" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                            </Border>
+                                            <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Grid>
                                         
                                         <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="2" Text="{Binding FormattedMemoryUsage}" Foreground="White" FontSize="12" FontWeight="Bold"/>
