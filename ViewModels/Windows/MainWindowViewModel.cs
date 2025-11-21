@@ -419,6 +419,11 @@ namespace WinState.ViewModels.Windows
                     Icon = iconSrc
                 });
             }
+
+            while (TopNetworkProcesses.Count < 15)
+            {
+                TopNetworkProcesses.Add(new NetworkProcessViewModel { Name = "", Upload = "", Download = "", Icon = null });
+            }
         }
 
         private void UpdateCores()
@@ -567,6 +572,11 @@ namespace WinState.ViewModels.Windows
                     Icon = iconSrc
                 });
             }
+
+            while (TopProcesses.Count < 15)
+            {
+                TopProcesses.Add(new ProcessViewModel { Name = "", CpuUsage = 0, Icon = null });
+            }
         }
 
         private void UpdateRamDetails()
@@ -647,6 +657,11 @@ namespace WinState.ViewModels.Windows
                     FormattedMemoryUsage = p.FormattedMemoryUsage,
                     Icon = iconSrc
                 });
+            }
+
+            while (TopMemoryProcesses.Count < 15)
+            {
+                TopMemoryProcesses.Add(new MemoryProcessViewModel { Name = "", FormattedMemoryUsage = "", Icon = null });
             }
         }
 
