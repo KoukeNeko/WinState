@@ -377,7 +377,7 @@
                     </Grid>
                 </StackPanel>
 
-                <TextBlock Grid.Row="2" Text="Usage history" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
                 <!-- Graph -->
                 <Border Grid.Row="3" Height="80" Background="#252525" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
@@ -419,7 +419,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         
-                        <TextBlock Grid.Row="0" Text="Details" Foreground="#888" HorizontalAlignment="Center" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+                        <TextBlock Grid.Row="0" Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
 
                         <!-- Total -->
                         <TextBlock Grid.Row="1" Text="Total:" Foreground="#888" Margin="0,2"/>
@@ -513,7 +513,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Top processes" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                        <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                         
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -588,7 +588,7 @@
                         <TextBlock Text="📊" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#888"/>
                     </Border>
                     
-                    <TextBlock Grid.Column="1" Text="Network" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+                    <TextBlock Grid.Column="1" Text="NETWORK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
                     
                     <!-- Settings Icon (Placeholder) -->
                     <Border Grid.Column="2" Width="24" Height="24" Background="Transparent" CornerRadius="4" Visibility="Collapsed">
@@ -628,7 +628,7 @@
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Grid.Row="2" Text="Usage history" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
                 <!-- Graph -->
                 <Border Grid.Row="3" Height="80" Background="#1E1E1E" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
@@ -660,7 +660,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Details" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,10"/>
 
                     <Grid Grid.Row="1" Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
@@ -702,7 +702,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Top processes" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                        <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                         
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopNetworkProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -775,7 +775,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="Disk" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+                    <TextBlock Grid.Column="1" Text="DISK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
                 </Grid>
 
                 <!-- Disk List -->
@@ -883,7 +883,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="Top processes" Foreground="#888" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                    <TextBlock Text="TOP PROCESSES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                     
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopDiskProcesses}">
                         <ItemsControl.ItemsPanel>
@@ -976,28 +976,31 @@
                 </StackPanel>
 
                 <!-- Details -->
-                <Grid Grid.Row="2" Margin="10,0">
+                <Grid Grid.Row="2" Margin="0,0,0,15">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
+                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+
                     <!-- Memory Used -->
-                    <TextBlock Text="Memory Used:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Column="1" Text="{Binding GpuMemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Row="1" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GpuMemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                     <!-- Memory Total -->
-                    <TextBlock Grid.Row="1" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GpuMemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Row="2" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GpuMemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                     <!-- Temperature -->
-                    <TextBlock Grid.Row="2" Text="Temperature:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GpuTemperature, StringFormat={}{0:F1} °C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Row="3" Text="Temperature:" Foreground="#888" Margin="0,2"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding GpuTemperature, StringFormat={}{0:F1} °C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                 </Grid>
             </Grid>
 
