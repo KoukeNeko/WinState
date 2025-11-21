@@ -151,9 +151,16 @@ namespace WinState.Services
             public bool IsWriting;
             public long ReadSpeed; // Bytes/sec
             public long WriteSpeed; // Bytes/sec
+            
+            // SMART Info
+            public string Model;
+            public double Temperature;
+            public double RemainingLife; // 0-100
+            public double PowerOnHours;
         }
 
         private List<DiskInfo> _cachedDiskInfo = new List<DiskInfo>();
+        private Dictionary<string, string> _driveModelCache = new Dictionary<string, string>();
         
         private class DiskCounter
         {
@@ -1440,6 +1447,28 @@ namespace WinState.Services
                             IsWriting = false
                         };
 
+                        // Get SMART Info
+                        string model = GetPhysicalDiskModel(drive.Name);
+                        info.Model = model;
+                        
+                        if (!string.IsNullOrEmpty(model))
+                        {
+                            var hardware = _diskHardwares.FirstOrDefault(h => h.Name.Equals(model, StringComparison.OrdinalIgnoreCase) || model.Contains(h.Name) || h.Name.Contains(model));
+                            if (hardware != null)
+                            {
+                                hardware.Update();
+                                foreach (var sensor in hardware.Sensors)
+                                {
+                                    if (sensor.SensorType == SensorType.Temperature)
+                                        info.Temperature = sensor.Value ?? 0;
+                                    else if (sensor.Name.Contains("Remaining Life") || sensor.Name.Contains("Life Left"))
+                                        info.RemainingLife = sensor.Value ?? 0;
+                                    else if (sensor.Name.Contains("Power On Hours"))
+                                        info.PowerOnHours = sensor.Value ?? 0;
+                                }
+                            }
+                        }
+
                         // Check activity
                         var counter = _diskCounters.FirstOrDefault(c => c.DriveName == drive.Name);
                         if (counter != null)
@@ -1604,6 +1633,35 @@ namespace WinState.Services
                 }
             }
             DetailedSensors = newList;
+        }
+
+        private string GetPhysicalDiskModel(string driveLetter)
+        {
+            // driveLetter e.g. "C:\"
+            string drive = driveLetter.TrimEnd('\\');
+            if (_driveModelCache.ContainsKey(drive)) return _driveModelCache[drive];
+
+            try
+            {
+                using (var searcher = new ManagementObjectSearcher($"ASSOCIATORS OF {{Win32_LogicalDisk.DeviceID='{drive}'}} WHERE AssocClass=Win32_LogicalDiskToPartition"))
+                {
+                    foreach (var partition in searcher.Get())
+                    {
+                        using (var driveSearcher = new ManagementObjectSearcher($"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partition["DeviceID"]}'}} WHERE AssocClass=Win32_DiskDriveToDiskPartition"))
+                        {
+                            foreach (var disk in driveSearcher.Get())
+                            {
+                                string model = disk["Model"]?.ToString() ?? "";
+                                _driveModelCache[drive] = model;
+                                return model;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            
+            return "";
         }
     }
 }

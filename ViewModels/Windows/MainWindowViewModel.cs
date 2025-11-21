@@ -753,6 +753,13 @@ namespace WinState.ViewModels.Windows
                 vm.ReadIndicatorBrush = info.IsReading ? Brushes.DodgerBlue : Brushes.Gray;
                 vm.WriteIndicatorBrush = info.IsWriting ? Brushes.Red : Brushes.Gray;
 
+                // SMART Info
+                vm.Model = info.Model;
+                vm.TemperatureString = info.Temperature > 0 ? $"{info.Temperature:F0}°C" : "";
+                vm.HealthString = info.RemainingLife > 0 ? $"{info.RemainingLife:F0}%" : "";
+                vm.PowerOnHoursString = info.PowerOnHours > 0 ? $"{info.PowerOnHours / 24.0:F0}d" : ""; // Convert hours to days? Or keep hours. Let's use hours.
+                if (info.PowerOnHours > 0) vm.PowerOnHoursString = $"{info.PowerOnHours:F0}h";
+
                 // Update Per-Disk Graph
                 vm.UpdateGraph(info.ReadSpeed, info.WriteSpeed);
             }
@@ -1022,6 +1029,12 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private Brush _readIndicatorBrush = Brushes.Gray;
         [ObservableProperty] private Brush _writeIndicatorBrush = Brushes.Gray;
         [ObservableProperty] private string _diskFreeSpaceString = "";
+
+        // SMART Info
+        [ObservableProperty] private string _model = "";
+        [ObservableProperty] private string _temperatureString = "";
+        [ObservableProperty] private string _healthString = "";
+        [ObservableProperty] private string _powerOnHoursString = "";
 
         // Graph Properties
         [ObservableProperty] private PointCollection _readHistoryPoints = new PointCollection();
