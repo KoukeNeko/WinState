@@ -30,13 +30,22 @@ namespace WinState.ViewModels.Windows
             CurrentUsage = history.LastOrDefault();
             
             var points = new PointCollection();
+            
+            // Start at bottom-left
+            points.Add(new System.Windows.Point(0, 100));
+
             int x = 0;
+            int step = 5;
             foreach (var val in history)
             {
-                points.Add(new System.Windows.Point(x * 5, 100 - val)); // Assuming 100 height, 5px width per step
+                points.Add(new System.Windows.Point(x * step, 100 - val));
                 x++;
             }
             
+            // End at bottom-right
+            // x is now history.Count
+            points.Add(new System.Windows.Point((x - 1) * step, 100));
+
             if (points.CanFreeze) points.Freeze();
             HistoryPoints = points;
             
