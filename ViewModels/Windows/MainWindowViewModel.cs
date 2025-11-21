@@ -175,6 +175,37 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty]
         private ObservableCollection<MemoryProcessViewModel> _topMemoryProcesses = new ObservableCollection<MemoryProcessViewModel>();
 
+        // Network Properties
+        public string LocalIpAddress => _systemInfoService.LocalIpAddress;
+        public string PublicIpAddress => _systemInfoService.PublicIpAddress;
+        public string MacAddress => _systemInfoService.MacAddress;
+        public string InterfaceDescription => _systemInfoService.InterfaceDescription;
+        public string NetworkName => _systemInfoService.NetworkName;
+
+        [ObservableProperty]
+        private PointCollection _networkUploadHistoryPoints = new PointCollection();
+        [ObservableProperty]
+        private PointCollection _networkDownloadHistoryPoints = new PointCollection();
+        
+        [ObservableProperty]
+        private string _networkMaxUploadString = "0 KB/s";
+        [ObservableProperty]
+        private string _networkMaxDownloadString = "0 KB/s";
+
+        [ObservableProperty]
+        private string _networkUploadValueString = "0.0";
+        [ObservableProperty]
+        private string _networkUploadUnitString = "KB/s";
+        [ObservableProperty]
+        private string _networkDownloadValueString = "0.0";
+        [ObservableProperty]
+        private string _networkDownloadUnitString = "KB/s";
+
+        private Queue<double> _netUploadHistory = new Queue<double>();
+        private Queue<double> _netDownloadHistory = new Queue<double>();
+        private double _maxUploadSeen = 1024; // Start with 1KB to avoid div/0
+        private double _maxDownloadSeen = 1024;
+
         // RAM Properties
         public string RamTotalString => BytesToReadable(_systemInfoService.RamTotal);
         public string RamUsedString => BytesToReadable(_systemInfoService.RamUsed);
@@ -212,6 +243,13 @@ namespace WinState.ViewModels.Windows
             // Initialize RAM history
             for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);
             
+            // Initialize Network history
+            for (int i = 0; i < 60; i++) 
+            {
+                _netUploadHistory.Enqueue(0);
+                _netDownloadHistory.Enqueue(0);
+            }
+
             // Initialize tray icons to prevent binding errors
             UpdateTrayIcons();
         }
@@ -248,9 +286,104 @@ namespace WinState.ViewModels.Windows
 
                 UpdateCpuHistory();
                 UpdateRamDetails();
+                UpdateNetworkDetails();
                 UpdateCores();
                 UpdateTrayIcons();
             });
+        }
+
+        private void UpdateNetworkDetails()
+        {
+            OnPropertyChanged(nameof(LocalIpAddress));
+            OnPropertyChanged(nameof(PublicIpAddress));
+            OnPropertyChanged(nameof(MacAddress));
+            OnPropertyChanged(nameof(InterfaceDescription));
+            OnPropertyChanged(nameof(NetworkName));
+
+            double currentUpload = NetworkUploadText; // Bytes/sec
+            double currentDownload = NetworkDownloadText; // Bytes/sec
+
+            // Update Display Strings
+            var upParts = SpeedHumanReadableParts((long)currentUpload);
+            NetworkUploadValueString = upParts.Value;
+            NetworkUploadUnitString = upParts.Unit;
+
+            var downParts = SpeedHumanReadableParts((long)currentDownload);
+            NetworkDownloadValueString = downParts.Value;
+            NetworkDownloadUnitString = downParts.Unit;
+
+            _netUploadHistory.Enqueue(currentUpload);
+            _netDownloadHistory.Enqueue(currentDownload);
+
+            if (_netUploadHistory.Count > 60) _netUploadHistory.Dequeue();
+            if (_netDownloadHistory.Count > 60) _netDownloadHistory.Dequeue();
+
+            // Update Max seen in current window (or global, but window is better for graph scaling)
+            // Let's use a sliding window max or decay
+            double localMaxUp = _netUploadHistory.Max();
+            double localMaxDown = _netDownloadHistory.Max();
+            
+            if (localMaxUp > _maxUploadSeen) _maxUploadSeen = localMaxUp;
+            else _maxUploadSeen = _maxUploadSeen * 0.95 + localMaxUp * 0.05; // Decay
+
+            if (localMaxDown > _maxDownloadSeen) _maxDownloadSeen = localMaxDown;
+            else _maxDownloadSeen = _maxDownloadSeen * 0.95 + localMaxDown * 0.05; // Decay
+
+            // Ensure min scale
+            double scaleUp = Math.Max(_maxUploadSeen, 1024); 
+            double scaleDown = Math.Max(_maxDownloadSeen, 1024);
+
+            NetworkMaxUploadString = SpeedHumanReadable((long)scaleUp);
+            NetworkMaxDownloadString = SpeedHumanReadable((long)scaleDown);
+
+            // Generate Points
+            // Graph Height = 80 total. Split into 40 up, 40 down? 
+            // Or two separate graphs overlaid? The image shows one graph area.
+            // Let's assume the graph area is 80px height.
+            // Center line at 40?
+            // Or maybe just two separate paths in the same container.
+            // Let's map 0..Max -> 0..40
+            
+            double graphHeight = 40; // Half height
+            double graphWidth = 280;
+            double step = graphWidth / 59.0;
+
+            var upPoints = new PointCollection();
+            var downPoints = new PointCollection();
+
+            // Start points (Center line)
+            upPoints.Add(new System.Windows.Point(0, graphHeight));
+            downPoints.Add(new System.Windows.Point(0, graphHeight));
+
+            int x = 0;
+            var upArr = _netUploadHistory.ToArray();
+            var downArr = _netDownloadHistory.ToArray();
+
+            for (int i = 0; i < upArr.Length; i++)
+            {
+                double uVal = upArr[i];
+                double dVal = downArr[i];
+
+                // Upload goes UP from center (40 -> 0)
+                double yUp = graphHeight - (uVal / scaleUp * graphHeight);
+                
+                // Download goes DOWN from center (40 -> 80)
+                double yDown = graphHeight + (dVal / scaleDown * graphHeight);
+
+                upPoints.Add(new System.Windows.Point(x * step, yUp));
+                downPoints.Add(new System.Windows.Point(x * step, yDown));
+                x++;
+            }
+
+            // End points (Center line)
+            upPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+            downPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
+
+            if (upPoints.CanFreeze) upPoints.Freeze();
+            if (downPoints.CanFreeze) downPoints.Freeze();
+
+            NetworkUploadHistoryPoints = upPoints;
+            NetworkDownloadHistoryPoints = downPoints;
         }
 
         private void UpdateCores()
@@ -513,6 +646,21 @@ namespace WinState.ViewModels.Windows
             }
 
             return string.Format("{0:0.##} {1}", number, suffixes[counter]);
+        }
+
+        private static (string Value, string Unit) SpeedHumanReadableParts(long bytes)
+        {
+            string[] suffixes = { "bps", "Kbps", "Mbps", "Gbps", "Tbps" };
+            int counter = 0;
+            double number = bytes * 8; 
+
+            while (number >= 1000 && counter < suffixes.Length - 1)
+            {
+                counter++;
+                number /= 1000;
+            }
+
+            return (number.ToString("0.0"), suffixes[counter]);
         }
 
 

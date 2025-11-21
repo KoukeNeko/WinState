@@ -4,6 +4,8 @@ using System.Management;
 using System.Net.NetworkInformation;
 using System.Timers;
 using Drawing = System.Drawing;
+using System.Net.Http;
+using System.Net;
 
 namespace WinState.Services
 {
@@ -93,7 +95,11 @@ namespace WinState.Services
         private Dictionary<string, long> previousReceived = new Dictionary<string, long>();
 
         public string PrimaryExternalInterface { get; private set; } = "";
-
+        public string LocalIpAddress { get; private set; } = "";
+        public string MacAddress { get; private set; } = "";
+        public string InterfaceDescription { get; private set; } = "";
+        public string PublicIpAddress { get; private set; } = "";
+        public string NetworkName { get; private set; } = "";
 
         public SystemInfoService()
         {
@@ -125,6 +131,22 @@ namespace WinState.Services
             InitializePreviousValues();
             InitializeCpuCounters();
             InitializeRamCounters();
+            
+            // Initial fetch of Public IP (async)
+            Task.Run(async () => await FetchPublicIpAsync());
+        }
+
+        private async Task FetchPublicIpAsync()
+        {
+            try
+            {
+                using var client = new HttpClient();
+                PublicIpAddress = await client.GetStringAsync("https://api.ipify.org");
+            }
+            catch
+            {
+                PublicIpAddress = "Unavailable";
+            }
         }
 
         private void InitializeRamCounters()
@@ -198,6 +220,21 @@ namespace WinState.Services
                 {
                     maxTraffic = totalTraffic;
                     maxInterface = adapter.Description;
+                    
+                    // Update Details for the active interface
+                    InterfaceDescription = adapter.Name + " (" + adapter.Description + ")";
+                    MacAddress = adapter.GetPhysicalAddress().ToString();
+                    if (MacAddress.Length > 0)
+                    {
+                        MacAddress = string.Join(":", Enumerable.Range(0, MacAddress.Length / 2).Select(i => MacAddress.Substring(i * 2, 2)));
+                    }
+
+                    var ipProps = adapter.GetIPProperties();
+                    var ipv4 = ipProps.UnicastAddresses.FirstOrDefault(ip => ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+                    LocalIpAddress = ipv4?.Address.ToString() ?? "N/A";
+                    
+                    // Try to get SSID if WiFi (This is tricky without Managed Wifi API, so we might just use Description or Name)
+                    NetworkName = adapter.Name; 
                 }
 
                 Debug.WriteLine(adapter.Description);
