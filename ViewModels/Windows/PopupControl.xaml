@@ -129,23 +129,86 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="CPU" Style="{StaticResource HeaderStyle}"/>
                 
-                <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <TextBlock Text="{Binding CpuUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}"/>
-                    <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
+                <!-- Header -->
+                <TextBlock Text="CPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                
+                <!-- Graph -->
+                <Border Grid.Row="1" Height="100" Background="#1E1E1E" BorderBrush="#333" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+                    <Grid>
+                        <!-- Grid Lines -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1"/>
+                            <Border Grid.Row="1" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1"/>
+                            <Border Grid.Row="2" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1"/>
+                        </Grid>
+                        
+                        <!-- Graphs -->
+                        <Canvas>
+                            <!-- Kernel Time (Red) -->
+                            <Polyline Points="{Binding CpuKernelHistoryPoints, Mode=OneWay}"
+                                      Stroke="#E74C3C"
+                                      StrokeThickness="1.5"
+                                      Fill="#40E74C3C"/>
+                                      
+                            <!-- User Time (Blue) -->
+                            <Polyline Points="{Binding CpuUserHistoryPoints, Mode=OneWay}"
+                                      Stroke="#3498DB"
+                                      StrokeThickness="1.5"
+                                      Fill="#403498DB"/>
+                        </Canvas>
+                    </Grid>
+                </Border>
+                
+                <!-- Legend -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,15">
+                    <Rectangle Width="10" Height="10" Fill="#3498DB" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
+                    <TextBlock Text="User" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+                    
+                    <Rectangle Width="10" Height="10" Fill="#E74C3C" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
+                    <TextBlock Text="System" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+                    
+                    <TextBlock Text="{Binding CpuUsage, StringFormat={}Total: {0:0}%}" Foreground="White" FontSize="12" FontWeight="Bold" Margin="20,0,0,0"/>
                 </StackPanel>
 
-                <!-- Graph -->
-                <Border Grid.Row="2" Height="80" Margin="0,10,0,0" Background="#252525" CornerRadius="4" ClipToBounds="True">
-                    <Canvas>
-                        <Polyline Points="{Binding CpuHistoryPoints, Mode=OneWay}"
-                                  Stroke="#007ACC"
-                                  StrokeThickness="2"
-                                  Fill="#33007ACC"/>
-                    </Canvas>
-                </Border>
+                <!-- Process List -->
+                <Grid Grid.Row="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+                    
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Icon Placeholder (could be actual icon later) -->
+                                    <Border Width="16" Height="16" Background="#333" CornerRadius="2" Margin="0,0,8,0">
+                                        <TextBlock Text=">" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                    </Border>
+                                    
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding CpuUsage, StringFormat={}{0:0.0}%}" Foreground="White" FontSize="12" FontWeight="Bold"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
             </Grid>
 
             <Rectangle Grid.Row="1" Style="{StaticResource SeparatorStyle}"/>

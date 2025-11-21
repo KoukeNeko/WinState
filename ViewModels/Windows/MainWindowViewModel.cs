@@ -173,34 +173,64 @@ namespace WinState.ViewModels.Windows
             }
         }
 
+        [ObservableProperty]
+        private PointCollection _cpuUserHistoryPoints = new PointCollection();
+
+        [ObservableProperty]
+        private PointCollection _cpuKernelHistoryPoints = new PointCollection();
+
+        [ObservableProperty]
+        private ObservableCollection<SystemInfoService.ProcessInfo> _topProcesses = new ObservableCollection<SystemInfoService.ProcessInfo>();
+
         private void UpdateCpuHistory()
         {
             double graphHeight = 80;
             double graphWidth = 280; 
-            double step = graphWidth / (MaxHistoryLength - 1);
+            // Use 60 points for 1 minute history
+            int historyLength = 60;
+            double step = graphWidth / (historyLength - 1);
 
-            var newPoints = new PointCollection();
-            
-            if (_cpuHistoryValues == null) _cpuHistoryValues = new List<double>();
-            
-            _cpuHistoryValues.Add(CpuUsage);
-            if (_cpuHistoryValues.Count > MaxHistoryLength)
-            {
-                _cpuHistoryValues.RemoveAt(0);
-            }
-
-            for (int i = 0; i < _cpuHistoryValues.Count; i++)
+            // Update User History Points
+            var newUserPoints = new PointCollection();
+            var userHistory = _systemInfoService.CpuUserHistory.ToArray();
+            for (int i = 0; i < userHistory.Length; i++)
             {
                 double x = i * step;
-                double y = graphHeight - (_cpuHistoryValues[i] / 100.0 * graphHeight);
-                newPoints.Add(new System.Windows.Point(x, y));
+                // Ensure we don't go below 0 or above height
+                double val = userHistory[i];
+                if (val > 100) val = 100;
+                if (val < 0) val = 0;
+                
+                double y = graphHeight - (val / 100.0 * graphHeight);
+                newUserPoints.Add(new System.Windows.Point(x, y));
             }
+            newUserPoints.Freeze();
+            CpuUserHistoryPoints = newUserPoints;
 
-            newPoints.Freeze();
-            CpuHistoryPoints = newPoints;
+            // Update Kernel History Points
+            var newKernelPoints = new PointCollection();
+            var kernelHistory = _systemInfoService.CpuKernelHistory.ToArray();
+            for (int i = 0; i < kernelHistory.Length; i++)
+            {
+                double x = i * step;
+                double val = kernelHistory[i];
+                if (val > 100) val = 100;
+                if (val < 0) val = 0;
+
+                double y = graphHeight - (val / 100.0 * graphHeight);
+                newKernelPoints.Add(new System.Windows.Point(x, y));
+            }
+            newKernelPoints.Freeze();
+            CpuKernelHistoryPoints = newKernelPoints;
+
+            // Update Top Processes
+            var processes = _systemInfoService.GetTopProcesses();
+            TopProcesses.Clear();
+            foreach (var p in processes)
+            {
+                TopProcesses.Add(p);
+            }
         }
-
-        private List<double> _cpuHistoryValues;
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         extern static bool DestroyIcon(IntPtr handle);
