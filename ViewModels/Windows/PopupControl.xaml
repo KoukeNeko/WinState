@@ -242,19 +242,30 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
-                    <!-- Small Gauge (Placeholder/Pressure) -->
-                    <Grid Grid.Column="0" Width="60" Height="60" HorizontalAlignment="Center">
+                    <!-- Memory Pressure Gauge (3 Levels) -->
+                    <Grid Grid.Column="0" Width="80" Height="80" HorizontalAlignment="Center">
                         <!-- Background Arc -->
-                        <Path Stroke="#333" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 10,50 A 25,25 0 1 1 50,50" Stretch="Fill"/>
-                        <!-- Value Arc (Static for now or bound to Pressure) -->
-                        <Path Stroke="#2ECC71" StrokeThickness="6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 10,50 A 25,25 0 0 1 15,30" Stretch="Fill"/>
-                        <!-- Needle/Text -->
-                        <TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
-                        <Path Fill="#3399FF" Data="M 0,0 L 10,5 L 0,10 Z" Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                        <Path Stroke="#333" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 15,70 A 35,35 0 1 1 65,70" />
+                        
+                        <!-- Level 1 (Low) - Green (0-33%) -->
+                        <Path Stroke="#2ECC71" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 15,70 A 35,35 0 0 1 28,25" />
+                        
+                        <!-- Level 2 (Medium) - Yellow (33-66%) -->
+                        <Path Stroke="#F1C40F" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 28,25 A 35,35 0 0 1 52,25" />
+                        
+                        <!-- Level 3 (High) - Red (66-100%) -->
+                        <Path Stroke="#E74C3C" StrokeThickness="8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M 52,25 A 35,35 0 0 1 65,70" />
+                        
+                        <!-- Pressure Indicator Needle -->
+                        <Path Fill="#3399FF" Data="M 0,0 L 12,6 L 0,12 Z" Width="12" Height="12" 
+                              HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,70,0,0"
+                              RenderTransformOrigin="0,0.5">
                              <Path.RenderTransform>
-                                 <RotateTransform Angle="-90"/>
+                                 <RotateTransform Angle="-135"/>
                              </Path.RenderTransform>
                         </Path>
                     </Grid>
@@ -396,7 +407,10 @@
                         <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding RamCommittedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Commit Limit -->
-                        <TextBlock Grid.Row="13" Text="Commit Limit:" Foreground="#888" Margin="0,2"/>
+                        <StackPanel Grid.Row="13" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFE680" Margin="0,0,5,0"/>
+                            <TextBlock Text="Commit Limit:" Foreground="#888"/>
+                        </StackPanel>
                         <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding RamCommitLimitString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                     </Grid>
 
