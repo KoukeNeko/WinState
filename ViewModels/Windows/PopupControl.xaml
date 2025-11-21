@@ -681,7 +681,7 @@
 
                         <!-- Local IP -->
                         <TextBlock Grid.Row="1" Text="Local IP:" Foreground="#888" Margin="0,2"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LocalIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LocalIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right" TextWrapping="Wrap"/>
 
                         <!-- Interface -->
                         <TextBlock Grid.Row="2" Text="Interface:" Foreground="#888" Margin="0,2"/>

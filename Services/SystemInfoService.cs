@@ -329,8 +329,11 @@ namespace WinState.Services
                     }
 
                     var ipProps = adapter.GetIPProperties();
-                    var ipv4 = ipProps.UnicastAddresses.FirstOrDefault(ip => ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
-                    LocalIpAddress = ipv4?.Address.ToString() ?? "N/A";
+                    var ips = ipProps.UnicastAddresses
+                        .Where(ip => ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork || ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                        .Select(ip => ip.Address.ToString());
+                    LocalIpAddress = string.Join(Environment.NewLine, ips);
+                    if (string.IsNullOrEmpty(LocalIpAddress)) LocalIpAddress = "N/A";
                     
                     // Try to get SSID if WiFi (This is tricky without Managed Wifi API, so we might just use Description or Name)
                     NetworkName = adapter.Name; 
