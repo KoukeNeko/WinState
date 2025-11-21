@@ -530,28 +530,25 @@ namespace WinState.Services
                 // Get Disk usage
                 DiskUsage = GetDiskUsage();
 
+                // Get Network usage
+                (NetworkUpload, NetworkDownload, NetworkUploadUnit, NetworkDownloadUnit) = GetNetworkUsage();
 
-        
-        // ... inside UpdateDataAsync ...
-        // (NetworkUpload, NetworkDownload, NetworkUploadUnit, NetworkDownloadUnit) = GetNetworkUsage();
-        
-        // Update CPU Breakdown
-        if (_cpuUserCounter != null && _cpuPrivilegedCounter != null)
-        {
-            CpuUserUsage = _cpuUserCounter.NextValue();
-            CpuKernelUsage = _cpuPrivilegedCounter.NextValue();
-            
-            // Update History
-            if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
-            CpuUserHistory.Enqueue(CpuUserUsage);
-            
-            if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
-            CpuKernelHistory.Enqueue(CpuKernelUsage);
-        }
+                // Update CPU Breakdown
+                if (_cpuUserCounter != null && _cpuPrivilegedCounter != null)
+                {
+                    CpuUserUsage = _cpuUserCounter.NextValue();
+                    CpuKernelUsage = _cpuPrivilegedCounter.NextValue();
+                    
+                    // Update History
+                    if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
+                    CpuUserHistory.Enqueue(CpuUserUsage);
+                    
+                    if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
+                    CpuKernelHistory.Enqueue(CpuKernelUsage);
+                }
 
-        // Get CPU power consumption
-        CpuPower = GetCpuPowerFromHardwareMonitor();
-
+                // Get CPU power consumption
+                CpuPower = GetCpuPowerFromHardwareMonitor();
 
                 UpdateNetworkSpeeds();
 

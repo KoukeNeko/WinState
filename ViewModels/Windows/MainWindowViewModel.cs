@@ -109,21 +109,25 @@ namespace WinState.ViewModels.Windows
 
         private void OnDataUpdated(object? sender, EventArgs e)
         {
-            OnPropertyChanged(nameof(CpuUsage));
-            OnPropertyChanged(nameof(GpuUsage));
-            OnPropertyChanged(nameof(RamUsage));
-            OnPropertyChanged(nameof(DiskUsage));
-            OnPropertyChanged(nameof(NetworkUpload));
-            OnPropertyChanged(nameof(NetworkDownload));
-            OnPropertyChanged(nameof(NetworkUploadUnit));
-            OnPropertyChanged(nameof(NetworkDownloadUnit));
-            OnPropertyChanged(nameof(CpuPower));
+            // Ensure all UI updates are on the UI thread
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            {
+                OnPropertyChanged(nameof(CpuUsage));
+                OnPropertyChanged(nameof(GpuUsage));
+                OnPropertyChanged(nameof(RamUsage));
+                OnPropertyChanged(nameof(DiskUsage));
+                OnPropertyChanged(nameof(NetworkUpload));
+                OnPropertyChanged(nameof(NetworkDownload));
+                OnPropertyChanged(nameof(NetworkUploadUnit));
+                OnPropertyChanged(nameof(NetworkDownloadUnit));
+                OnPropertyChanged(nameof(CpuPower));
 
-            OnPropertyChanged(nameof(NetworkDownloadText));
-            OnPropertyChanged(nameof(NetworkUploadText));
+                OnPropertyChanged(nameof(NetworkDownloadText));
+                OnPropertyChanged(nameof(NetworkUploadText));
 
-            UpdateCpuHistory();
-            UpdateTrayIcons();
+                UpdateCpuHistory();
+                UpdateTrayIcons();
+            });
         }
 
         private void UpdateTrayIcons()
