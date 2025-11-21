@@ -16,6 +16,35 @@ using System.Windows.Media.Imaging;
 
 namespace WinState.ViewModels.Windows
 {
+    public class CoreUsageViewModel : INotifyPropertyChanged
+    {
+        public int CoreIndex { get; set; }
+        public PointCollection HistoryPoints { get; set; }
+        public double CurrentUsage { get; set; }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public void Update(Queue<double> history)
+        {
+            CurrentUsage = history.LastOrDefault();
+            
+            var points = new PointCollection();
+            int x = 0;
+            foreach (var val in history)
+            {
+                points.Add(new System.Windows.Point(x * 5, 100 - val)); // Assuming 100 height, 5px width per step
+                x++;
+            }
+            
+            if (points.CanFreeze) points.Freeze();
+            HistoryPoints = points;
+            
+            OnPropertyChanged(nameof(HistoryPoints));
+            OnPropertyChanged(nameof(CurrentUsage));
+        }
+    }
+
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -50,8 +79,7 @@ namespace WinState.ViewModels.Windows
         };
 
         private readonly SystemInfoService _systemInfoService;
-
-        public new event PropertyChangedEventHandler? PropertyChanged;
+        public ObservableCollection<CoreUsageViewModel> Cores { get; private set; } = new ObservableCollection<CoreUsageViewModel>();
 
         public double CpuUsage => _systemInfoService.CpuUsage;
         public double GpuUsage => _systemInfoService.GpuUsage;
@@ -126,8 +154,33 @@ namespace WinState.ViewModels.Windows
                 OnPropertyChanged(nameof(NetworkUploadText));
 
                 UpdateCpuHistory();
+                UpdateCores();
                 UpdateTrayIcons();
             });
+        }
+
+        private void UpdateCores()
+        {
+            var coreHistories = _systemInfoService.CpuCoresHistory;
+            
+            // Initialize if empty
+            if (Cores.Count != coreHistories.Count)
+            {
+                Cores.Clear();
+                foreach (var key in coreHistories.Keys.OrderBy(k => k))
+                {
+                    Cores.Add(new CoreUsageViewModel { CoreIndex = key });
+                }
+            }
+
+            // Update each core
+            foreach (var coreVM in Cores)
+            {
+                if (coreHistories.TryGetValue(coreVM.CoreIndex, out var history))
+                {
+                    coreVM.Update(history);
+                }
+            }
         }
 
         private void UpdateTrayIcons()
@@ -254,10 +307,7 @@ namespace WinState.ViewModels.Windows
             return string.Format("{0:0.##} {1}", number, suffixes[counter]);
         }
 
-        protected new void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+
 
         static Drawing.Icon CreateTextIcon(string text1, string text2)
         {

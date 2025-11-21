@@ -220,32 +220,10 @@ namespace WinState.Services
                             }
                         }
                         break;
-
-                    case HardwareType.Network:
-                        // 新增：利用 LibreHardwareMonitor 初始化網路硬體與感測器
-                        hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
-                        foreach (var sensor in hardware.Sensors)
-                        {
-                            //DEBUG: print all sensors
-                            //Console.WriteLine(sensor.Name);
-
-                            // 依據實際情況，Sensor 名稱可能為 "Upload Speed" 與 "Download Speed"
-                            if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Upload Speed")
-                            {
-
-                                _networkUploadSensor = sensor;
-                            }
-                            else if (sensor.SensorType == SensorType.Throughput && sensor.Name == "Download Speed")
-                            {
-                                _networkDownloadSensor = sensor;
-                            }
-                        }
-                        break;
                 }
             }
         }
 
-        /// <summary>
         /// 判斷指定網卡描述是否為一般使用的網卡，
         /// 若描述中包含排除關鍵字（例如虛擬或特殊網卡關鍵字），則視為不合格。
         /// </summary>
@@ -451,6 +429,10 @@ namespace WinState.Services
 
         public Queue<double> CpuUserHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
         public Queue<double> CpuKernelHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
+        
+        // Per-Core History: Key is Core Index (0, 1, 2...), Value is History Queue
+        public Dictionary<int, Queue<double>> CpuCoresHistory { get; private set; } = new Dictionary<int, Queue<double>>();
+        private List<ISensor> _cpuCoreSensors = new List<ISensor>();
 
         public struct ProcessInfo
         {
@@ -566,6 +548,11 @@ namespace WinState.Services
                     CpuUserUsage = _cpuUserCounter.NextValue();
                     CpuKernelUsage = _cpuPrivilegedCounter.NextValue();
                     
+                    // Fix: Calculate Total CpuUsage from the components to ensure consistency with graph
+                    CpuUsage = CpuUserUsage + CpuKernelUsage;
+                    // Clamp to 100
+                    if (CpuUsage > 100) CpuUsage = 100;
+
                     // Update History
                     if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
                     CpuUserHistory.Enqueue(CpuUserUsage);
@@ -573,12 +560,41 @@ namespace WinState.Services
                     if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
                     CpuKernelHistory.Enqueue(CpuKernelUsage);
                 }
+                else 
+                {
+                    // Fallback if counters are null
+                    CpuUsage = GetCpuUsage();
+                }
 
                 // Get CPU power consumption
                 CpuPower = GetCpuPowerFromHardwareMonitor();
 
                 // Update Process CPU Usage
                 UpdateProcessCpuUsage();
+
+                // Update Per-Core Usage (from LHM)
+                if (_cpuHardware != null)
+                {
+                    // _cpuHardware.Update() is called in GetCpuUsage() if counters failed, 
+                    // OR we should call it here if we rely on it for cores.
+                    // Since we might have used counters for Total, we need to ensure LHM is updated for Cores.
+                    // But GetCpuPowerFromHardwareMonitor() also calls Update().
+                    // Let's ensure it's updated.
+                    _cpuHardware.Update();
+
+                    for (int i = 0; i < _cpuCoreSensors.Count; i++)
+                    {
+                        var sensor = _cpuCoreSensors[i];
+                        double val = sensor.Value.GetValueOrDefault();
+                        
+                        if (CpuCoresHistory.ContainsKey(i))
+                        {
+                            var queue = CpuCoresHistory[i];
+                            if (queue.Count >= 60) queue.Dequeue();
+                            queue.Enqueue(val);
+                        }
+                    }
+                }
 
                 UpdateNetworkSpeeds();
 
