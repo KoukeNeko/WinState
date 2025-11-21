@@ -351,7 +351,7 @@
                 <TextBlock Text="RAM" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
                 <!-- Bars -->
-                <StackPanel Grid.Row="1" Margin="10,0,10,15">
+                <StackPanel Grid.Row="1" Margin="0,0,0,15">
                     <!-- Memory Pressure -->
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
@@ -949,7 +949,7 @@
                 <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 
                 <!-- Bars -->
-                <StackPanel Grid.Row="1" Margin="10,0,10,15">
+                <StackPanel Grid.Row="1" Margin="0,0,0,15">
                     <!-- Processor Usage -->
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
