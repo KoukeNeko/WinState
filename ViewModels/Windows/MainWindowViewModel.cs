@@ -332,6 +332,66 @@ namespace WinState.ViewModels.Windows
             return Icon.FromHandle(bitmap.GetHicon());
         }
 
+        static Icon CreateNetworkIcon(long upload, long download)
+        {
+            // Use SystemInformation.SmallIconSize to get the correct icon size for the current DPI
+            int iconWidth = SystemInformation.SmallIconSize.Width;
+            int iconHeight = SystemInformation.SmallIconSize.Height;
+
+            using var bitmap = new Bitmap(iconWidth, iconHeight);
+            using Graphics g = Graphics.FromImage(bitmap);
+            g.Clear(Color.Transparent);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+            // Define arrows
+            string upArrow = "▲";
+            string downArrow = "▼";
+            string label = "NET";
+
+            // Determine colors based on activity (threshold: 1KB/s = 1024 bytes/s)
+            long threshold = 1024; 
+            
+            // Upload: Red, Download: Light Blue (Cyan)
+            Brush upBrush = upload > threshold ? new SolidBrush(Color.Red) : new SolidBrush(Color.Gray);
+            Brush downBrush = download > threshold ? new SolidBrush(Color.Cyan) : new SolidBrush(Color.Gray);
+            Brush labelBrush = new SolidBrush(Color.White);
+
+            // Calculate font sizes
+            // Label "NET" at top
+            float labelFontSize = iconHeight * 0.30f;
+            // Arrows below
+            float arrowFontSize = iconHeight * 0.40f;
+
+            using (var labelFont = new System.Drawing.Font("Arial", labelFontSize, System.Drawing.FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var arrowFont = new System.Drawing.Font("Arial", arrowFontSize, System.Drawing.FontStyle.Bold, GraphicsUnit.Pixel))
+            {
+                using (var stringFormat = new StringFormat())
+                {
+                    stringFormat.Alignment = StringAlignment.Center;
+                    stringFormat.LineAlignment = StringAlignment.Center;
+
+                    // Layout:
+                    // Top 40%: "NET" Label
+                    // Bottom 60%: Horizontal Arrows
+                    
+                    RectangleF labelRect = new RectangleF(0, -iconHeight * 0.05f, iconWidth, iconHeight * 0.4f);
+                    
+                    // Left half of bottom section for Up Arrow
+                    RectangleF upRect = new RectangleF(0, iconHeight * 0.35f, iconWidth / 2f, iconHeight * 0.6f);
+                    
+                    // Right half of bottom section for Down Arrow
+                    RectangleF downRect = new RectangleF(iconWidth / 2f, iconHeight * 0.35f, iconWidth / 2f, iconHeight * 0.6f);
+
+                    g.DrawString(label, labelFont, labelBrush, labelRect, stringFormat);
+                    g.DrawString(upArrow, arrowFont, upBrush, upRect, stringFormat);
+                    g.DrawString(downArrow, arrowFont, downBrush, downRect, stringFormat);
+                }
+            }
+
+            return Icon.FromHandle(bitmap.GetHicon());
+        }
+
         public void StartMonitoring()
         {
             _systemInfoService.Start();
@@ -418,7 +478,7 @@ namespace WinState.ViewModels.Windows
                         long download = _systemInfoService.DownloadSpeeds[_systemInfoService.PrimaryExternalInterface];
                         long upload = _systemInfoService.UploadSpeeds[_systemInfoService.PrimaryExternalInterface];
                         DestroyIcon(NETWORK.Icon.Handle);
-                        NETWORK.Icon = CreateTextIcon("NET", Math.Max(upload, download).ToString());
+                        NETWORK.Icon = CreateNetworkIcon(upload, download);
                         NETWORK.Text = _systemInfoService.PrimaryExternalInterface + "\nNET: " + SpeedHumanReadable(upload) + " / " + SpeedHumanReadable(download);
                     }
                     break;
