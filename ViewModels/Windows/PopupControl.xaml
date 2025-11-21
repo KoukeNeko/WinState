@@ -772,7 +772,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,0,5">
                                 <!-- Name and Free Space -->
                                 <Grid Margin="0,0,0,2">
                                     <Grid.ColumnDefinitions>
@@ -823,6 +823,9 @@
                                         </Canvas>
                                     </Grid>
                                 </Border>
+
+                                <!-- Separator -->
+                                <Rectangle Height="1" Fill="#333333" Margin="0,15,0,5"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
