@@ -278,8 +278,7 @@ namespace WinState.Services
                             if (sensor.SensorType == SensorType.Load && sensor.Name.StartsWith("CPU Core #"))
                             {
                                 _cpuCoreSensors.Add(sensor);
-                                int index = _cpuCoreSensors.Count - 1;
-                                CpuCoresHistory[index] = new Queue<double>();
+                                // History is now handled by PerformanceCounters in InitializeCpuCounters
                             }
                         }
                         break;
@@ -520,8 +519,10 @@ namespace WinState.Services
         public Queue<double> CpuUserHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
         public Queue<double> CpuKernelHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
         
-        // Per-Core History: Key is Core Index (0, 1, 2...), Value is History Queue
-        public Dictionary<int, Queue<double>> CpuCoresHistory { get; private set; } = new Dictionary<int, Queue<double>>();
+        // Per-Core History: Key is Core Index (0, 1, 2...), Value is History Queue (User, Kernel)
+        public Dictionary<int, Queue<(double User, double Kernel)>> CpuCoresHistory { get; private set; } = new Dictionary<int, Queue<(double User, double Kernel)>>();
+        private List<PerformanceCounter> _cpuCoreUserCounters = new List<PerformanceCounter>();
+        private List<PerformanceCounter> _cpuCorePrivilegedCounters = new List<PerformanceCounter>();
         private List<ISensor> _cpuCoreSensors = new List<ISensor>();
 
         public struct ProcessInfo
@@ -606,6 +607,28 @@ namespace WinState.Services
                 _cpuPrivilegedCounter = new PerformanceCounter("Processor", "% Privileged Time", "_Total");
                 _cpuUserCounter.NextValue();
                 _cpuPrivilegedCounter.NextValue();
+
+                // Initialize per-core counters
+                int coreCount = Environment.ProcessorCount;
+                _cpuCoreUserCounters.Clear();
+                _cpuCorePrivilegedCounters.Clear();
+                CpuCoresHistory.Clear();
+
+                for (int i = 0; i < coreCount; i++)
+                {
+                    var userCounter = new PerformanceCounter("Processor", "% User Time", i.ToString());
+                    var privCounter = new PerformanceCounter("Processor", "% Privileged Time", i.ToString());
+                    userCounter.NextValue();
+                    privCounter.NextValue();
+                    
+                    _cpuCoreUserCounters.Add(userCounter);
+                    _cpuCorePrivilegedCounters.Add(privCounter);
+                    
+                    // Pre-fill history with 0s
+                    var queue = new Queue<(double, double)>();
+                    for(int j=0; j<60; j++) queue.Enqueue((0,0));
+                    CpuCoresHistory[i] = queue;
+                }
             }
             catch (Exception ex)
             {
@@ -662,28 +685,24 @@ namespace WinState.Services
                 // Update Process CPU Usage
                 UpdateProcessCpuUsage();
 
-                // Update Per-Core Usage (from LHM)
+                // Update Per-Core Usage (from Counters)
+                for (int i = 0; i < _cpuCoreUserCounters.Count; i++)
+                {
+                    float user = _cpuCoreUserCounters[i].NextValue();
+                    float kernel = _cpuCorePrivilegedCounters[i].NextValue();
+                    
+                    if (CpuCoresHistory.ContainsKey(i))
+                    {
+                        var queue = CpuCoresHistory[i];
+                        if (queue.Count >= 60) queue.Dequeue();
+                        queue.Enqueue((user, kernel));
+                    }
+                }
+
+                // Update LHM sensors just in case we need them elsewhere, but not for history
                 if (_cpuHardware != null)
                 {
-                    // _cpuHardware.Update() is called in GetCpuUsage() if counters failed, 
-                    // OR we should call it here if we rely on it for cores.
-                    // Since we might have used counters for Total, we need to ensure LHM is updated for Cores.
-                    // But GetCpuPowerFromHardwareMonitor() also calls Update().
-                    // Let's ensure it's updated.
                     _cpuHardware.Update();
-
-                    for (int i = 0; i < _cpuCoreSensors.Count; i++)
-                    {
-                        var sensor = _cpuCoreSensors[i];
-                        double val = sensor.Value.GetValueOrDefault();
-                        
-                        if (CpuCoresHistory.ContainsKey(i))
-                        {
-                            var queue = CpuCoresHistory[i];
-                            if (queue.Count >= 60) queue.Dequeue();
-                            queue.Enqueue(val);
-                        }
-                    }
                 }
 
                 UpdateNetworkSpeeds();

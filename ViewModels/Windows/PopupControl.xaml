@@ -201,13 +201,21 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Margin="3" Background="#252525" CornerRadius="4" Height="50" ToolTip="{Binding CurrentUsage, StringFormat={}{0:0}%}">
-                                    <Grid ClipToBounds="True">
-                                        <Polygon Points="{Binding HistoryPoints}" 
-                                                 Fill="#403399FF" 
-                                                 Stroke="#3399FF" 
-                                                 StrokeThickness="1" 
-                                                 Stretch="Fill" />
-                                    </Grid>
+                                    <Viewbox Stretch="Fill">
+                                        <Grid Width="295" Height="100">
+                                            <!-- System (Kernel) + User = Total (Red) -->
+                                            <Polygon Points="{Binding TotalHistoryPoints}" 
+                                                     Fill="#40FF3333" 
+                                                     Stroke="#FF3333" 
+                                                     StrokeThickness="2" />
+                                            
+                                            <!-- User (Blue) -->
+                                            <Polygon Points="{Binding UserHistoryPoints}" 
+                                                     Fill="#403399FF" 
+                                                     Stroke="#3399FF" 
+                                                     StrokeThickness="2" />
+                                        </Grid>
+                                    </Viewbox>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

@@ -19,37 +19,51 @@ namespace WinState.ViewModels.Windows
     public class CoreUsageViewModel : INotifyPropertyChanged
     {
         public int CoreIndex { get; set; }
-        public PointCollection HistoryPoints { get; set; }
+        public PointCollection UserHistoryPoints { get; set; }
+        public PointCollection TotalHistoryPoints { get; set; }
         public double CurrentUsage { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public void Update(Queue<double> history)
+        public void Update(Queue<(double User, double Kernel)> history)
         {
-            CurrentUsage = history.LastOrDefault();
+            var last = history.LastOrDefault();
+            CurrentUsage = last.User + last.Kernel;
             
-            var points = new PointCollection();
+            var userPoints = new PointCollection();
+            var totalPoints = new PointCollection();
             
             // Start at bottom-left
-            points.Add(new System.Windows.Point(0, 100));
+            userPoints.Add(new System.Windows.Point(0, 100));
+            totalPoints.Add(new System.Windows.Point(0, 100));
 
             int x = 0;
             int step = 5;
             foreach (var val in history)
             {
-                points.Add(new System.Windows.Point(x * step, 100 - val));
+                double userVal = val.User;
+                double totalVal = val.User + val.Kernel;
+                if (totalVal > 100) totalVal = 100;
+
+                userPoints.Add(new System.Windows.Point(x * step, 100 - userVal));
+                totalPoints.Add(new System.Windows.Point(x * step, 100 - totalVal));
                 x++;
             }
             
             // End at bottom-right
             // x is now history.Count
-            points.Add(new System.Windows.Point((x - 1) * step, 100));
+            userPoints.Add(new System.Windows.Point((x - 1) * step, 100));
+            totalPoints.Add(new System.Windows.Point((x - 1) * step, 100));
 
-            if (points.CanFreeze) points.Freeze();
-            HistoryPoints = points;
+            if (userPoints.CanFreeze) userPoints.Freeze();
+            if (totalPoints.CanFreeze) totalPoints.Freeze();
             
-            OnPropertyChanged(nameof(HistoryPoints));
+            UserHistoryPoints = userPoints;
+            TotalHistoryPoints = totalPoints;
+            
+            OnPropertyChanged(nameof(UserHistoryPoints));
+            OnPropertyChanged(nameof(TotalHistoryPoints));
             OnPropertyChanged(nameof(CurrentUsage));
         }
     }
