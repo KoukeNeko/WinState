@@ -82,6 +82,14 @@ namespace WinState.ViewModels.Windows
         public ImageSource? Icon { get; set; }
     }
 
+    public class NetworkProcessViewModel
+    {
+        public string Name { get; set; } = "";
+        public string Upload { get; set; } = "";
+        public string Download { get; set; } = "";
+        public ImageSource? Icon { get; set; }
+    }
+
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
@@ -174,6 +182,9 @@ namespace WinState.ViewModels.Windows
 
         [ObservableProperty]
         private ObservableCollection<MemoryProcessViewModel> _topMemoryProcesses = new ObservableCollection<MemoryProcessViewModel>();
+
+        [ObservableProperty]
+        private ObservableCollection<NetworkProcessViewModel> _topNetworkProcesses = new ObservableCollection<NetworkProcessViewModel>();
 
         // Network Properties
         public string LocalIpAddress => _systemInfoService.LocalIpAddress;
@@ -384,6 +395,30 @@ namespace WinState.ViewModels.Windows
 
             NetworkUploadHistoryPoints = upPoints;
             NetworkDownloadHistoryPoints = downPoints;
+
+            // Update Top Network Processes
+            var netProcesses = _systemInfoService.GetTopNetworkProcesses();
+            TopNetworkProcesses.Clear();
+            foreach (var p in netProcesses)
+            {
+                ImageSource? iconSrc = null;
+                if (p.Icon != null)
+                {
+                    try
+                    {
+                        iconSrc = ToImageSource(p.Icon, false);
+                    }
+                    catch { }
+                }
+
+                TopNetworkProcesses.Add(new NetworkProcessViewModel
+                {
+                    Name = p.Name,
+                    Upload = p.FormattedUpload,
+                    Download = p.FormattedDownload,
+                    Icon = iconSrc
+                });
+            }
         }
 
         private void UpdateCores()

@@ -6,6 +6,10 @@ using System.Timers;
 using Drawing = System.Drawing;
 using System.Net.Http;
 using System.Net;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Session;
+using System.Collections.Concurrent;
 
 namespace WinState.Services
 {
@@ -87,7 +91,22 @@ namespace WinState.Services
 
         public event EventHandler? DataUpdated;
 
+        // ETW Session for Network Monitoring
+        private TraceEventSession? _etwSession;
+        private readonly ConcurrentDictionary<int, (long Upload, long Download)> _processNetworkUsage = new();
 
+        public struct NetworkProcessInfo
+        {
+            public string Name { get; set; }
+            public int Id { get; set; }
+            public long UploadSpeed { get; set; } // Bytes/sec
+            public long DownloadSpeed { get; set; } // Bytes/sec
+            public string FormattedUpload { get; set; }
+            public string FormattedDownload { get; set; }
+            public Drawing.Icon? Icon { get; set; }
+        }
+
+        private List<NetworkProcessInfo> _cachedTopNetworkProcesses = new List<NetworkProcessInfo>();
 
         public Dictionary<string, long> UploadSpeeds { get; private set; } = new Dictionary<string, long>();
         public Dictionary<string, long> DownloadSpeeds { get; private set; } = new Dictionary<string, long>();
@@ -132,6 +151,9 @@ namespace WinState.Services
             InitializeCpuCounters();
             InitializeRamCounters();
             
+            // Initialize ETW for per-process network monitoring
+            InitializeEtwSession();
+
             // Initial fetch of Public IP (async)
             Task.Run(async () => await FetchPublicIpAsync());
         }
@@ -820,6 +842,7 @@ namespace WinState.Services
                 }
 
                 UpdateNetworkSpeeds();
+                UpdateTopNetworkProcesses();
 
                 // Notify external (ViewModel)
                 DataUpdated?.Invoke(this, EventArgs.Empty);
@@ -1083,6 +1106,108 @@ namespace WinState.Services
         public List<MemoryProcessInfo> GetTopMemoryProcesses()
         {
             return _cachedTopMemoryProcesses;
+        }
+
+        private void InitializeEtwSession()
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    // Note: This requires Admin privileges. The app manifest should request requireAdministrator.
+                    _etwSession = new TraceEventSession("WinStateNetworkMonitor");
+                    
+                    _etwSession.EnableKernelProvider(KernelTraceEventParser.Keywords.NetworkTCPIP);
+
+                    _etwSession.Source.Kernel.TcpIpRecv += data =>
+                    {
+                        _processNetworkUsage.AddOrUpdate(data.ProcessID, 
+                            (0, data.size), 
+                            (key, old) => (old.Upload, old.Download + data.size));
+                    };
+
+                    _etwSession.Source.Kernel.TcpIpSend += data =>
+                    {
+                        _processNetworkUsage.AddOrUpdate(data.ProcessID, 
+                            (data.size, 0), 
+                            (key, old) => (old.Upload + data.size, old.Download));
+                    };
+                    
+                    _etwSession.Source.Kernel.UdpIpRecv += data =>
+                    {
+                         _processNetworkUsage.AddOrUpdate(data.ProcessID, 
+                            (0, data.size), 
+                            (key, old) => (old.Upload, old.Download + data.size));
+                    };
+                    _etwSession.Source.Kernel.UdpIpSend += data =>
+                    {
+                         _processNetworkUsage.AddOrUpdate(data.ProcessID, 
+                            (data.size, 0), 
+                            (key, old) => (old.Upload + data.size, old.Download));
+                    };
+
+                    _etwSession.Source.Process();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ETW Initialization failed: {ex.Message}");
+                }
+            });
+        }
+
+        private void UpdateTopNetworkProcesses()
+        {
+            try
+            {
+                // Snapshot and clear the counters
+                var snapshot = new Dictionary<int, (long Upload, long Download)>(_processNetworkUsage);
+                _processNetworkUsage.Clear();
+
+                var netProcesses = new List<NetworkProcessInfo>();
+                
+                // We need to map Process IDs to Names. 
+                // Doing Process.GetProcessById for every ID every second might be heavy if there are many.
+                // But usually active network processes are few.
+                
+                foreach (var kvp in snapshot)
+                {
+                    if (kvp.Key == 0) continue; // System Idle Process
+                    if (kvp.Value.Upload == 0 && kvp.Value.Download == 0) continue;
+
+                    try 
+                    {
+                        var p = Process.GetProcessById(kvp.Key);
+                        netProcesses.Add(new NetworkProcessInfo
+                        {
+                            Name = p.ProcessName,
+                            Id = p.Id,
+                            UploadSpeed = kvp.Value.Upload,
+                            DownloadSpeed = kvp.Value.Download,
+                            FormattedUpload = BytesToReadable(kvp.Value.Upload) + "/s",
+                            FormattedDownload = BytesToReadable(kvp.Value.Download) + "/s",
+                            Icon = GetProcessIcon(p)
+                        });
+                    }
+                    catch 
+                    { 
+                        // Process might have exited or access denied
+                    }
+                }
+                
+                _cachedTopNetworkProcesses = netProcesses
+                    .OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed)
+                    .Take(15)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating network processes: {ex.Message}");
+            }
+        }
+
+        public List<NetworkProcessInfo> GetTopNetworkProcesses()
+        {
+            return _cachedTopNetworkProcesses;
         }
     }
 }
