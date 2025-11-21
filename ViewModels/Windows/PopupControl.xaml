@@ -59,14 +59,14 @@
                 <TextBlock Text="CPU" Style="{StaticResource HeaderStyle}"/>
                 
                 <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <TextBlock Text="{Binding CpuUsage, StringFormat={}{0:0}}" Style="{StaticResource ValueStyle}"/>
+                    <TextBlock Text="{Binding CpuUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}"/>
                     <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
                 </StackPanel>
 
                 <!-- Graph -->
                 <Border Grid.Row="2" Height="80" Margin="0,10,0,0" Background="#252525" CornerRadius="4" ClipToBounds="True">
                     <Canvas>
-                        <Polyline Points="{Binding CpuHistoryPoints}"
+                        <Polyline Points="{Binding CpuHistoryPoints, Mode=OneWay}"
                                   Stroke="#007ACC"
                                   StrokeThickness="2"
                                   Fill="#33007ACC"/>
@@ -85,12 +85,12 @@
                 <StackPanel>
                     <TextBlock Text="MEMORY" Style="{StaticResource HeaderStyle}"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding RamUsage, StringFormat={}{0:0}}" Style="{StaticResource ValueStyle}"/>
+                        <TextBlock Text="{Binding RamUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}"/>
                         <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
                     </StackPanel>
                 </StackPanel>
                 <!-- Progress Bar (Circular simulation or simple bar) -->
-                <ProgressBar Grid.Column="1" Value="{Binding RamUsage}" Maximum="100" Width="100" Height="10" Background="#333" Foreground="#9B59B6" BorderThickness="0"/>
+                <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Width="100" Height="10" Background="#333" Foreground="#9B59B6" BorderThickness="0"/>
             </Grid>
 
             <Rectangle Grid.Row="3" Height="1" Fill="#333333" Margin="0,15"/>
@@ -106,7 +106,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="UPLOAD" Style="{StaticResource HeaderStyle}" Foreground="#E74C3C"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding NetworkUploadText, StringFormat={}{0:0.0}}" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="{Binding NetworkUploadText, StringFormat={}{0:0.0}, Mode=OneWay}" FontSize="18" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text=" KB/s" Style="{StaticResource UnitStyle}" FontSize="12"/>
                     </StackPanel>
                 </StackPanel>
@@ -115,7 +115,7 @@
                 <StackPanel Grid.Column="1">
                     <TextBlock Text="DOWNLOAD" Style="{StaticResource HeaderStyle}" Foreground="#2ECC71"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding NetworkDownloadText, StringFormat={}{0:0.0}}" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="{Binding NetworkDownloadText, StringFormat={}{0:0.0}, Mode=OneWay}" FontSize="18" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text=" KB/s" Style="{StaticResource UnitStyle}" FontSize="12"/>
                     </StackPanel>
                 </StackPanel>
@@ -134,7 +134,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="DISK" Style="{StaticResource HeaderStyle}"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding DiskUsage, StringFormat={}{0:0}}" Style="{StaticResource ValueStyle}" FontSize="20"/>
+                        <TextBlock Text="{Binding DiskUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}" FontSize="20"/>
                         <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
                     </StackPanel>
                 </StackPanel>
@@ -143,7 +143,7 @@
                 <StackPanel Grid.Column="1">
                     <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding GpuUsage, StringFormat={}{0:0}}" Style="{StaticResource ValueStyle}" FontSize="20"/>
+                        <TextBlock Text="{Binding GpuUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}" FontSize="20"/>
                         <TextBlock Text="%" Style="{StaticResource UnitStyle}"/>
                     </StackPanel>
                 </StackPanel>

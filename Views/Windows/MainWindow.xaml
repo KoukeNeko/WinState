@@ -35,30 +35,32 @@
     </ui:FluentWindow.InputBindings>
 
     <Grid>
+
+
         <tb:TaskbarIcon x:Name="CpuNotifyIcon"
                         IconSource="{Binding ViewModel.CpuIcon}"
                         ToolTipText="{Binding ViewModel.CpuToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="GpuNotifyIcon"
                         IconSource="{Binding ViewModel.GpuIcon}"
                         ToolTipText="{Binding ViewModel.GpuToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="RamNotifyIcon"
                         IconSource="{Binding ViewModel.RamIcon}"
                         ToolTipText="{Binding ViewModel.RamToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="DiskNotifyIcon"
                         IconSource="{Binding ViewModel.DiskIcon}"
                         ToolTipText="{Binding ViewModel.DiskToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="NetworkNotifyIcon"
                         IconSource="{Binding ViewModel.NetworkIcon}"
                         ToolTipText="{Binding ViewModel.NetworkToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="PowerNotifyIcon"
                         IconSource="{Binding ViewModel.PowerIcon}"
                         ToolTipText="{Binding ViewModel.PowerToolTip}"
-                        TrayPopup="{StaticResource SharedPopup}" />
+                        TrayLeftMouseUp="OnTrayIconClick" />
 
         <ui:TitleBar
             x:Name="TitleBar"

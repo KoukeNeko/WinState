@@ -62,8 +62,8 @@ namespace WinState.ViewModels.Windows
         public string NetworkUploadUnit => _systemInfoService.NetworkUploadUnit;
         public string NetworkDownloadUnit => _systemInfoService.NetworkDownloadUnit;
         public double CpuPower => _systemInfoService.CpuPower;
-        public double NetworkDownloadText => _systemInfoService.DownloadSpeeds[_systemInfoService.PrimaryExternalInterface];
-        public double NetworkUploadText => _systemInfoService.UploadSpeeds[_systemInfoService.PrimaryExternalInterface];
+        public double NetworkDownloadText => _systemInfoService.DownloadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var down) ? down : 0;
+        public double NetworkUploadText => _systemInfoService.UploadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var up) ? up : 0;
         
         [ObservableProperty]
         private PointCollection _cpuHistoryPoints = new PointCollection();
@@ -145,8 +145,8 @@ namespace WinState.ViewModels.Windows
             DiskToolTip = $"DISK: {DiskUsage}%";
 
             // NETWORK
-            long download = _systemInfoService.DownloadSpeeds[_systemInfoService.PrimaryExternalInterface];
-            long upload = _systemInfoService.UploadSpeeds[_systemInfoService.PrimaryExternalInterface];
+            long download = _systemInfoService.DownloadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var d) ? d : 0;
+            long upload = _systemInfoService.UploadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var u) ? u : 0;
             NetworkIcon = ToImageSource(CreateNetworkIcon(upload, download));
             NetworkToolTip = $"NET: {SpeedHumanReadable(upload)} / {SpeedHumanReadable(download)}";
 

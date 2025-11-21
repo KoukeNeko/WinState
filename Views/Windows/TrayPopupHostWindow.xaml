@@ -1,0 +1,18 @@
+<Window x:Class="WinState.Views.Windows.TrayPopupHostWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:viewmodels="clr-namespace:WinState.ViewModels.Windows"
+        mc:Ignorable="d"
+        Title="WinState Tray Popup"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        Deactivated="Window_Deactivated">
+    <viewmodels:PopupControl x:Name="PopupContent" />
+</Window>
