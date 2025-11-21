@@ -38,26 +38,32 @@
 
 
         <tb:TaskbarIcon x:Name="CpuNotifyIcon"
+                        Tag="CPU"
                         IconSource="{Binding ViewModel.CpuIcon}"
                         ToolTipText="{Binding ViewModel.CpuToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="GpuNotifyIcon"
+                        Tag="GPU"
                         IconSource="{Binding ViewModel.GpuIcon}"
                         ToolTipText="{Binding ViewModel.GpuToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="RamNotifyIcon"
+                        Tag="RAM"
                         IconSource="{Binding ViewModel.RamIcon}"
                         ToolTipText="{Binding ViewModel.RamToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="DiskNotifyIcon"
+                        Tag="DISK"
                         IconSource="{Binding ViewModel.DiskIcon}"
                         ToolTipText="{Binding ViewModel.DiskToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="NetworkNotifyIcon"
+                        Tag="NET"
                         IconSource="{Binding ViewModel.NetworkIcon}"
                         ToolTipText="{Binding ViewModel.NetworkToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />
         <tb:TaskbarIcon x:Name="PowerNotifyIcon"
+                        Tag="ALL"
                         IconSource="{Binding ViewModel.PowerIcon}"
                         ToolTipText="{Binding ViewModel.PowerToolTip}"
                         TrayLeftMouseUp="OnTrayIconClick" />

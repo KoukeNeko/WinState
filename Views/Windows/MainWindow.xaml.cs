@@ -100,14 +100,19 @@ namespace WinState.Views.Windows
             Visibility = Visibility.Hidden;
         }
 
-        private TrayPopupHostWindow? _trayHostWindow;
+        private Dictionary<string, TrayPopupHostWindow> _trayHostWindows = new Dictionary<string, TrayPopupHostWindow>();
 
         private void OnTrayIconClick(object sender, RoutedEventArgs e)
         {
-            if (_trayHostWindow == null)
+            var taskbarIcon = sender as Hardcodet.Wpf.TaskbarNotification.TaskbarIcon;
+            string category = taskbarIcon?.Tag as string ?? "ALL";
+
+            if (!_trayHostWindows.TryGetValue(category, out var trayHostWindow))
             {
-                _trayHostWindow = new TrayPopupHostWindow();
-                _trayHostWindow.DataContext = ViewModel;
+                trayHostWindow = new TrayPopupHostWindow();
+                trayHostWindow.DataContext = ViewModel;
+                trayHostWindow.PopupContent.Category = category;
+                _trayHostWindows[category] = trayHostWindow;
             }
 
             // Get cursor position (Physical)
@@ -117,29 +122,29 @@ namespace WinState.Views.Windows
             var screenBounds = screen.Bounds;
 
             // Initialize window to measure size
-            _trayHostWindow.WindowStartupLocation = WindowStartupLocation.Manual;
+            trayHostWindow.WindowStartupLocation = WindowStartupLocation.Manual;
             // Move off-screen initially
-            _trayHostWindow.Left = -10000;
-            _trayHostWindow.Top = -10000;
+            trayHostWindow.Left = -10000;
+            trayHostWindow.Top = -10000;
             
             // Ensure window is loaded to get dimensions
-            if (!_trayHostWindow.IsVisible)
+            if (!trayHostWindow.IsVisible)
             {
-                _trayHostWindow.Show();
+                trayHostWindow.Show();
             }
             
-            _trayHostWindow.UpdateLayout();
+            trayHostWindow.UpdateLayout();
             // Measure desired size if ActualSize is not yet valid
-            _trayHostWindow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            trayHostWindow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             
-            double windowWidth = _trayHostWindow.ActualWidth > 0 ? _trayHostWindow.ActualWidth : _trayHostWindow.DesiredSize.Width;
-            double windowHeight = _trayHostWindow.ActualHeight > 0 ? _trayHostWindow.ActualHeight : _trayHostWindow.DesiredSize.Height;
+            double windowWidth = trayHostWindow.ActualWidth > 0 ? trayHostWindow.ActualWidth : trayHostWindow.DesiredSize.Width;
+            double windowHeight = trayHostWindow.ActualHeight > 0 ? trayHostWindow.ActualHeight : trayHostWindow.DesiredSize.Height;
             
             if (windowWidth == 0) windowWidth = 320;
             if (windowHeight == 0) windowHeight = 450;
 
             // Get DPI scale
-            var source = PresentationSource.FromVisual(_trayHostWindow);
+            var source = PresentationSource.FromVisual(trayHostWindow);
             double dpiScaleX = 1.0;
             double dpiScaleY = 1.0;
             if (source != null && source.CompositionTarget != null)
@@ -193,15 +198,15 @@ namespace WinState.Views.Windows
             double targetLeft = physicalLeft / dpiScaleX;
             double targetTop = physicalTop / dpiScaleY;
 
-            _trayHostWindow.Left = targetLeft;
-            _trayHostWindow.Top = targetTop;
+            trayHostWindow.Left = targetLeft;
+            trayHostWindow.Top = targetTop;
             
-            _trayHostWindow.ShowActivated = true;
-            _trayHostWindow.Visibility = Visibility.Visible;
-            _trayHostWindow.Opacity = 1;
-            _trayHostWindow.Topmost = true;
-            _trayHostWindow.Activate();
-            _trayHostWindow.Focus();
+            trayHostWindow.ShowActivated = true;
+            trayHostWindow.Visibility = Visibility.Visible;
+            trayHostWindow.Opacity = 1;
+            trayHostWindow.Topmost = true;
+            trayHostWindow.Activate();
+            trayHostWindow.Focus();
         }
     }
 }

@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             Width="320" Height="450">
+             x:Name="Root"
+             Width="320">
 
     <UserControl.Resources>
         <Style TargetType="TextBlock">
@@ -28,6 +29,79 @@
             <Setter Property="VerticalAlignment" Value="Bottom"/>
             <Setter Property="Margin" Value="2,0,0,4"/>
         </Style>
+
+        <!-- Visibility Styles -->
+        <Style x:Key="SectionStyle" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CpuSectionStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="CPU">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="RamSectionStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="RAM">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="NetSectionStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="NET">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DiskSectionStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="DISK">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="GpuSectionStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="GPU">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style x:Key="DiskGpuContainerStyle" TargetType="FrameworkElement" BasedOn="{StaticResource SectionStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="DISK">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="GPU">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SeparatorStyle" TargetType="Rectangle">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Fill" Value="#333333"/>
+            <Setter Property="Margin" Value="0,15"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Border Background="#1E1E1E"
@@ -50,7 +124,7 @@
             </Grid.RowDefinitions>
 
             <!-- CPU Section -->
-            <Grid Grid.Row="0">
+            <Grid Grid.Row="0" Style="{StaticResource CpuSectionStyle}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -74,10 +148,10 @@
                 </Border>
             </Grid>
 
-            <Rectangle Grid.Row="1" Height="1" Fill="#333333" Margin="0,15"/>
+            <Rectangle Grid.Row="1" Style="{StaticResource SeparatorStyle}"/>
 
             <!-- Memory Section -->
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="2" Style="{StaticResource RamSectionStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -93,10 +167,10 @@
                 <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Width="100" Height="10" Background="#333" Foreground="#9B59B6" BorderThickness="0"/>
             </Grid>
 
-            <Rectangle Grid.Row="3" Height="1" Fill="#333333" Margin="0,15"/>
+            <Rectangle Grid.Row="3" Style="{StaticResource SeparatorStyle}"/>
 
             <!-- Network Section -->
-            <Grid Grid.Row="4">
+            <Grid Grid.Row="4" Style="{StaticResource NetSectionStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -121,17 +195,17 @@
                 </StackPanel>
             </Grid>
 
-            <Rectangle Grid.Row="5" Height="1" Fill="#333333" Margin="0,15"/>
+            <Rectangle Grid.Row="5" Style="{StaticResource SeparatorStyle}"/>
 
             <!-- Disk & GPU Section -->
-            <Grid Grid.Row="6">
+            <Grid Grid.Row="6" Style="{StaticResource DiskGpuContainerStyle}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Disk -->
-                <StackPanel Grid.Column="0">
+                <StackPanel Grid.Column="0" Style="{StaticResource DiskSectionStyle}">
                     <TextBlock Text="DISK" Style="{StaticResource HeaderStyle}"/>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding DiskUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}" FontSize="20"/>
@@ -140,7 +214,7 @@
                 </StackPanel>
 
                 <!-- GPU -->
-                <StackPanel Grid.Column="1">
+                <StackPanel Grid.Column="1" Style="{StaticResource GpuSectionStyle}">
                     <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}"/>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding GpuUsage, StringFormat={}{0:0}, Mode=OneWay}" Style="{StaticResource ValueStyle}" FontSize="20"/>
