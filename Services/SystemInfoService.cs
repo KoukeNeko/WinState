@@ -25,12 +25,11 @@ namespace WinState.Services
 
         // 預先快取 CPU、GPU、Disk 對應的 Hardware 物件
         private IHardware? _cpuHardware;
-        private IHardware? _gpuHardware;    // 若可能有多張 GPU，可改成 List<IHardware>
+        private List<IHardware> _gpuHardwares = new List<IHardware>();
         private List<IHardware> _diskHardwares = new List<IHardware>();
 
         // 預先快取 Sensor
         private ISensor? _cpuTotalLoadSensor;
-        private ISensor? _gpuCoreLoadSensor;
         private List<ISensor> _diskLoadSensors = new List<ISensor>();
         private ISensor? _cpuPowerSensor;
         private ISensor? _cpuClockSensor;
@@ -41,12 +40,26 @@ namespace WinState.Services
         private ISensor? _networkUploadSensor;
         private ISensor? _networkDownloadSensor;
 
-        // GPU Sensors
-        private ISensor? _gpuMemoryLoadSensor;
-        private ISensor? _gpuMemoryUsedSensor;
-        private ISensor? _gpuMemoryTotalSensor;
-        private ISensor? _gpuTemperatureSensor;
-        private ISensor? _gpuClockSensor;
+        public class GpuInfo
+        {
+            public string Name { get; set; } = "";
+            public double Usage { get; set; }
+            public double MemoryUsage { get; set; }
+            public long MemoryUsed { get; set; }
+            public long MemoryTotal { get; set; }
+            public double Temperature { get; set; }
+            public double Clock { get; set; }
+
+            // Sensors
+            public ISensor? CoreLoadSensor { get; set; }
+            public ISensor? MemoryLoadSensor { get; set; }
+            public ISensor? MemoryUsedSensor { get; set; }
+            public ISensor? MemoryTotalSensor { get; set; }
+            public ISensor? TemperatureSensor { get; set; }
+            public ISensor? ClockSensor { get; set; }
+        }
+
+        public List<GpuInfo> Gpus { get; private set; } = new List<GpuInfo>();
 
         // Network Counters
         private PerformanceCounter? _uploadCounter;
@@ -66,12 +79,6 @@ namespace WinState.Services
 
         // 各種監控屬性 (0~100 或實際值)
         public double CpuUsage { get; private set; }
-        public double GpuUsage { get; private set; }
-        public double GpuMemoryUsage { get; private set; }
-        public long GpuMemoryUsed { get; private set; }
-        public long GpuMemoryTotal { get; private set; }
-        public double GpuTemperature { get; private set; }
-        public double GpuClock { get; private set; }
         public double RamUsage { get; private set; }
         public double DiskUsage { get; private set; }
         public double NetworkUpload { get; private set; }
@@ -162,6 +169,7 @@ namespace WinState.Services
         }
 
         private List<DiskInfo> _cachedDiskInfo = new List<DiskInfo>();
+        public List<DiskInfo> DiskInfos => _cachedDiskInfo;
         private Dictionary<string, string> _driveModelCache = new Dictionary<string, string>();
         
         private class DiskCounter
@@ -451,39 +459,43 @@ namespace WinState.Services
 
                     case HardwareType.GpuNvidia:
                     case HardwareType.GpuAmd:
-                        _gpuHardware = hardware; // 若有多張 GPU，這裡可改用 List 來收集
+                    case HardwareType.GpuIntel:
+                        _gpuHardwares.Add(hardware);
+                        var gpuInfo = new GpuInfo { Name = hardware.Name };
+                        
                         foreach (var sensor in hardware.Sensors)
                         {
                             if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core")
                             {
-                                _gpuCoreLoadSensor = sensor;
+                                gpuInfo.CoreLoadSensor = sensor;
                             }
                             // GPU Memory Load
                             if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Memory")
                             {
-                                _gpuMemoryLoadSensor = sensor;
+                                gpuInfo.MemoryLoadSensor = sensor;
                             }
                             // GPU Memory Used
                             if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Used" || sensor.Name.Contains("Memory Used")))
                             {
-                                _gpuMemoryUsedSensor = sensor;
+                                gpuInfo.MemoryUsedSensor = sensor;
                             }
                             // GPU Memory Total
                             if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Total" || sensor.Name.Contains("Memory Total")))
                             {
-                                _gpuMemoryTotalSensor = sensor;
+                                gpuInfo.MemoryTotalSensor = sensor;
                             }
                             // GPU Temperature
-                            if (sensor.SensorType == SensorType.Temperature && _gpuTemperatureSensor == null)
+                            if (sensor.SensorType == SensorType.Temperature && gpuInfo.TemperatureSensor == null)
                             {
-                                _gpuTemperatureSensor = sensor;
+                                gpuInfo.TemperatureSensor = sensor;
                             }
                             // GPU Clock
-                            if (sensor.SensorType == SensorType.Clock && _gpuClockSensor == null && sensor.Name.Contains("Core"))
+                            if (sensor.SensorType == SensorType.Clock && gpuInfo.ClockSensor == null && sensor.Name.Contains("Core"))
                             {
-                                _gpuClockSensor = sensor;
+                                gpuInfo.ClockSensor = sensor;
                             }
                         }
+                        Gpus.Add(gpuInfo);
                         break;
 
                     case HardwareType.Storage:
@@ -1008,19 +1020,22 @@ namespace WinState.Services
 
         private void UpdateGpuData()
         {
-            if (_gpuHardware == null) return;
+            foreach (var hardware in _gpuHardwares)
+            {
+                hardware.Update();
+            }
 
-            _gpuHardware.Update();
-
-            if (_gpuCoreLoadSensor != null) GpuUsage = _gpuCoreLoadSensor.Value.GetValueOrDefault();
-            if (_gpuMemoryLoadSensor != null) GpuMemoryUsage = _gpuMemoryLoadSensor.Value.GetValueOrDefault();
-            
-            // LHM usually reports Memory Used/Total in MB
-            if (_gpuMemoryUsedSensor != null) GpuMemoryUsed = (long)(_gpuMemoryUsedSensor.Value.GetValueOrDefault() * 1024 * 1024); 
-            if (_gpuMemoryTotalSensor != null) GpuMemoryTotal = (long)(_gpuMemoryTotalSensor.Value.GetValueOrDefault() * 1024 * 1024);
-            
-            if (_gpuTemperatureSensor != null) GpuTemperature = _gpuTemperatureSensor.Value.GetValueOrDefault();
-            if (_gpuClockSensor != null) GpuClock = _gpuClockSensor.Value.GetValueOrDefault();
+            foreach (var gpu in Gpus)
+            {
+                if (gpu.CoreLoadSensor != null) gpu.Usage = gpu.CoreLoadSensor.Value.GetValueOrDefault();
+                if (gpu.MemoryLoadSensor != null) gpu.MemoryUsage = gpu.MemoryLoadSensor.Value.GetValueOrDefault();
+                
+                if (gpu.MemoryUsedSensor != null) gpu.MemoryUsed = (long)(gpu.MemoryUsedSensor.Value.GetValueOrDefault() * 1024 * 1024);
+                if (gpu.MemoryTotalSensor != null) gpu.MemoryTotal = (long)(gpu.MemoryTotalSensor.Value.GetValueOrDefault() * 1024 * 1024);
+                
+                if (gpu.TemperatureSensor != null) gpu.Temperature = gpu.TemperatureSensor.Value.GetValueOrDefault();
+                if (gpu.ClockSensor != null) gpu.Clock = gpu.ClockSensor.Value.GetValueOrDefault();
+            }
         }
 
         private double GetRamUsage()

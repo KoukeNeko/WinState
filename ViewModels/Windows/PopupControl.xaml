@@ -994,65 +994,80 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                 
-                <!-- Bars -->
-                <StackPanel Grid.Row="1" Margin="0,0,0,15">
-                    <!-- Processor Usage -->
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Processor" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
-                        <ProgressBar Grid.Column="1" Value="{Binding GpuUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
-                        <TextBlock Grid.Column="2" Text="{Binding GpuUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                    </Grid>
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Gpus}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,15">
+                                <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                                
+                                <!-- Bars -->
+                                <StackPanel Margin="0,0,0,10">
+                                    <!-- Processor Usage -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Processor" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <ProgressBar Grid.Column="1" Value="{Binding Usage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Usage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                                    </Grid>
 
-                    <!-- Memory Usage -->
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Video Memory" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
-                        <ProgressBar Grid.Column="1" Value="{Binding GpuMemoryUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#FF3333" VerticalAlignment="Center" Margin="5,0"/>
-                        <TextBlock Grid.Column="2" Text="{Binding GpuMemoryUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                    </Grid>
-                </StackPanel>
+                                    <!-- Memory Usage -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Video Memory" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <ProgressBar Grid.Column="1" Value="{Binding MemoryUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#FF3333" VerticalAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding MemoryUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                                    </Grid>
+                                </StackPanel>
 
-                <!-- Details -->
-                <Grid Grid.Row="2" Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                                <!-- Details -->
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+                                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
 
-                    <!-- Memory Used -->
-                    <TextBlock Grid.Row="1" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GpuMemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <!-- Memory Used -->
+                                    <TextBlock Grid.Row="1" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
-                    <!-- Memory Total -->
-                    <TextBlock Grid.Row="2" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GpuMemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
-
-                    <!-- Temperature -->
-                    <TextBlock Grid.Row="3" Text="Temperature:" Foreground="#888" Margin="0,2"/>
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding GpuTemperature, StringFormat={}{0:F1} °C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
-                </Grid>
+                                    <!-- Memory Total -->
+                                    <TextBlock Grid.Row="2" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    
+                                    <!-- Temperature -->
+                                    <TextBlock Grid.Row="3" Text="Temperature:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Temperature, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    
+                                    <!-- Clock -->
+                                    <TextBlock Grid.Row="4" Text="Clock:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Clock, StringFormat={}{0:0} MHz}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Rectangle Height="1" Fill="#333333" Margin="0,5"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
 
             <Rectangle Grid.Row="8" Style="{StaticResource SeparatorStyle}"/>

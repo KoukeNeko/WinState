@@ -19,7 +19,7 @@ namespace WinState.ViewModels.Windows
 {
     public class ProcessViewModel
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
         public double CpuUsage { get; set; }
         public ImageSource? Icon { get; set; }
     }
@@ -27,8 +27,8 @@ namespace WinState.ViewModels.Windows
     public class CoreUsageViewModel : INotifyPropertyChanged
     {
         public int CoreIndex { get; set; }
-        public PointCollection UserHistoryPoints { get; set; }
-        public PointCollection TotalHistoryPoints { get; set; }
+        public PointCollection UserHistoryPoints { get; set; } = new PointCollection();
+        public PointCollection TotalHistoryPoints { get; set; } = new PointCollection();
         public double CurrentUsage { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -78,8 +78,8 @@ namespace WinState.ViewModels.Windows
 
     public class MemoryProcessViewModel
     {
-        public string Name { get; set; }
-        public string FormattedMemoryUsage { get; set; }
+        public string Name { get; set; } = "";
+        public string FormattedMemoryUsage { get; set; } = "";
         public ImageSource? Icon { get; set; }
     }
 
@@ -137,17 +137,13 @@ namespace WinState.ViewModels.Windows
 
         public double CpuUsage => _systemInfoService.CpuUsage;
         public List<SensorItem> DetailedSensors => _systemInfoService.DetailedSensors;
-        public double GpuUsage => _systemInfoService.GpuUsage;
-        public double GpuMemoryUsage => _systemInfoService.GpuMemoryUsage;
-        public long GpuMemoryUsed => _systemInfoService.GpuMemoryUsed;
-        public long GpuMemoryTotal => _systemInfoService.GpuMemoryTotal;
-        public double GpuTemperature => _systemInfoService.GpuTemperature;
-        public double GpuClock => _systemInfoService.GpuClock;
+        
+        public ObservableCollection<GpuViewModel> Gpus { get; private set; } = new ObservableCollection<GpuViewModel>();
 
-        public string GpuMemoryUsedString => BytesToReadable(_systemInfoService.GpuMemoryUsed);
-        public string GpuMemoryTotalString => BytesToReadable(_systemInfoService.GpuMemoryTotal);
         public double RamUsage => _systemInfoService.RamUsage;
         public double DiskUsage => _systemInfoService.DiskUsage;
+        public List<SystemInfoService.DiskInfo> DiskSmartInfos => _systemInfoService.DiskInfos;
+        public long DiskReadRate => _systemInfoService.TotalDiskRead;
         public double NetworkUpload => _systemInfoService.NetworkUpload;
         public double NetworkDownload => _systemInfoService.NetworkDownload;
         public string NetworkUploadUnit => _systemInfoService.NetworkUploadUnit;
@@ -169,34 +165,34 @@ namespace WinState.ViewModels.Windows
         private PointCollection _cpuHistoryPoints = new PointCollection();
 
         [ObservableProperty]
-        private ImageSource _cpuIcon;
+        private ImageSource _cpuIcon = null!;
         [ObservableProperty]
-        private string _cpuToolTip;
+        private string _cpuToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _gpuIcon;
+        private ImageSource _gpuIcon = null!;
         [ObservableProperty]
-        private string _gpuToolTip;
+        private string _gpuToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _ramIcon;
+        private ImageSource _ramIcon = null!;
         [ObservableProperty]
-        private string _ramToolTip;
+        private string _ramToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _diskIcon;
+        private ImageSource _diskIcon = null!;
         [ObservableProperty]
-        private string _diskToolTip;
+        private string _diskToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _networkIcon;
+        private ImageSource _networkIcon = null!;
         [ObservableProperty]
-        private string _networkToolTip;
+        private string _networkToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _powerIcon;
+        private ImageSource _powerIcon = null!;
         [ObservableProperty]
-        private string _powerToolTip;
+        private string _powerToolTip = "";
 
         [ObservableProperty]
         private ObservableCollection<MemoryProcessViewModel> _topMemoryProcesses = new ObservableCollection<MemoryProcessViewModel>();
@@ -297,14 +293,9 @@ namespace WinState.ViewModels.Windows
             {
                 OnPropertyChanged(nameof(CpuUsage));
                 OnPropertyChanged(nameof(DetailedSensors));
-                OnPropertyChanged(nameof(GpuUsage));
-                OnPropertyChanged(nameof(GpuMemoryUsage));
-                OnPropertyChanged(nameof(GpuMemoryUsed));
-                OnPropertyChanged(nameof(GpuMemoryTotal));
-                OnPropertyChanged(nameof(GpuTemperature));
-                OnPropertyChanged(nameof(GpuClock));
-                OnPropertyChanged(nameof(GpuMemoryUsedString));
-                OnPropertyChanged(nameof(GpuMemoryTotalString));
+                
+                UpdateGpus();
+
                 OnPropertyChanged(nameof(RamUsage));
                 OnPropertyChanged(nameof(DiskUsage));
                 OnPropertyChanged(nameof(NetworkUpload));
@@ -323,7 +314,9 @@ namespace WinState.ViewModels.Windows
 
                 OnPropertyChanged(nameof(NetworkDownloadText));
                 OnPropertyChanged(nameof(NetworkUploadText));
+                OnPropertyChanged(nameof(DiskSmartInfos));
 
+                UpdateGpus();
                 UpdateCpuHistory();
                 UpdateRamDetails();
                 UpdateNetworkDetails();
@@ -331,6 +324,36 @@ namespace WinState.ViewModels.Windows
                 UpdateCores();
                 UpdateTrayIcons();
             });
+        }
+
+        private void UpdateGpus()
+        {
+            var serviceGpus = _systemInfoService.Gpus;
+            
+            // Sync collection count
+            while (Gpus.Count < serviceGpus.Count)
+            {
+                Gpus.Add(new GpuViewModel());
+            }
+            while (Gpus.Count > serviceGpus.Count)
+            {
+                Gpus.RemoveAt(Gpus.Count - 1);
+            }
+
+            // Update values
+            for (int i = 0; i < serviceGpus.Count; i++)
+            {
+                var info = serviceGpus[i];
+                var vm = Gpus[i];
+
+                vm.Name = info.Name;
+                vm.Usage = info.Usage;
+                vm.MemoryUsage = info.MemoryUsage;
+                vm.MemoryUsedString = BytesToReadable((long)info.MemoryUsed);
+                vm.MemoryTotalString = BytesToReadable((long)info.MemoryTotal);
+                vm.Temperature = info.Temperature;
+                vm.Clock = info.Clock;
+            }
         }
 
         private void UpdateNetworkDetails()
@@ -487,8 +510,9 @@ namespace WinState.ViewModels.Windows
             CpuToolTip = $"CPU: {CpuUsage}%";
 
             // GPU
-            GpuIcon = ToImageSource(CreateTextIcon("GPU", GpuUsage.ToString()));
-            GpuToolTip = $"GPU: {GpuUsage}%";
+            double maxGpuUsage = Gpus.Any() ? Gpus.Max(g => g.Usage) : 0;
+            GpuIcon = ToImageSource(CreateTextIcon("GPU", maxGpuUsage.ToString()));
+            GpuToolTip = $"GPU: {maxGpuUsage}%";
 
             // RAM
             RamIcon = ToImageSource(CreateTextIcon("RAM", RamUsage.ToString()));
@@ -1120,5 +1144,16 @@ namespace WinState.ViewModels.Windows
             ReadHistoryPoints = readPoints;
             WriteHistoryPoints = writePoints;
         }
+    }
+
+    public partial class GpuViewModel : ObservableObject
+    {
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private double _usage;
+        [ObservableProperty] private double _memoryUsage;
+        [ObservableProperty] private string _memoryUsedString = "";
+        [ObservableProperty] private string _memoryTotalString = "";
+        [ObservableProperty] private double _temperature;
+        [ObservableProperty] private double _clock;
     }
 }
