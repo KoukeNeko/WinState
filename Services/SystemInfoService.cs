@@ -22,6 +22,9 @@ namespace WinState.Services
         private ISensor? _gpuCoreLoadSensor;
         private List<ISensor> _diskLoadSensors = new List<ISensor>();
         private ISensor? _cpuPowerSensor;
+        private ISensor? _cpuClockSensor;
+        private ISensor? _cpuTemperatureSensor;
+        private ISensor? _cpuVoltageSensor;
 
         // 新增：網路感測器 (利用 LibreHardwareMonitor)
         private ISensor? _networkUploadSensor;
@@ -253,6 +256,8 @@ namespace WinState.Services
                 {
                     case HardwareType.Cpu:
                         _cpuHardware = hardware;
+                        CpuName = hardware.Name;
+
                         // 預先找出 CPU 的 "CPU Total" Load Sensor 與 Power Sensor
                         hardware.Update(); // 先 Update 一次，才能正確抓到 Sensors
                         
@@ -274,6 +279,22 @@ namespace WinState.Services
                             {
                                 _cpuPowerSensor = sensor;
                             }
+                            // CPU Clock (Take first core clock)
+                            if (sensor.SensorType == SensorType.Clock && _cpuClockSensor == null && sensor.Name.Contains("Core"))
+                            {
+                                _cpuClockSensor = sensor;
+                            }
+                            // CPU Temperature (Package or Core Average)
+                            if (sensor.SensorType == SensorType.Temperature && _cpuTemperatureSensor == null && (sensor.Name.Contains("Package") || sensor.Name.Contains("Average") || sensor.Name == "Core Max"))
+                            {
+                                _cpuTemperatureSensor = sensor;
+                            }
+                            // CPU Voltage
+                            if (sensor.SensorType == SensorType.Voltage && _cpuVoltageSensor == null && (sensor.Name.Contains("Package") || sensor.Name.Contains("Core")))
+                            {
+                                _cpuVoltageSensor = sensor;
+                            }
+
                             // CPU Cores
                             if (sensor.SensorType == SensorType.Load && sensor.Name.StartsWith("CPU Core #"))
                             {
@@ -515,6 +536,16 @@ namespace WinState.Services
 
         public double CpuUserUsage { get; private set; }
         public double CpuKernelUsage { get; private set; }
+        
+        // Additional CPU Info
+        public string CpuName { get; private set; } = "Unknown CPU";
+        public double CpuTemperature { get; private set; }
+        public double CpuClock { get; private set; }
+        public double CpuVoltage { get; private set; }
+        public int ProcessCount { get; private set; }
+        public int ThreadCount { get; private set; }
+        public int HandleCount { get; private set; }
+        public TimeSpan Uptime { get; private set; }
 
         public Queue<double> CpuUserHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
         public Queue<double> CpuKernelHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
@@ -590,8 +621,13 @@ namespace WinState.Services
 
                 _previousProcessTimes = newProcessTimes;
 
-                // Sort by CPU usage descending and take top N
-                _cachedTopProcesses = processInfos.OrderByDescending(p => p.CpuUsage).Take(5).ToList();
+        // Sort by CPU usage descending and take top N
+                _cachedTopProcesses = processInfos.OrderByDescending(p => p.CpuUsage).Take(15).ToList();
+                
+                // Update System Counts
+                ProcessCount = currentProcesses.Length;
+                ThreadCount = currentProcesses.Sum(p => p.Threads.Count);
+                HandleCount = currentProcesses.Sum(p => p.HandleCount);
             }
             catch (Exception ex)
             {
@@ -681,6 +717,13 @@ namespace WinState.Services
 
                 // Get CPU power consumption
                 CpuPower = GetCpuPowerFromHardwareMonitor();
+                
+                // Update other CPU sensors
+                if (_cpuClockSensor != null) CpuClock = _cpuClockSensor.Value.GetValueOrDefault();
+                if (_cpuTemperatureSensor != null) CpuTemperature = _cpuTemperatureSensor.Value.GetValueOrDefault();
+                if (_cpuVoltageSensor != null) CpuVoltage = _cpuVoltageSensor.Value.GetValueOrDefault();
+                
+                Uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
 
                 // Update Process CPU Usage
                 UpdateProcessCpuUsage();

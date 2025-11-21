@@ -134,6 +134,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <!-- Header -->
@@ -222,8 +223,23 @@
                     </ItemsControl>
                 </StackPanel>
 
+                <!-- CPU Info -->
+                <StackPanel Grid.Row="4" Margin="0,0,0,15">
+                    <TextBlock Text="INFO" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{Binding CpuName}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                    <UniformGrid Columns="2">
+                        <TextBlock Text="{Binding CpuClock, StringFormat='Clock: {0:F0} MHz'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding CpuTemperature, StringFormat='Temp: {0:F1} °C'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding CpuVoltage, StringFormat='Volt: {0:F3} V'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding Uptime, StringFormat='Uptime: {0:dd\\.hh\\:mm\\:ss}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding ProcessCount, StringFormat='Processes: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding ThreadCount, StringFormat='Threads: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding HandleCount, StringFormat='Handles: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                    </UniformGrid>
+                </StackPanel>
+
                 <!-- Process List -->
-                <Grid Grid.Row="4">
+                <Grid Grid.Row="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -231,9 +247,14 @@
                     <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
                     
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="2" VerticalAlignment="Top"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="0,2">
+                                <Grid Margin="0,2,10,2">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>

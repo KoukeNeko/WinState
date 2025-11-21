@@ -113,6 +113,15 @@ namespace WinState.ViewModels.Windows
         public string NetworkUploadUnit => _systemInfoService.NetworkUploadUnit;
         public string NetworkDownloadUnit => _systemInfoService.NetworkDownloadUnit;
         public double CpuPower => _systemInfoService.CpuPower;
+        public string CpuName => _systemInfoService.CpuName;
+        public double CpuTemperature => _systemInfoService.CpuTemperature;
+        public double CpuClock => _systemInfoService.CpuClock;
+        public double CpuVoltage => _systemInfoService.CpuVoltage;
+        public int ProcessCount => _systemInfoService.ProcessCount;
+        public int ThreadCount => _systemInfoService.ThreadCount;
+        public int HandleCount => _systemInfoService.HandleCount;
+        public TimeSpan Uptime => _systemInfoService.Uptime;
+        
         public double NetworkDownloadText => _systemInfoService.DownloadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var down) ? down : 0;
         public double NetworkUploadText => _systemInfoService.UploadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var up) ? up : 0;
         
@@ -205,6 +214,14 @@ namespace WinState.ViewModels.Windows
                 OnPropertyChanged(nameof(NetworkUploadUnit));
                 OnPropertyChanged(nameof(NetworkDownloadUnit));
                 OnPropertyChanged(nameof(CpuPower));
+                OnPropertyChanged(nameof(CpuName));
+                OnPropertyChanged(nameof(CpuTemperature));
+                OnPropertyChanged(nameof(CpuClock));
+                OnPropertyChanged(nameof(CpuVoltage));
+                OnPropertyChanged(nameof(ProcessCount));
+                OnPropertyChanged(nameof(ThreadCount));
+                OnPropertyChanged(nameof(HandleCount));
+                OnPropertyChanged(nameof(Uptime));
 
                 OnPropertyChanged(nameof(NetworkDownloadText));
                 OnPropertyChanged(nameof(NetworkUploadText));
