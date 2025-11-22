@@ -66,7 +66,7 @@ namespace WinState.ViewModels.Pages
 
         public Task OnNavigatedFromAsync()
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }
