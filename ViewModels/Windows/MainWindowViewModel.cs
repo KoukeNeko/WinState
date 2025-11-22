@@ -15,6 +15,7 @@ using Wpf.Ui.Tray;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WinState.Views.Windows;
+using WinState.Views.Pages;
 
 namespace WinState.ViewModels.Windows
 {
@@ -112,13 +113,43 @@ namespace WinState.ViewModels.Windows
             {
                 Content = "Home",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
-                TargetPageType = typeof(Views.Pages.DashboardPage)
+                TargetPageType = typeof(WinState.Views.Pages.DashboardPage)
             },
             new NavigationViewItem()
             {
-                Content = "Data",
+                Content = "CPU",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Board24 },
+                TargetPageType = typeof(WinState.Views.Pages.CpuPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "GPU",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Video24 },
+                TargetPageType = typeof(WinState.Views.Pages.GpuPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "Memory",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.DeveloperBoard24 },
+                TargetPageType = typeof(WinState.Views.Pages.MemoryPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "Disk",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Storage24 },
+                TargetPageType = typeof(WinState.Views.Pages.DiskPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "Network",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.NetworkCheck24 },
+                TargetPageType = typeof(WinState.Views.Pages.NetworkPage)
+            },
+            new NavigationViewItem()
+            {
+                Content = "Sensors",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
-                TargetPageType = typeof(Views.Pages.DataPage)
+                TargetPageType = typeof(WinState.Views.Pages.SensorsPage)
             }
         };
 
@@ -129,7 +160,7 @@ namespace WinState.ViewModels.Windows
             {
                 Content = "Settings",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
-                TargetPageType = typeof(Views.Pages.SettingsPage)
+                TargetPageType = typeof(WinState.Views.Pages.SettingsPage)
             }
         };
 
@@ -139,7 +170,7 @@ namespace WinState.ViewModels.Windows
         public double CpuUsage => _systemInfoService.CpuUsage;
         public List<SensorItem> DetailedSensors => _systemInfoService.DetailedSensors;
         
-        public ObservableCollection<GpuViewModel> Gpus { get; private set; } = new ObservableCollection<GpuViewModel>();
+        public ObservableCollection<GpuItemViewModel> Gpus { get; private set; } = new ObservableCollection<GpuItemViewModel>();
 
         public double RamUsage => _systemInfoService.RamUsage;
         public double DiskUsage => _systemInfoService.DiskUsage;
@@ -263,9 +294,9 @@ namespace WinState.ViewModels.Windows
 
         private const int MaxHistoryLength = 20;
 
-        public MainWindowViewModel()
+        public MainWindowViewModel(SystemInfoService systemInfoService)
         {
-            _systemInfoService = new SystemInfoService();
+            _systemInfoService = systemInfoService;
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
             
@@ -352,7 +383,7 @@ namespace WinState.ViewModels.Windows
             // Sync collection count
             while (Gpus.Count < serviceGpus.Count)
             {
-                Gpus.Add(new GpuViewModel());
+                Gpus.Add(new GpuItemViewModel());
             }
             while (Gpus.Count > serviceGpus.Count)
             {
@@ -1165,7 +1196,7 @@ namespace WinState.ViewModels.Windows
         }
     }
 
-    public partial class GpuViewModel : ObservableObject
+    public partial class GpuItemViewModel : ObservableObject
     {
         [ObservableProperty] private string _name = "";
         [ObservableProperty] private double _usage;

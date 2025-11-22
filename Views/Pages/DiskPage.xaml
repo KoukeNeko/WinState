@@ -1,0 +1,33 @@
+<Page x:Class="WinState.Views.Pages.DiskPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:local="clr-namespace:WinState.Views.Pages"
+      Title="DiskPage"
+      d:DataContext="{d:DesignInstance local:DiskPage, IsDesignTimeCreatable=False}"
+      mc:Ignorable="d">
+
+    <Grid>
+        <StackPanel Margin="20">
+            <TextBlock Text="Disk" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+            <TextBlock Text="{Binding ViewModel.DiskUsage, StringFormat='Usage: {0:F1}%'}" FontSize="14"/>
+            <TextBlock Text="{Binding ViewModel.TotalDiskRead, StringFormat='Read: {0} B/s'}" FontSize="14"/>
+            <TextBlock Text="{Binding ViewModel.TotalDiskWrite, StringFormat='Write: {0} B/s'}" FontSize="14"/>
+            
+            <ItemsControl ItemsSource="{Binding ViewModel.DiskInfos}" Margin="0,20,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding Label}"/>
+                            <TextBlock Text="{Binding Model}"/>
+                            <TextBlock Text="{Binding Temperature, StringFormat='Temp: {0}°C'}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Grid>
+</Page>

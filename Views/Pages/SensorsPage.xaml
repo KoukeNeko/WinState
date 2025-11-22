@@ -1,0 +1,27 @@
+<Page x:Class="WinState.Views.Pages.SensorsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:local="clr-namespace:WinState.Views.Pages"
+      Title="SensorsPage"
+      d:DataContext="{d:DesignInstance local:SensorsPage, IsDesignTimeCreatable=False}"
+      mc:Ignorable="d">
+
+    <Grid>
+        <StackPanel Margin="20">
+            <TextBlock Text="Sensors" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+            <ItemsControl ItemsSource="{Binding ViewModel.DetailedSensors}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="{Binding Name}" Width="200"/>
+                            <TextBlock Text="{Binding Value, StringFormat='{}{0:F1}'}" Width="100"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Grid>
+</Page>

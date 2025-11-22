@@ -32,6 +32,9 @@ namespace WinState
             {
                 services.AddHostedService<ApplicationHostService>();
 
+                // Services
+                services.AddSingleton<SystemInfoService>();
+
                 // Page resolver service
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
 
@@ -54,6 +57,18 @@ namespace WinState
                 services.AddSingleton<DataViewModel>();
                 services.AddSingleton<SettingsPage>();
                 services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<CpuPage>();
+                services.AddSingleton<CpuViewModel>();
+                services.AddSingleton<GpuPage>();
+                services.AddSingleton<GpuViewModel>();
+                services.AddSingleton<MemoryPage>();
+                services.AddSingleton<MemoryViewModel>();
+                services.AddSingleton<DiskPage>();
+                services.AddSingleton<DiskViewModel>();
+                services.AddSingleton<NetworkPage>();
+                services.AddSingleton<NetworkViewModel>();
+                services.AddSingleton<SensorsPage>();
+                services.AddSingleton<SensorsViewModel>();
 
                 services.AddSingleton<INotifyIconService, CustomNotifyIconService>();
 
