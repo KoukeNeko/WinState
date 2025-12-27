@@ -288,9 +288,12 @@ namespace WinState.ViewModels.Windows
 
         private const int MaxHistoryLength = 20;
 
-        public MainWindowViewModel(SystemInfoService systemInfoService)
+        private readonly IUserSettingsService _userSettingsService;
+
+        public MainWindowViewModel(SystemInfoService systemInfoService, IUserSettingsService userSettingsService)
         {
             _systemInfoService = systemInfoService;
+            _userSettingsService = userSettingsService;
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
             
@@ -671,7 +674,7 @@ namespace WinState.ViewModels.Windows
                 });
             }
 
-            while (TopProcesses.Count < 15)
+            while (TopProcesses.Count < _userSettingsService.GetCpuSettings().ProcessCount)
             {
                 TopProcesses.Add(new ProcessViewModel { Name = "", CpuUsage = 0, Icon = null });
             }

@@ -25,6 +25,9 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
 
+        [ObservableProperty]
+        private int _cpuProcessCount = 15;
+
         public SettingsViewModel(IUserSettingsService userSettingsService)
         {
             _userSettingsService = userSettingsService;
@@ -38,8 +41,24 @@ namespace WinState.ViewModels.Pages
             AppVersion = $"WinState - {GetAssemblyVersion()}";
             
             LoadTrayIconSettings();
+            LoadCpuSettings();
 
             _isInitialized = true;
+        }
+
+        private void LoadCpuSettings()
+        {
+            var settings = _userSettingsService.GetCpuSettings();
+            CpuProcessCount = settings.ProcessCount;
+        }
+
+        partial void OnCpuProcessCountChanged(int value)
+        {
+            if (_isInitialized && value >= 1 && value <= 50)
+            {
+                var settings = new CpuSettings { ProcessCount = value };
+                _userSettingsService.SaveCpuSettings(settings);
+            }
         }
 
         private void LoadTrayIconSettings()

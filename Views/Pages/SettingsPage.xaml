@@ -122,6 +122,36 @@
                 </StackPanel>
             </ui:CardExpander>
 
+            <!-- CPU Settings -->
+            <ui:CardExpander 
+                Margin="0,12,0,0"
+                Icon="{ui:SymbolIcon Board24}"
+                Header="CPU">
+                <StackPanel>
+                    <Grid Margin="0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock 
+                            Text="Process Count" 
+                            VerticalAlignment="Center"
+                            FontWeight="Medium"/>
+                        <ui:NumberBox 
+                            Grid.Column="1"
+                            Width="120"
+                            Minimum="1"
+                            Maximum="50"
+                            SpinButtonPlacementMode="Inline"
+                            Value="{Binding ViewModel.CpuProcessCount, Mode=TwoWay}"/>
+                    </Grid>
+                    <TextBlock 
+                        Text="Number of processes to display (1-50)"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        FontSize="12"/>
+                </StackPanel>
+            </ui:CardExpander>
+
             <!-- About Section -->
             <TextBlock
                 Margin="0,24,0,0"

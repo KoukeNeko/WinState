@@ -12,6 +12,22 @@ namespace WinState.Services
         TrayIconSettings GetTrayIconSettings();
         void SaveTrayIconSettings(TrayIconSettings settings);
         void ResetTrayIconSettings();
+        
+        CpuSettings GetCpuSettings();
+        void SaveCpuSettings(CpuSettings settings);
+    }
+
+    /// <summary>
+    /// CPU display settings.
+    /// </summary>
+    public class CpuSettings
+    {
+        /// <summary>
+        /// Number of processes to display in the process list. Default: 15
+        /// </summary>
+        public int ProcessCount { get; set; } = 15;
+
+        public static CpuSettings CreateDefault() => new CpuSettings { ProcessCount = 15 };
     }
 
     /// <summary>
@@ -25,7 +41,8 @@ namespace WinState.Services
         private readonly string _settingsFilePath;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        private TrayIconSettings? _cachedSettings;
+        private TrayIconSettings? _cachedTraySettings;
+        private CpuSettings? _cachedCpuSettings;
 
         public UserSettingsService()
         {
@@ -47,33 +64,21 @@ namespace WinState.Services
 
         public TrayIconSettings GetTrayIconSettings()
         {
-            if (_cachedSettings != null)
+            if (_cachedTraySettings != null)
             {
-                return _cachedSettings;
+                return _cachedTraySettings;
             }
 
-            if (File.Exists(_settingsFilePath))
+            var wrapper = LoadSettingsWrapper();
+            if (wrapper.TrayIconSettings != null)
             {
-                try
-                {
-                    var json = File.ReadAllText(_settingsFilePath);
-                    var settingsWrapper = JsonSerializer.Deserialize<UserSettingsWrapper>(json, _jsonOptions);
-                    
-                    if (settingsWrapper?.TrayIconSettings != null)
-                    {
-                        _cachedSettings = settingsWrapper.TrayIconSettings;
-                        return _cachedSettings;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to load settings: {ex.Message}");
-                }
+                _cachedTraySettings = wrapper.TrayIconSettings;
+                return _cachedTraySettings;
             }
 
-            _cachedSettings = TrayIconSettings.CreateDefault();
-            SaveTrayIconSettings(_cachedSettings);
-            return _cachedSettings;
+            _cachedTraySettings = TrayIconSettings.CreateDefault();
+            SaveTrayIconSettings(_cachedTraySettings);
+            return _cachedTraySettings;
         }
 
         public void SaveTrayIconSettings(TrayIconSettings settings)
@@ -86,7 +91,7 @@ namespace WinState.Services
                 var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
                 File.WriteAllText(_settingsFilePath, json);
                 
-                _cachedSettings = settings;
+                _cachedTraySettings = settings;
             }
             catch (Exception ex)
             {
@@ -98,6 +103,43 @@ namespace WinState.Services
         {
             var defaultSettings = TrayIconSettings.CreateDefault();
             SaveTrayIconSettings(defaultSettings);
+        }
+
+        public CpuSettings GetCpuSettings()
+        {
+            if (_cachedCpuSettings != null)
+            {
+                return _cachedCpuSettings;
+            }
+
+            var wrapper = LoadSettingsWrapper();
+            if (wrapper.CpuSettings != null)
+            {
+                _cachedCpuSettings = wrapper.CpuSettings;
+                return _cachedCpuSettings;
+            }
+
+            _cachedCpuSettings = CpuSettings.CreateDefault();
+            SaveCpuSettings(_cachedCpuSettings);
+            return _cachedCpuSettings;
+        }
+
+        public void SaveCpuSettings(CpuSettings settings)
+        {
+            try
+            {
+                var wrapper = LoadSettingsWrapper();
+                wrapper.CpuSettings = settings;
+                
+                var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                File.WriteAllText(_settingsFilePath, json);
+                
+                _cachedCpuSettings = settings;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to save CPU settings: {ex.Message}");
+            }
         }
 
         private UserSettingsWrapper LoadSettingsWrapper()
@@ -123,6 +165,7 @@ namespace WinState.Services
         private class UserSettingsWrapper
         {
             public TrayIconSettings? TrayIconSettings { get; set; }
+            public CpuSettings? CpuSettings { get; set; }
         }
     }
 }
