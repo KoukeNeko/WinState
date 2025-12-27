@@ -135,15 +135,25 @@
         </CollectionViewSource>
     </UserControl.Resources>
 
-    <Border Background="#1E1E1E"
-            CornerRadius="12"
-            BorderBrush="#333333"
-            BorderThickness="1">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.4" Color="Black"/>
-        </Border.Effect>
+    <Grid>
+        <!-- Shadow Layer - uses a separate Border with BlurEffect for proper rounded corner shadows -->
+        <Border Background="#000000"
+                CornerRadius="12"
+                Margin="10"
+                Opacity="0.4">
+            <Border.Effect>
+                <BlurEffect Radius="15"/>
+            </Border.Effect>
+        </Border>
+        
+        <!-- Main Content Border -->
+        <Border Background="#1E1E1E"
+                CornerRadius="12"
+                BorderBrush="#333333"
+                BorderThickness="1"
+                Margin="10">
 
-        <Grid Margin="20">
+            <Grid Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- CPU -->
                 <RowDefinition Height="Auto"/> <!-- Separator -->
@@ -1128,5 +1138,6 @@
                 </ScrollViewer>
             </Grid>
         </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </UserControl>
