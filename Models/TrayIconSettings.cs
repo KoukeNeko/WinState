@@ -21,10 +21,10 @@ namespace WinState.Models
                 {
                     new TrayIconEntry { Id = "CPU", DisplayName = "CPU", Order = 0, IsVisible = true },
                     new TrayIconEntry { Id = "GPU", DisplayName = "GPU", Order = 1, IsVisible = true },
-                    new TrayIconEntry { Id = "DISK", DisplayName = "Disk", Order = 2, IsVisible = true },
-                    new TrayIconEntry { Id = "NET", DisplayName = "Network", Order = 3, IsVisible = true },
-                    new TrayIconEntry { Id = "POWER", DisplayName = "Power", Order = 4, IsVisible = true },
-                    new TrayIconEntry { Id = "RAM", DisplayName = "RAM", Order = 5, IsVisible = true }
+                    new TrayIconEntry { Id = "RAM", DisplayName = "RAM", Order = 2, IsVisible = true },
+                    new TrayIconEntry { Id = "DISK", DisplayName = "Disk", Order = 3, IsVisible = true },
+                    new TrayIconEntry { Id = "NET", DisplayName = "Network", Order = 4, IsVisible = true },
+                    new TrayIconEntry { Id = "POWER", DisplayName = "Power", Order = 5, IsVisible = true }
                 }
             };
         }

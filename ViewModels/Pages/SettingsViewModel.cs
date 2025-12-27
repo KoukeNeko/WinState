@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Linq;
 using WinState.Models;
 using WinState.Services;
 using Wpf.Ui.Abstractions.Controls;

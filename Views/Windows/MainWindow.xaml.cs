@@ -97,10 +97,20 @@ namespace WinState.Views.Windows
 
         private Hardcodet.Wpf.TaskbarNotification.TaskbarIcon? CreateTrayIcon(string iconId)
         {
+            // Create individual ContextMenu for each icon with proper DataContext
+            var contextMenu = new System.Windows.Controls.ContextMenu { DataContext = this };
+            var settingsMenuItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
+            settingsMenuItem.SetBinding(System.Windows.Controls.MenuItem.CommandProperty, new Binding("ViewModel.OpenSettingsCommand"));
+            var exitMenuItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+            exitMenuItem.SetBinding(System.Windows.Controls.MenuItem.CommandProperty, new Binding("ViewModel.ExitApplicationCommand"));
+            contextMenu.Items.Add(settingsMenuItem);
+            contextMenu.Items.Add(new System.Windows.Controls.Separator());
+            contextMenu.Items.Add(exitMenuItem);
+
             var icon = new Hardcodet.Wpf.TaskbarNotification.TaskbarIcon
             {
                 Tag = iconId,
-                ContextMenu = _trayContextMenu
+                ContextMenu = contextMenu
             };
             
             icon.TrayLeftMouseUp += OnTrayIconClick;

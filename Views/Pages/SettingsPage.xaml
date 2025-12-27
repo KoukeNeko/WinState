@@ -22,11 +22,11 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,20">
-            <!-- Personalization Section -->
+            <!-- 外觀 Section -->
             <TextBlock
                 FontSize="20"
                 FontWeight="Medium"
-                Text="Personalization" />
+                Text="外觀" />
             <TextBlock Margin="0,12,0,0" Text="Theme" />
             <RadioButton
                 Margin="0,12,0,0"
@@ -42,17 +42,6 @@
                 Content="Dark"
                 GroupName="themeSelect"
                 IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
-
-            <!-- Tray Icons Section -->
-            <TextBlock
-                Margin="0,24,0,0"
-                FontSize="20"
-                FontWeight="Medium"
-                Text="Tray Icons" />
-            <TextBlock 
-                Margin="0,8,0,0" 
-                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                Text="Configure icon order and visibility. Changes require restart." />
             
             <ui:CardExpander 
                 Margin="0,12,0,0"
