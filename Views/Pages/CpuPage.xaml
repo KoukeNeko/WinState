@@ -10,14 +10,46 @@
       mc:Ignorable="d">
 
     <Grid>
-        <StackPanel Margin="20">
-            <TextBlock Text="CPU" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
-            <TextBlock Text="{Binding ViewModel.CpuName}" FontSize="16" Margin="0,0,0,10"/>
-            <TextBlock Text="{Binding ViewModel.CpuUsage, StringFormat='Usage: {0:F1}%'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.CpuTemperature, StringFormat='Temperature: {0:F1}°C'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.CpuClock, StringFormat='Clock: {0:F0} MHz'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.CpuPower, StringFormat='Power: {0:F1} W'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.CpuVoltage, StringFormat='Voltage: {0:F3} V'}" FontSize="14"/>
-        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+                <TextBlock Text="CPU" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+                <TextBlock Text="{Binding ViewModel.CpuName}" FontSize="16" Margin="0,0,0,10"/>
+                <TextBlock Text="{Binding ViewModel.CpuUsage, StringFormat='Usage: {0:F1}%'}" FontSize="14"/>
+                <TextBlock Text="{Binding ViewModel.CpuTemperature, StringFormat='Temperature: {0:F1}°C'}" FontSize="14"/>
+                <TextBlock Text="{Binding ViewModel.CpuClock, StringFormat='Clock: {0:F0} MHz'}" FontSize="14"/>
+                <TextBlock Text="{Binding ViewModel.CpuPower, StringFormat='Power: {0:F1} W'}" FontSize="14"/>
+                <TextBlock Text="{Binding ViewModel.CpuVoltage, StringFormat='Voltage: {0:F3} V'}" FontSize="14"/>
+                
+                <!-- Settings Section -->
+                <ui:CardExpander 
+                    Margin="0,24,0,0"
+                    Icon="{ui:SymbolIcon Settings24}"
+                    Header="Settings">
+                    <StackPanel>
+                        <Grid Margin="0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock 
+                                Text="Process Count" 
+                                VerticalAlignment="Center"
+                                FontWeight="Medium"/>
+                            <ui:NumberBox 
+                                Grid.Column="1"
+                                Width="120"
+                                Minimum="1"
+                                Maximum="50"
+                                SpinButtonPlacementMode="Inline"
+                                Value="{Binding ViewModel.ProcessCount, Mode=TwoWay}"/>
+                        </Grid>
+                        <TextBlock 
+                            Text="Number of processes to display (1-50)"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            FontSize="12"/>
+                    </StackPanel>
+                </ui:CardExpander>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>

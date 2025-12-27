@@ -7,6 +7,7 @@ namespace WinState.ViewModels.Pages
     public partial class CpuViewModel : ObservableObject
     {
         private readonly SystemInfoService _systemInfoService;
+        private readonly IUserSettingsService _userSettingsService;
 
         public double CpuUsage => _systemInfoService.CpuUsage;
         public string CpuName => _systemInfoService.CpuName;
@@ -15,10 +16,27 @@ namespace WinState.ViewModels.Pages
         public double CpuPower => _systemInfoService.CpuPower;
         public double CpuVoltage => _systemInfoService.CpuVoltage;
 
-        public CpuViewModel(SystemInfoService systemInfoService)
+        [ObservableProperty]
+        private int _processCount = 15;
+
+        public CpuViewModel(SystemInfoService systemInfoService, IUserSettingsService userSettingsService)
         {
             _systemInfoService = systemInfoService;
+            _userSettingsService = userSettingsService;
             _systemInfoService.DataUpdated += OnDataUpdated;
+            
+            // Load saved settings
+            var cpuSettings = _userSettingsService.GetCpuSettings();
+            _processCount = cpuSettings.ProcessCount;
+        }
+
+        partial void OnProcessCountChanged(int value)
+        {
+            if (value >= 1 && value <= 50)
+            {
+                var settings = new CpuSettings { ProcessCount = value };
+                _userSettingsService.SaveCpuSettings(settings);
+            }
         }
 
         private void OnDataUpdated(object? sender, EventArgs e)
