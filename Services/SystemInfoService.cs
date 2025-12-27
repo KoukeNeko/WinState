@@ -404,7 +404,7 @@ namespace WinState.Services
                         sensor.SensorType == SensorType.Current ||
                         sensor.SensorType == SensorType.Energy ||
                         sensor.SensorType == SensorType.Level || // Battery level
-                        (sensor.SensorType == SensorType.Load && (hardware.HardwareType == HardwareType.Cpu || hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd || hardware.HardwareType == HardwareType.Memory)))
+                        (sensor.SensorType == SensorType.Load && (hardware.HardwareType == HardwareType.Cpu || hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd || hardware.HardwareType == HardwareType.GpuIntel || hardware.HardwareType == HardwareType.Memory)))
                     {
                         _allDetailedSensors.Add(sensor);
                     }
@@ -468,34 +468,49 @@ namespace WinState.Services
                         
                         foreach (var sensor in hardware.Sensors)
                         {
-                            if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core")
+                            // GPU Core Load
+                            if (sensor.SensorType == SensorType.Load)
                             {
-                                gpuInfo.CoreLoadSensor = sensor;
+                                if (sensor.Name == "GPU Core")
+                                    gpuInfo.CoreLoadSensor = sensor;
+                                else if (gpuInfo.CoreLoadSensor == null && (sensor.Name == "D3D 3D" || sensor.Name.Contains("Core")))
+                                    gpuInfo.CoreLoadSensor = sensor;
                             }
+
                             // GPU Memory Load
-                            if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Memory")
+                            if (sensor.SensorType == SensorType.Load && (sensor.Name == "GPU Memory" || sensor.Name.Contains("Memory")))
                             {
                                 gpuInfo.MemoryLoadSensor = sensor;
                             }
+
                             // GPU Memory Used
-                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Used" || sensor.Name.Contains("Memory Used")))
+                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Used" || sensor.Name.Contains("Memory Used") || sensor.Name.Contains("D3D Shared Memory Used")))
                             {
                                 gpuInfo.MemoryUsedSensor = sensor;
                             }
+
                             // GPU Memory Total
-                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Total" || sensor.Name.Contains("Memory Total")))
+                            if (sensor.SensorType == SensorType.SmallData && (sensor.Name == "GPU Memory Total" || sensor.Name.Contains("Memory Total") || sensor.Name.Contains("D3D Shared Memory Total")))
                             {
                                 gpuInfo.MemoryTotalSensor = sensor;
                             }
+
                             // GPU Temperature
-                            if (sensor.SensorType == SensorType.Temperature && gpuInfo.TemperatureSensor == null)
+                            if (sensor.SensorType == SensorType.Temperature)
                             {
-                                gpuInfo.TemperatureSensor = sensor;
+                                if (gpuInfo.TemperatureSensor == null || sensor.Name.Contains("Core") || sensor.Name.Contains("Package"))
+                                {
+                                    gpuInfo.TemperatureSensor = sensor;
+                                }
                             }
+
                             // GPU Clock
-                            if (sensor.SensorType == SensorType.Clock && gpuInfo.ClockSensor == null && sensor.Name.Contains("Core"))
+                            if (sensor.SensorType == SensorType.Clock)
                             {
-                                gpuInfo.ClockSensor = sensor;
+                                if (sensor.Name == "GPU Core" || sensor.Name.Contains("Core") || sensor.Name.Contains("Graphics") || sensor.Name.Contains("System"))
+                                {
+                                    gpuInfo.ClockSensor = sensor;
+                                }
                             }
                         }
                         Gpus.Add(gpuInfo);
@@ -514,6 +529,28 @@ namespace WinState.Services
                         }
                         break;
                 }
+            }
+
+            // Debug: Dump all sensors to a file
+            try
+            {
+                var debugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug_sensors.txt");
+                using (var writer = new StreamWriter(debugPath))
+                {
+                    foreach (var hw in _computer.Hardware)
+                    {
+                        writer.WriteLine($"Hardware: {hw.Name} ({hw.HardwareType})");
+                        foreach (var s in hw.Sensors)
+                        {
+                            writer.WriteLine($"  Sensor: {s.Name} [{s.SensorType}] = {s.Value}");
+                        }
+                        writer.WriteLine();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to write debug file: {ex.Message}");
             }
         }
 
@@ -1031,10 +1068,23 @@ namespace WinState.Services
             foreach (var gpu in Gpus)
             {
                 if (gpu.CoreLoadSensor != null) gpu.Usage = gpu.CoreLoadSensor.Value.GetValueOrDefault();
-                if (gpu.MemoryLoadSensor != null) gpu.MemoryUsage = gpu.MemoryLoadSensor.Value.GetValueOrDefault();
+                if (gpu.MemoryLoadSensor != null) 
+                {
+                    gpu.MemoryUsage = gpu.MemoryLoadSensor.Value.GetValueOrDefault();
+                }
+                else if (gpu.MemoryTotal > 0)
+                {
+                    gpu.MemoryUsage = (double)gpu.MemoryUsed / gpu.MemoryTotal * 100.0;
+                }
                 
                 if (gpu.MemoryUsedSensor != null) gpu.MemoryUsed = (long)(gpu.MemoryUsedSensor.Value.GetValueOrDefault() * 1024 * 1024);
                 if (gpu.MemoryTotalSensor != null) gpu.MemoryTotal = (long)(gpu.MemoryTotalSensor.Value.GetValueOrDefault() * 1024 * 1024);
+                
+                // Re-calculate if we just got the values and didn't have the sensor
+                if (gpu.MemoryLoadSensor == null && gpu.MemoryTotal > 0)
+                {
+                     gpu.MemoryUsage = (double)gpu.MemoryUsed / gpu.MemoryTotal * 100.0;
+                }
                 
                 if (gpu.TemperatureSensor != null) gpu.Temperature = gpu.TemperatureSensor.Value.GetValueOrDefault();
                 if (gpu.ClockSensor != null) gpu.Clock = gpu.ClockSensor.Value.GetValueOrDefault();
