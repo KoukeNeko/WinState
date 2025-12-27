@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WinState.ViewModels.Windows;
+using WinState.Services;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
@@ -45,22 +46,109 @@ namespace WinState.Views.Windows
         }
 
         public MainWindowViewModel ViewModel { get; }
+        
+        private readonly IUserSettingsService _userSettingsService;
+        private readonly List<Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIcons = new();
+        private ContextMenu? _trayContextMenu;
 
         public MainWindow(
             MainWindowViewModel viewModel,
             INavigationViewPageProvider pageService,
-            INavigationService navigationService
+            INavigationService navigationService,
+            IUserSettingsService userSettingsService
         )
         {
             ViewModel = viewModel;
+            _userSettingsService = userSettingsService;
             DataContext = this;
 
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
+            
+            // Create tray icons dynamically based on settings
+            CreateTrayIcons();
+            
             SetPageService(pageService);
 
             navigationService.SetNavigationControl(RootNavigation);
+        }
+
+        private void CreateTrayIcons()
+        {
+            // Get context menu from resources
+            _trayContextMenu = this.Resources["TrayContextMenu"] as ContextMenu;
+            
+            var settings = _userSettingsService.GetTrayIconSettings();
+            var orderedIcons = settings.Icons
+                .Where(i => i.IsVisible)
+                .OrderBy(i => i.Order)
+                .ToList();
+
+            foreach (var iconConfig in orderedIcons)
+            {
+                var icon = CreateTrayIcon(iconConfig.Id);
+                if (icon != null)
+                {
+                    _trayIcons.Add(icon);
+                }
+            }
+        }
+
+        private Hardcodet.Wpf.TaskbarNotification.TaskbarIcon? CreateTrayIcon(string iconId)
+        {
+            var icon = new Hardcodet.Wpf.TaskbarNotification.TaskbarIcon
+            {
+                Tag = iconId,
+                ContextMenu = _trayContextMenu
+            };
+            
+            icon.TrayLeftMouseUp += OnTrayIconClick;
+
+            // Set bindings based on icon type
+            switch (iconId)
+            {
+                case "CPU":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.CpuIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.CpuToolTip") { Source = this });
+                    break;
+                case "GPU":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.GpuIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.GpuToolTip") { Source = this });
+                    break;
+                case "RAM":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.RamIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.RamToolTip") { Source = this });
+                    break;
+                case "DISK":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.DiskIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.DiskToolTip") { Source = this });
+                    break;
+                case "NET":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.NetworkIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.NetworkToolTip") { Source = this });
+                    break;
+                case "POWER":
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
+                        new Binding("ViewModel.PowerIcon") { Source = this });
+                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
+                        new Binding("ViewModel.PowerToolTip") { Source = this });
+                    break;
+                default:
+                    return null;
+            }
+
+            return icon;
         }
 
         #region INavigationWindow methods
@@ -79,6 +167,13 @@ namespace WinState.Views.Windows
 
         protected override void OnClosed(EventArgs e)
         {
+            // Dispose tray icons
+            foreach (var icon in _trayIcons)
+            {
+                icon.Dispose();
+            }
+            _trayIcons.Clear();
+            
             base.OnClosed(e);
             Application.Current.Shutdown();
         }

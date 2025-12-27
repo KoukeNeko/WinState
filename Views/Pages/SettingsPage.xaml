@@ -10,7 +10,7 @@
     Title="SettingsPage"
     d:DataContext="{d:DesignInstance local:SettingsPage,
                                      IsDesignTimeCreatable=False}"
-    d:DesignHeight="450"
+    d:DesignHeight="650"
     d:DesignWidth="800"
     ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
     ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -20,32 +20,126 @@
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
     </Page.Resources>
 
-    <StackPanel>
-        <TextBlock
-            FontSize="20"
-            FontWeight="Medium"
-            Text="Personalization" />
-        <TextBlock Margin="0,12,0,0" Text="Theme" />
-        <RadioButton
-            Margin="0,12,0,0"
-            Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
-            CommandParameter="theme_light"
-            Content="Light"
-            GroupName="themeSelect"
-            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}" />
-        <RadioButton
-            Margin="0,8,0,0"
-            Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
-            CommandParameter="theme_dark"
-            Content="Dark"
-            GroupName="themeSelect"
-            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,20">
+            <!-- Personalization Section -->
+            <TextBlock
+                FontSize="20"
+                FontWeight="Medium"
+                Text="Personalization" />
+            <TextBlock Margin="0,12,0,0" Text="Theme" />
+            <RadioButton
+                Margin="0,12,0,0"
+                Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
+                CommandParameter="theme_light"
+                Content="Light"
+                GroupName="themeSelect"
+                IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}" />
+            <RadioButton
+                Margin="0,8,0,0"
+                Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
+                CommandParameter="theme_dark"
+                Content="Dark"
+                GroupName="themeSelect"
+                IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
 
-        <TextBlock
-            Margin="0,24,0,0"
-            FontSize="20"
-            FontWeight="Medium"
-            Text="About WinState" />
-        <TextBlock Margin="0,12,0,0" Text="{Binding ViewModel.AppVersion, Mode=OneWay}" />
-    </StackPanel>
+            <!-- Tray Icons Section -->
+            <TextBlock
+                Margin="0,24,0,0"
+                FontSize="20"
+                FontWeight="Medium"
+                Text="Tray Icons" />
+            <TextBlock 
+                Margin="0,8,0,0" 
+                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                Text="Configure icon order and visibility. Changes require restart." />
+            
+            <ui:CardExpander 
+                Margin="0,12,0,0"
+                Icon="{ui:SymbolIcon AppsList24}"
+                Header="Icon Order &amp; Visibility">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding ViewModel.TrayIcons}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border 
+                                    Margin="0,4" 
+                                    Padding="12,8"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                    CornerRadius="4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Visibility Toggle -->
+                                        <CheckBox 
+                                            Grid.Column="0"
+                                            IsChecked="{Binding IsVisible}"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,12,0"/>
+                                        
+                                        <!-- Icon Name -->
+                                        <TextBlock 
+                                            Grid.Column="1"
+                                            Text="{Binding DisplayName}"
+                                            VerticalAlignment="Center"
+                                            FontWeight="Medium"/>
+                                        
+                                        <!-- Move Up Button -->
+                                        <ui:Button 
+                                            Grid.Column="2"
+                                            Icon="{ui:SymbolIcon ChevronUp24}"
+                                            Appearance="Secondary"
+                                            Margin="4,0"
+                                            Padding="8,4"
+                                            ToolTip="Move Up"
+                                            Command="{Binding DataContext.ViewModel.MoveIconUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                            CommandParameter="{Binding}"/>
+                                        
+                                        <!-- Move Down Button -->
+                                        <ui:Button 
+                                            Grid.Column="3"
+                                            Icon="{ui:SymbolIcon ChevronDown24}"
+                                            Appearance="Secondary"
+                                            Padding="8,4"
+                                            ToolTip="Move Down"
+                                            Command="{Binding DataContext.ViewModel.MoveIconDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                            CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <!-- Reset Button -->
+                    <ui:Button 
+                        Margin="0,12,0,0"
+                        Appearance="Secondary"
+                        Icon="{ui:SymbolIcon ArrowReset24}"
+                        Content="Reset to Default"
+                        Command="{Binding ViewModel.ResetIconOrderCommand}"/>
+                    
+                    <!-- Restart Notice -->
+                    <ui:InfoBar
+                        Margin="0,12,0,0"
+                        IsOpen="{Binding ViewModel.HasUnsavedChanges}"
+                        Severity="Informational"
+                        Title="Restart Required"
+                        Message="Icon order changes will take effect after restarting the application."/>
+                </StackPanel>
+            </ui:CardExpander>
+
+            <!-- About Section -->
+            <TextBlock
+                Margin="0,24,0,0"
+                FontSize="20"
+                FontWeight="Medium"
+                Text="About WinState" />
+            <TextBlock Margin="0,12,0,0" Text="{Binding ViewModel.AppVersion, Mode=OneWay}" />
+        </StackPanel>
+    </ScrollViewer>
 </Page>

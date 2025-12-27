@@ -1,4 +1,7 @@
-﻿using Wpf.Ui.Abstractions.Controls;
+﻿using System.Collections.ObjectModel;
+using WinState.Models;
+using WinState.Services;
+using Wpf.Ui.Abstractions.Controls;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
@@ -7,6 +10,7 @@ namespace WinState.ViewModels.Pages
     public partial class SettingsViewModel : ObservableObject, INavigationAware
     {
         private bool _isInitialized = false;
+        private readonly IUserSettingsService _userSettingsService;
 
         [ObservableProperty]
         private string _appVersion = String.Empty;
@@ -14,14 +18,66 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
 
+        [ObservableProperty]
+        private ObservableCollection<TrayIconEntryViewModel> _trayIcons = new();
+
+        [ObservableProperty]
+        private bool _hasUnsavedChanges = false;
+
+        public SettingsViewModel(IUserSettingsService userSettingsService)
+        {
+            _userSettingsService = userSettingsService;
+        }
+
         public void OnNavigatedFrom() { }
 
         private void InitializeViewModel()
         {
             CurrentTheme = ApplicationThemeManager.GetAppTheme();
-            AppVersion = $"UiDesktopApp1 - {GetAssemblyVersion()}";
+            AppVersion = $"WinState - {GetAssemblyVersion()}";
+            
+            LoadTrayIconSettings();
 
             _isInitialized = true;
+        }
+
+        private void LoadTrayIconSettings()
+        {
+            var settings = _userSettingsService.GetTrayIconSettings();
+            TrayIcons.Clear();
+            
+            foreach (var entry in settings.Icons.OrderBy(i => i.Order))
+            {
+                var vm = new TrayIconEntryViewModel
+                {
+                    Id = entry.Id,
+                    DisplayName = entry.DisplayName,
+                    IsVisible = entry.IsVisible,
+                    Order = entry.Order
+                };
+                vm.PropertyChanged += (s, e) => 
+                {
+                    HasUnsavedChanges = true;
+                    SaveTrayIconSettings();
+                };
+                TrayIcons.Add(vm);
+            }
+        }
+
+        private void SaveTrayIconSettings()
+        {
+            var settings = new TrayIconSettings
+            {
+                Icons = TrayIcons.Select((vm, index) => new TrayIconEntry
+                {
+                    Id = vm.Id,
+                    DisplayName = vm.DisplayName,
+                    IsVisible = vm.IsVisible,
+                    Order = index
+                }).ToList()
+            };
+            
+            _userSettingsService.SaveTrayIconSettings(settings);
         }
 
         private string GetAssemblyVersion()
@@ -55,6 +111,42 @@ namespace WinState.ViewModels.Pages
             }
         }
 
+        [RelayCommand]
+        private void OnMoveIconUp(TrayIconEntryViewModel? icon)
+        {
+            if (icon == null) return;
+            
+            var index = TrayIcons.IndexOf(icon);
+            if (index > 0)
+            {
+                TrayIcons.Move(index, index - 1);
+                SaveTrayIconSettings();
+                HasUnsavedChanges = true;
+            }
+        }
+
+        [RelayCommand]
+        private void OnMoveIconDown(TrayIconEntryViewModel? icon)
+        {
+            if (icon == null) return;
+            
+            var index = TrayIcons.IndexOf(icon);
+            if (index < TrayIcons.Count - 1)
+            {
+                TrayIcons.Move(index, index + 1);
+                SaveTrayIconSettings();
+                HasUnsavedChanges = true;
+            }
+        }
+
+        [RelayCommand]
+        private void OnResetIconOrder()
+        {
+            _userSettingsService.ResetTrayIconSettings();
+            LoadTrayIconSettings();
+            HasUnsavedChanges = true;
+        }
+
         public Task OnNavigatedToAsync()
         {
 
@@ -68,5 +160,23 @@ namespace WinState.ViewModels.Pages
         {
             return Task.CompletedTask;
         }
+    }
+
+    /// <summary>
+    /// ViewModel for individual tray icon entry in settings.
+    /// </summary>
+    public partial class TrayIconEntryViewModel : ObservableObject
+    {
+        [ObservableProperty]
+        private string _id = string.Empty;
+
+        [ObservableProperty]
+        private string _displayName = string.Empty;
+
+        [ObservableProperty]
+        private bool _isVisible = true;
+
+        [ObservableProperty]
+        private int _order;
     }
 }

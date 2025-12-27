@@ -34,6 +34,7 @@ namespace WinState
 
                 // Services
                 services.AddSingleton<SystemInfoService>();
+                services.AddSingleton<IUserSettingsService, UserSettingsService>();
 
                 // Page resolver service
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
