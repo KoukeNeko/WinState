@@ -111,12 +111,6 @@ namespace WinState.ViewModels.Windows
         {
             new NavigationViewItem()
             {
-                Content = "Home",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Home24 },
-                TargetPageType = typeof(WinState.Views.Pages.DashboardPage)
-            },
-            new NavigationViewItem()
-            {
                 Content = "CPU",
                 Icon = new SymbolIcon { Symbol = SymbolRegular.Board24 },
                 TargetPageType = typeof(WinState.Views.Pages.CpuPage)
