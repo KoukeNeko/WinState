@@ -49,6 +49,8 @@ namespace WinState.Views.Windows
         
         private readonly IUserSettingsService _userSettingsService;
         private readonly List<Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIcons = new();
+        // Maps each visible icon id to its tray icon and the ViewModel property carrying its image.
+        private readonly Dictionary<string, Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIconsById = new();
         private ContextMenu? _trayContextMenu;
 
         public MainWindow(
@@ -93,6 +95,8 @@ namespace WinState.Views.Windows
                     _trayIcons.Add(icon);
                 }
             }
+
+            ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
 
         private Hardcodet.Wpf.TaskbarNotification.TaskbarIcon? CreateTrayIcon(string iconId)
@@ -115,50 +119,65 @@ namespace WinState.Views.Windows
             
             icon.TrayLeftMouseUp += OnTrayIconClick;
 
-            // Set bindings based on icon type
-            switch (iconId)
+            // The tooltip is data-bound, but the icon image is assigned directly (see
+            // UpdateTrayIconImage) rather than via IconSource: the latter re-rasterizes the
+            // bitmap to a fixed size, which breaks crispness and sizing under display scaling.
+            string toolTipProperty = iconId switch
             {
-                case "CPU":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.CpuIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.CpuToolTip") { Source = this });
-                    break;
-                case "GPU":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.GpuIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.GpuToolTip") { Source = this });
-                    break;
-                case "RAM":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.RamIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.RamToolTip") { Source = this });
-                    break;
-                case "DISK":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.DiskIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.DiskToolTip") { Source = this });
-                    break;
-                case "NET":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.NetworkIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.NetworkToolTip") { Source = this });
-                    break;
-                case "POWER":
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.IconSourceProperty, 
-                        new Binding("ViewModel.PowerIcon") { Source = this });
-                    icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty, 
-                        new Binding("ViewModel.PowerToolTip") { Source = this });
-                    break;
-                default:
-                    return null;
-            }
+                "CPU" => "ViewModel.CpuToolTip",
+                "GPU" => "ViewModel.GpuToolTip",
+                "RAM" => "ViewModel.RamToolTip",
+                "DISK" => "ViewModel.DiskToolTip",
+                "NET" => "ViewModel.NetworkToolTip",
+                "POWER" => "ViewModel.PowerToolTip",
+                _ => ""
+            };
+
+            if (toolTipProperty.Length == 0)
+                return null;
+
+            icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty,
+                new Binding(toolTipProperty) { Source = this });
+
+            _trayIconsById[iconId] = icon;
+            UpdateTrayIconImage(iconId);
 
             return icon;
+        }
+
+        // Mirrors the ViewModel's current System.Drawing.Icon onto the matching tray icon.
+        private void UpdateTrayIconImage(string iconId)
+        {
+            if (!_trayIconsById.TryGetValue(iconId, out var trayIcon))
+                return;
+
+            trayIcon.Icon = iconId switch
+            {
+                "CPU" => ViewModel.CpuIcon,
+                "GPU" => ViewModel.GpuIcon,
+                "RAM" => ViewModel.RamIcon,
+                "DISK" => ViewModel.DiskIcon,
+                "NET" => ViewModel.NetworkIcon,
+                "POWER" => ViewModel.PowerIcon,
+                _ => trayIcon.Icon
+            };
+        }
+
+        private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            string? iconId = e.PropertyName switch
+            {
+                nameof(MainWindowViewModel.CpuIcon) => "CPU",
+                nameof(MainWindowViewModel.GpuIcon) => "GPU",
+                nameof(MainWindowViewModel.RamIcon) => "RAM",
+                nameof(MainWindowViewModel.DiskIcon) => "DISK",
+                nameof(MainWindowViewModel.NetworkIcon) => "NET",
+                nameof(MainWindowViewModel.PowerIcon) => "POWER",
+                _ => null
+            };
+
+            if (iconId != null)
+                UpdateTrayIconImage(iconId);
         }
 
         #region INavigationWindow methods
@@ -177,12 +196,15 @@ namespace WinState.Views.Windows
 
         protected override void OnClosed(EventArgs e)
         {
+            ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
             // Dispose tray icons
             foreach (var icon in _trayIcons)
             {
                 icon.Dispose();
             }
             _trayIcons.Clear();
+            _trayIconsById.Clear();
             
             base.OnClosed(e);
             Application.Current.Shutdown();

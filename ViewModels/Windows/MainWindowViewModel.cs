@@ -191,32 +191,32 @@ namespace WinState.ViewModels.Windows
         private PointCollection _cpuHistoryPoints = new PointCollection();
 
         [ObservableProperty]
-        private ImageSource _cpuIcon = null!;
+        private Drawing.Icon? _cpuIcon;
         [ObservableProperty]
         private string _cpuToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _gpuIcon = null!;
+        private Drawing.Icon? _gpuIcon;
         [ObservableProperty]
         private string _gpuToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _ramIcon = null!;
+        private Drawing.Icon? _ramIcon;
         [ObservableProperty]
         private string _ramToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _diskIcon = null!;
+        private Drawing.Icon? _diskIcon;
         [ObservableProperty]
         private string _diskToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _networkIcon = null!;
+        private Drawing.Icon? _networkIcon;
         [ObservableProperty]
         private string _networkToolTip = "";
 
         [ObservableProperty]
-        private ImageSource _powerIcon = null!;
+        private Drawing.Icon? _powerIcon;
         [ObservableProperty]
         private string _powerToolTip = "";
 
@@ -552,32 +552,57 @@ namespace WinState.ViewModels.Windows
 
         private void UpdateTrayIcons()
         {
+            // Size the icons to the taskbar monitor's actual DPI so they stay crisp and
+            // correctly sized under any display scaling.
+            int iconSize = NotifyIconHelper.GetNotificationAreaIconSize();
+
+            // Each property assignment raises PropertyChanged synchronously, so the view repoints
+            // the tray at the new icon before we free the previous GDI handle.
+            var old = (CpuIcon, GpuIcon, RamIcon, DiskIcon, NetworkIcon, PowerIcon);
+
             // CPU
-            CpuIcon = ToImageSource(CreateTextIcon("CPU", CpuUsage.ToString()));
+            CpuIcon = CreateTextIcon("CPU", CpuUsage.ToString(), iconSize);
             CpuToolTip = $"CPU: {CpuUsage}%";
 
             // GPU
             double maxGpuUsage = Gpus.Any() ? Gpus.Max(g => g.Usage) : 0;
-            GpuIcon = ToImageSource(CreateTextIcon("GPU", maxGpuUsage.ToString()));
+            GpuIcon = CreateTextIcon("GPU", maxGpuUsage.ToString(), iconSize);
             GpuToolTip = $"GPU: {maxGpuUsage}%";
 
             // RAM
-            RamIcon = ToImageSource(CreateTextIcon("RAM", RamUsage.ToString()));
+            RamIcon = CreateTextIcon("RAM", RamUsage.ToString(), iconSize);
             RamToolTip = $"RAM: {RamUsage}%";
 
             // DISK
-            DiskIcon = ToImageSource(CreateTextIcon("DISK", DiskUsage.ToString()));
+            DiskIcon = CreateTextIcon("DISK", DiskUsage.ToString(), iconSize);
             DiskToolTip = $"DISK: {DiskUsage}%";
 
             // NETWORK
             long download = _systemInfoService.DownloadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var d) ? d : 0;
             long upload = _systemInfoService.UploadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var u) ? u : 0;
-            NetworkIcon = ToImageSource(CreateNetworkIcon(upload, download));
+            NetworkIcon = CreateNetworkIcon(upload, download, iconSize);
             NetworkToolTip = $"NET: {SpeedHumanReadable(upload)} / {SpeedHumanReadable(download)}";
 
             // POWER
-            PowerIcon = ToImageSource(CreateTextIcon("PWR", CpuPower.ToString()));
+            PowerIcon = CreateTextIcon("PWR", CpuPower.ToString(), iconSize);
             PowerToolTip = $"PWR: {CpuPower}W";
+
+            DisposeTrayIcon(old.Item1);
+            DisposeTrayIcon(old.Item2);
+            DisposeTrayIcon(old.Item3);
+            DisposeTrayIcon(old.Item4);
+            DisposeTrayIcon(old.Item5);
+            DisposeTrayIcon(old.Item6);
+        }
+
+        // Icons returned by Icon.FromHandle do not own their HICON, so the handle must be
+        // destroyed explicitly to avoid leaking a GDI object on every refresh.
+        private static void DisposeTrayIcon(Drawing.Icon? icon)
+        {
+            if (icon == null) return;
+            IntPtr handle = icon.Handle;
+            icon.Dispose();
+            DestroyIcon(handle);
         }
 
         private ImageSource ToImageSource(Drawing.Icon icon, bool dispose = true)
@@ -979,7 +1004,7 @@ namespace WinState.ViewModels.Windows
 
 
 
-        static Drawing.Icon CreateTextIcon(string text1, string text2)
+        static Drawing.Icon CreateTextIcon(string text1, string text2, int iconSize)
         {
             if (text2.Length >= 3)
             {
@@ -996,8 +1021,8 @@ namespace WinState.ViewModels.Windows
                 }
             }
 
-            int iconWidth = SystemInformation.SmallIconSize.Width;
-            int iconHeight = SystemInformation.SmallIconSize.Height;
+            int iconWidth = iconSize;
+            int iconHeight = iconSize;
 
             using var bitmap = new Drawing.Bitmap(iconWidth, iconHeight);
             using Drawing.Graphics g = Drawing.Graphics.FromImage(bitmap);
@@ -1045,10 +1070,10 @@ namespace WinState.ViewModels.Windows
             return Drawing.Icon.FromHandle(bitmap.GetHicon());
         }
 
-        static Drawing.Icon CreateNetworkIcon(long upload, long download)
+        static Drawing.Icon CreateNetworkIcon(long upload, long download, int iconSize)
         {
-            int iconWidth = SystemInformation.SmallIconSize.Width;
-            int iconHeight = SystemInformation.SmallIconSize.Height;
+            int iconWidth = iconSize;
+            int iconHeight = iconSize;
 
             using var bitmap = new Drawing.Bitmap(iconWidth, iconHeight);
             using Drawing.Graphics g = Drawing.Graphics.FromImage(bitmap);

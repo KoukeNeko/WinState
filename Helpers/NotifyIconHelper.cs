@@ -51,6 +51,43 @@ namespace WinState.Helpers
         [DllImport("shell32.dll", SetLastError = true)]
         private static extern int Shell_NotifyIconGetRect([In] ref NOTIFYICONIDENTIFIER identifier, [Out] out RECT iconLocation);
 
+        // Returns the size (in physical pixels) a notification-area icon should be drawn at,
+        // based on the DPI of the monitor that hosts the taskbar. This works regardless of the
+        // process's DPI-awareness, so the icon stays crisp and correctly sized under any scaling.
+        public static int GetNotificationAreaIconSize()
+        {
+            try
+            {
+                IntPtr trayWnd = FindWindow("Shell_TrayWnd", null);
+                if (trayWnd != IntPtr.Zero)
+                {
+                    IntPtr monitor = MonitorFromWindow(trayWnd, MONITOR_DEFAULTTOPRIMARY);
+                    if (GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0)
+                    {
+                        return (int)Math.Round(16.0 * dpiX / 96.0);
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to the system metric below.
+            }
+
+            return System.Windows.Forms.SystemInformation.SmallIconSize.Width;
+        }
+
+        private const uint MONITOR_DEFAULTTOPRIMARY = 1;
+        private const int MDT_EFFECTIVE_DPI = 0;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+        [DllImport("Shcore.dll")]
+        private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
+
         private static FieldInfo windowField = typeof(NotifyIcon).GetField("_window", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private static IntPtr GetHandle(NotifyIcon icon)
         {
