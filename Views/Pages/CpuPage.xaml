@@ -1,55 +1,180 @@
-<Page x:Class="WinState.Views.Pages.CpuPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:local="clr-namespace:WinState.Views.Pages"
-      Title="CpuPage"
-      d:DataContext="{d:DesignInstance local:CpuPage, IsDesignTimeCreatable=False}"
-      mc:Ignorable="d">
+<Page
+    x:Class="WinState.Views.Pages.CpuPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WinState.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="CpuPage"
+    d:DataContext="{d:DesignInstance local:CpuPage,
+                                     IsDesignTimeCreatable=False}"
+    d:DesignHeight="900"
+    d:DesignWidth="800"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
 
-    <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="20">
-                <TextBlock Text="CPU" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
-                <TextBlock Text="{Binding ViewModel.CpuName}" FontSize="16" Margin="0,0,0,10"/>
-                <TextBlock Text="{Binding ViewModel.CpuUsage, StringFormat='Usage: {0:F1}%'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.CpuTemperature, StringFormat='Temperature: {0:F1}°C'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.CpuClock, StringFormat='Clock: {0:F0} MHz'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.CpuPower, StringFormat='Power: {0:F1} W'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.CpuVoltage, StringFormat='Voltage: {0:F3} V'}" FontSize="14"/>
-                
-                <!-- Settings Section -->
-                <ui:CardExpander 
-                    Margin="0,24,0,0"
-                    Icon="{ui:SymbolIcon Settings24}"
-                    Header="Settings">
-                    <StackPanel>
-                        <Grid Margin="0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock 
-                                Text="Process Count" 
-                                VerticalAlignment="Center"
-                                FontWeight="Medium"/>
-                            <ui:NumberBox 
-                                Grid.Column="1"
-                                Width="120"
-                                Minimum="1"
-                                Maximum="50"
-                                SpinButtonPlacementMode="Inline"
-                                Value="{Binding ViewModel.ProcessCount, Mode=TwoWay}"/>
-                        </Grid>
-                        <TextBlock 
-                            Text="Number of processes to display (1-50)"
-                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                            FontSize="12"/>
+    <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,24">
+            <TextBlock Style="{StaticResource PageTitle}" Text="CPU" />
+
+            <!--  Overview  -->
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock
+                            FontSize="16"
+                            FontWeight="SemiBold"
+                            Text="{Binding Main.CpuName}"
+                            TextWrapping="Wrap" />
+                        <UniformGrid Margin="0,8,0,0" Columns="2">
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.CpuClock, StringFormat='時脈：{0:F0} MHz'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.CpuTemperature, StringFormat='溫度：{0:F1} °C'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.CpuPower, StringFormat='功耗：{0:F1} W'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.CpuVoltage, StringFormat='電壓：{0:F3} V'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.ProcessCount, StringFormat='程序：{0}'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.ThreadCount, StringFormat='執行緒：{0}'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.HandleCount, StringFormat='控制代碼：{0}'}" />
+                            <TextBlock Style="{StaticResource MetricLabel}" Text="{Binding Main.Uptime, StringFormat='開機時間：{0:dd\\.hh\\:mm\\:ss}'}" />
+                        </UniformGrid>
                     </StackPanel>
-                </ui:CardExpander>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <TextBlock
+                            FontSize="44"
+                            FontWeight="Bold"
+                            Text="{Binding Main.CpuUsage, StringFormat={}{0:0.0}}" />
+                        <TextBlock
+                            Margin="2,0,0,10"
+                            VerticalAlignment="Bottom"
+                            FontSize="20"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="%" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!--  Usage history graph  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="使用率歷史" />
+                    <Border
+                        Height="150"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        ClipToBounds="True"
+                        CornerRadius="4">
+                        <Viewbox Stretch="Fill">
+                            <Grid Width="280" Height="80">
+                                <Line X1="0" Y1="20" X2="280" Y2="20" Stroke="{StaticResource GraphGridBrush}" StrokeDashArray="2 2" StrokeThickness="1" />
+                                <Line X1="0" Y1="40" X2="280" Y2="40" Stroke="{StaticResource GraphGridBrush}" StrokeDashArray="2 2" StrokeThickness="1" />
+                                <Line X1="0" Y1="60" X2="280" Y2="60" Stroke="{StaticResource GraphGridBrush}" StrokeDashArray="2 2" StrokeThickness="1" />
+                                <Polyline Points="{Binding Main.CpuUserHistoryPoints}" Stroke="{StaticResource GraphBlueBrush}" StrokeThickness="1.5" />
+                                <Polyline Points="{Binding Main.CpuKernelHistoryPoints}" Stroke="{StaticResource GraphRedBrush}" StrokeThickness="1.5" />
+                            </Grid>
+                        </Viewbox>
+                    </Border>
+                    <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
+                        <Rectangle Width="10" Height="10" Margin="0,0,5,0" Fill="{StaticResource GraphBlueBrush}" RadiusX="2" RadiusY="2" />
+                        <TextBlock Margin="0,0,16,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="User" />
+                        <Rectangle Width="10" Height="10" Margin="0,0,5,0" Fill="{StaticResource GraphRedBrush}" RadiusX="2" RadiusY="2" />
+                        <TextBlock Margin="0,0,16,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="System" />
+                        <TextBlock FontWeight="SemiBold" Text="{Binding Main.CpuUsage, StringFormat='合計 {0:0}%'}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!--  Per-core charts  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="各核心" />
+                    <ItemsControl ItemsSource="{Binding Main.Cores}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border
+                                    Height="54"
+                                    Margin="3"
+                                    Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                    ClipToBounds="True"
+                                    CornerRadius="4"
+                                    ToolTip="{Binding CurrentUsage, StringFormat={}{0:0}%}">
+                                    <Viewbox Stretch="Fill">
+                                        <Grid Width="295" Height="100">
+                                            <Polygon
+                                                Fill="{StaticResource GraphRedFillBrush}"
+                                                Points="{Binding TotalHistoryPoints}"
+                                                Stroke="{StaticResource GraphRedBrush}"
+                                                StrokeThickness="2" />
+                                            <Polygon
+                                                Fill="{StaticResource GraphBlueFillBrush}"
+                                                Points="{Binding UserHistoryPoints}"
+                                                Stroke="{StaticResource GraphBlueBrush}"
+                                                StrokeThickness="2" />
+                                        </Grid>
+                                    </Viewbox>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!--  Top processes  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="使用最多的程序" />
+                    <ItemsControl ItemsSource="{Binding Main.TopProcesses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Name}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image
+                                        Width="16"
+                                        Height="16"
+                                        Margin="0,0,8,0"
+                                        RenderOptions.BitmapScalingMode="HighQuality"
+                                        Source="{Binding Icon}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontWeight="SemiBold"
+                                        Text="{Binding CpuUsage, StringFormat={}{0:0.0}%}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

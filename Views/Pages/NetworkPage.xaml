@@ -1,29 +1,194 @@
-<Page x:Class="WinState.Views.Pages.NetworkPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:local="clr-namespace:WinState.Views.Pages"
-      Title="NetworkPage"
-      d:DataContext="{d:DesignInstance local:NetworkPage, IsDesignTimeCreatable=False}"
-      mc:Ignorable="d">
+<Page
+    x:Class="WinState.Views.Pages.NetworkPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WinState.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="NetworkPage"
+    d:DataContext="{d:DesignInstance local:NetworkPage,
+                                     IsDesignTimeCreatable=False}"
+    d:DesignHeight="900"
+    d:DesignWidth="800"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
 
-    <Grid>
-        <StackPanel Margin="20">
-            <TextBlock Text="Network" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Upload: " FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.NetworkUpload, StringFormat='{}{0:F1}'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.NetworkUploadUnit}" FontSize="14" Margin="5,0,0,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Download: " FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.NetworkDownload, StringFormat='{}{0:F1}'}" FontSize="14"/>
-                <TextBlock Text="{Binding ViewModel.NetworkDownloadUnit}" FontSize="14" Margin="5,0,0,0"/>
-            </StackPanel>
-            <TextBlock Text="{Binding ViewModel.LocalIpAddress, StringFormat='Local IP: {0}'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.PublicIpAddress, StringFormat='Public IP: {0}'}" FontSize="14"/>
+    <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,24">
+            <TextBlock Style="{StaticResource PageTitle}" Text="網路" />
+
+            <!--  Up / Down big stats  -->
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock FontSize="32" FontWeight="Bold" Text="{Binding Main.NetworkUploadValueString}" />
+                            <TextBlock
+                                Margin="3,0,0,6"
+                                VerticalAlignment="Bottom"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding Main.NetworkUploadUnitString}" />
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <Rectangle Width="10" Height="10" Margin="0,0,5,0" Fill="{StaticResource GraphRedBrush}" RadiusX="3" RadiusY="3" />
+                            <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="上傳" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock FontSize="32" FontWeight="Bold" Text="{Binding Main.NetworkDownloadValueString}" />
+                            <TextBlock
+                                Margin="3,0,0,6"
+                                VerticalAlignment="Bottom"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding Main.NetworkDownloadUnitString}" />
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <Rectangle Width="10" Height="10" Margin="0,0,5,0" Fill="{StaticResource GraphBlueBrush}" RadiusX="3" RadiusY="3" />
+                            <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="下載" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!--  History graph  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="流量歷史" />
+                    <Border
+                        Height="140"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        ClipToBounds="True"
+                        CornerRadius="4">
+                        <Grid>
+                            <TextBlock
+                                Margin="6,4,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding Main.NetworkMaxUploadString}" />
+                            <TextBlock
+                                Margin="6,0,0,4"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom"
+                                FontSize="10"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding Main.NetworkMaxDownloadString}" />
+                            <Viewbox Stretch="Fill">
+                                <Grid Width="280" Height="80">
+                                    <Polygon Points="{Binding Main.NetworkUploadHistoryPoints}" Fill="{StaticResource GraphRedFillBrush}" />
+                                    <Polyline Points="{Binding Main.NetworkUploadHistoryPoints}" Stroke="{StaticResource GraphRedBrush}" StrokeThickness="1.5" />
+                                    <Polygon Points="{Binding Main.NetworkDownloadHistoryPoints}" Fill="{StaticResource GraphBlueFillBrush}" />
+                                    <Polyline Points="{Binding Main.NetworkDownloadHistoryPoints}" Stroke="{StaticResource GraphBlueBrush}" StrokeThickness="1.5" />
+                                    <Line X1="0" Y1="40" X2="280" Y2="40" Stroke="{StaticResource GraphGridBrush}" StrokeThickness="1" />
+                                </Grid>
+                            </Viewbox>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!--  Details  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="連線資訊" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="公用 IP" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.PublicIpAddress}" />
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="本機 IP" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Style="{StaticResource MetricValue}"
+                            Text="{Binding Main.LocalIpAddress}"
+                            TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="介面" />
+                        <TextBlock
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Style="{StaticResource MetricValue}"
+                            Text="{Binding Main.InterfaceDescription}"
+                            TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="網路名稱" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.NetworkName}" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="實體位址" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.MacAddress}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!--  Top processes  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="使用最多的程序" />
+                    <ItemsControl ItemsSource="{Binding Main.TopNetworkProcesses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Name}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image
+                                        Width="16"
+                                        Height="16"
+                                        Margin="0,0,8,0"
+                                        RenderOptions.BitmapScalingMode="HighQuality"
+                                        Source="{Binding Icon}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <TextBlock
+                                            Margin="0,0,8,0"
+                                            VerticalAlignment="Center"
+                                            FontSize="11"
+                                            Foreground="{StaticResource GraphRedBrush}"
+                                            Text="{Binding Upload}" />
+                                        <TextBlock
+                                            VerticalAlignment="Center"
+                                            FontSize="11"
+                                            Foreground="{StaticResource GraphBlueBrush}"
+                                            Text="{Binding Download}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Page>

@@ -1,22 +1,222 @@
-<Page x:Class="WinState.Views.Pages.MemoryPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:local="clr-namespace:WinState.Views.Pages"
-      Title="MemoryPage"
-      d:DataContext="{d:DesignInstance local:MemoryPage, IsDesignTimeCreatable=False}"
-      mc:Ignorable="d">
+<Page
+    x:Class="WinState.Views.Pages.MemoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WinState.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="MemoryPage"
+    d:DataContext="{d:DesignInstance local:MemoryPage,
+                                     IsDesignTimeCreatable=False}"
+    d:DesignHeight="900"
+    d:DesignWidth="800"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
 
-    <Grid>
-        <StackPanel Margin="20">
-            <TextBlock Text="Memory" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
-            <TextBlock Text="{Binding ViewModel.RamUsage, StringFormat='Usage: {0:F1}%'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.RamTotalString, StringFormat='Total: {0}'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.RamUsedString, StringFormat='Used: {0}'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.RamFreeString, StringFormat='Free: {0}'}" FontSize="14"/>
-            <TextBlock Text="{Binding ViewModel.RamAvailableString, StringFormat='Available: {0}'}" FontSize="14"/>
+    <Page.Resources>
+        <Style x:Key="RamRowLabel" TargetType="TextBlock" BasedOn="{StaticResource MetricLabel}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,24">
+            <TextBlock Style="{StaticResource PageTitle}" Text="記憶體" />
+
+            <!--  Overview + bars  -->
+            <Border Style="{StaticResource Card}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel
+                        Grid.Column="0"
+                        Margin="0,0,24,0"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <TextBlock
+                            FontSize="44"
+                            FontWeight="Bold"
+                            Text="{Binding Main.RamUsage, StringFormat={}{0:0}}" />
+                        <TextBlock
+                            Margin="2,0,0,10"
+                            VerticalAlignment="Bottom"
+                            FontSize="20"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="%" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="46" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RamRowLabel}" Text="壓力" />
+                            <ProgressBar
+                                Grid.Column="1"
+                                Margin="6,0"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                Foreground="{Binding Main.RamPressureBrush}"
+                                Style="{StaticResource MeterBar}"
+                                Value="{Binding Main.RamPressure, Mode=OneWay}" />
+                            <TextBlock
+                                Grid.Column="2"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="{Binding Main.RamPressure, StringFormat={}{0:0}%}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="46" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource RamRowLabel}" Text="使用率" />
+                            <ProgressBar
+                                Grid.Column="1"
+                                Margin="6,0"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                Foreground="{StaticResource GraphBlueBrush}"
+                                Style="{StaticResource MeterBar}"
+                                Value="{Binding Main.RamUsage, Mode=OneWay}" />
+                            <TextBlock
+                                Grid.Column="2"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                FontWeight="SemiBold"
+                                Text="{Binding Main.RamUsage, StringFormat={}{0:0}%}" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!--  History graph  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="使用率歷史" />
+                    <Border
+                        Height="130"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        ClipToBounds="True"
+                        CornerRadius="4">
+                        <Viewbox Stretch="Fill">
+                            <Grid Width="280" Height="100">
+                                <Polygon Points="{Binding Main.RamHistoryPoints}" Fill="{StaticResource GraphBlueFillBrush}" />
+                                <Polyline Points="{Binding Main.RamHistoryPoints}" Stroke="{StaticResource GraphBlueBrush}" StrokeThickness="1.5" />
+                            </Grid>
+                        </Viewbox>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!--  Details  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="明細" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="32" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="總計" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamTotalString}" />
+                        <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="已用" />
+                        <TextBlock Grid.Row="0" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamUsedString}" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="應用程式" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamAppString}" />
+                        <TextBlock Grid.Row="1" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="可用" />
+                        <TextBlock Grid.Row="1" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamAvailableString}" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="Wired" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamWiredString}" />
+                        <TextBlock Grid.Row="2" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="可用記憶體" />
+                        <TextBlock Grid.Row="2" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamFreeString}" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="分頁集區" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamPagedPoolString}" />
+                        <TextBlock Grid.Row="3" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="已認可" />
+                        <TextBlock Grid.Row="3" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamCommittedString}" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="壓縮" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamCompressedString}" />
+                        <TextBlock Grid.Row="4" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="認可上限" />
+                        <TextBlock Grid.Row="4" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamCommitLimitString}" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="快取" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamCacheString}" />
+                        <TextBlock Grid.Row="5" Grid.Column="3" Style="{StaticResource MetricLabel}" Text="待命" />
+                        <TextBlock Grid.Row="5" Grid.Column="4" Style="{StaticResource MetricValue}" Text="{Binding Main.RamStandbyString}" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Style="{StaticResource MetricLabel}" Text="已修改" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Style="{StaticResource MetricValue}" Text="{Binding Main.RamModifiedString}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!--  Top processes  -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardHeader}" Text="使用最多的程序" />
+                    <ItemsControl ItemsSource="{Binding Main.TopMemoryProcesses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Name}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image
+                                        Width="16"
+                                        Height="16"
+                                        Margin="0,0,8,0"
+                                        RenderOptions.BitmapScalingMode="HighQuality"
+                                        Source="{Binding Icon}" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding Name}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        VerticalAlignment="Center"
+                                        FontWeight="SemiBold"
+                                        Text="{Binding FormattedMemoryUsage}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Page>
