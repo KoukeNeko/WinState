@@ -26,16 +26,16 @@ namespace WinState.ViewModels.Pages
             _systemInfoService.DataUpdated += OnDataUpdated;
             
             // Load saved settings
-            var cpuSettings = _userSettingsService.GetCpuSettings();
-            _processCount = cpuSettings.ProcessCount;
+            _processCount = _userSettingsService.GetProcessListSettings().Cpu;
         }
 
         partial void OnProcessCountChanged(int value)
         {
             if (value >= 1 && value <= 50)
             {
-                var settings = new CpuSettings { ProcessCount = value };
-                _userSettingsService.SaveCpuSettings(settings);
+                var settings = _userSettingsService.GetProcessListSettings();
+                settings.Cpu = value;
+                _userSettingsService.SaveProcessListSettings(settings);
             }
         }
 

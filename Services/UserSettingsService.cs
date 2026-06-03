@@ -12,22 +12,12 @@ namespace WinState.Services
         TrayIconSettings GetTrayIconSettings();
         void SaveTrayIconSettings(TrayIconSettings settings);
         void ResetTrayIconSettings();
-        
-        CpuSettings GetCpuSettings();
-        void SaveCpuSettings(CpuSettings settings);
-    }
 
-    /// <summary>
-    /// CPU display settings.
-    /// </summary>
-    public class CpuSettings
-    {
-        /// <summary>
-        /// Number of processes to display in the process list. Default: 15
-        /// </summary>
-        public int ProcessCount { get; set; } = 15;
+        ProcessListSettings GetProcessListSettings();
+        void SaveProcessListSettings(ProcessListSettings settings);
 
-        public static CpuSettings CreateDefault() => new CpuSettings { ProcessCount = 15 };
+        RefreshSettings GetRefreshSettings();
+        void SaveRefreshSettings(RefreshSettings settings);
     }
 
     /// <summary>
@@ -42,13 +32,14 @@ namespace WinState.Services
         private readonly JsonSerializerOptions _jsonOptions;
 
         private TrayIconSettings? _cachedTraySettings;
-        private CpuSettings? _cachedCpuSettings;
+        private ProcessListSettings? _cachedProcessListSettings;
+        private RefreshSettings? _cachedRefreshSettings;
 
         public UserSettingsService()
         {
             var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             var settingsFolder = Path.Combine(appDataPath, SETTINGS_FOLDER_NAME);
-            
+
             if (!Directory.Exists(settingsFolder))
             {
                 Directory.CreateDirectory(settingsFolder);
@@ -87,10 +78,10 @@ namespace WinState.Services
             {
                 var wrapper = LoadSettingsWrapper();
                 wrapper.TrayIconSettings = settings;
-                
+
                 var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
                 File.WriteAllText(_settingsFilePath, json);
-                
+
                 _cachedTraySettings = settings;
             }
             catch (Exception ex)
@@ -105,40 +96,84 @@ namespace WinState.Services
             SaveTrayIconSettings(defaultSettings);
         }
 
-        public CpuSettings GetCpuSettings()
+        public ProcessListSettings GetProcessListSettings()
         {
-            if (_cachedCpuSettings != null)
+            if (_cachedProcessListSettings != null)
             {
-                return _cachedCpuSettings;
+                return _cachedProcessListSettings;
             }
 
             var wrapper = LoadSettingsWrapper();
-            if (wrapper.CpuSettings != null)
+            if (wrapper.ProcessListSettings != null)
             {
-                _cachedCpuSettings = wrapper.CpuSettings;
-                return _cachedCpuSettings;
+                _cachedProcessListSettings = wrapper.ProcessListSettings;
+                return _cachedProcessListSettings;
             }
 
-            _cachedCpuSettings = CpuSettings.CreateDefault();
-            SaveCpuSettings(_cachedCpuSettings);
-            return _cachedCpuSettings;
+            _cachedProcessListSettings = ProcessListSettings.CreateDefault();
+            SaveProcessListSettings(_cachedProcessListSettings);
+            return _cachedProcessListSettings;
         }
 
-        public void SaveCpuSettings(CpuSettings settings)
+        public void SaveProcessListSettings(ProcessListSettings settings)
         {
             try
             {
                 var wrapper = LoadSettingsWrapper();
-                wrapper.CpuSettings = settings;
-                
+                wrapper.ProcessListSettings = settings;
+
                 var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
                 File.WriteAllText(_settingsFilePath, json);
-                
-                _cachedCpuSettings = settings;
+
+                _cachedProcessListSettings = settings;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to save CPU settings: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Failed to save process list settings: {ex.Message}");
+            }
+        }
+
+        public RefreshSettings GetRefreshSettings()
+        {
+            if (_cachedRefreshSettings != null)
+            {
+                return _cachedRefreshSettings;
+            }
+
+            var wrapper = LoadSettingsWrapper();
+            if (wrapper.RefreshSettings != null)
+            {
+                _cachedRefreshSettings = wrapper.RefreshSettings;
+                return _cachedRefreshSettings;
+            }
+
+            _cachedRefreshSettings = RefreshSettings.CreateDefault();
+            SaveRefreshSettings(_cachedRefreshSettings);
+            return _cachedRefreshSettings;
+        }
+
+        public void SaveRefreshSettings(RefreshSettings settings)
+        {
+            // Keep intervals within the supported range regardless of caller input.
+            settings.Cpu = RefreshSettings.Clamp(settings.Cpu);
+            settings.Gpu = RefreshSettings.Clamp(settings.Gpu);
+            settings.Memory = RefreshSettings.Clamp(settings.Memory);
+            settings.Disk = RefreshSettings.Clamp(settings.Disk);
+            settings.Network = RefreshSettings.Clamp(settings.Network);
+
+            try
+            {
+                var wrapper = LoadSettingsWrapper();
+                wrapper.RefreshSettings = settings;
+
+                var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                File.WriteAllText(_settingsFilePath, json);
+
+                _cachedRefreshSettings = settings;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to save refresh settings: {ex.Message}");
             }
         }
 
@@ -165,7 +200,8 @@ namespace WinState.Services
         private class UserSettingsWrapper
         {
             public TrayIconSettings? TrayIconSettings { get; set; }
-            public CpuSettings? CpuSettings { get; set; }
+            public ProcessListSettings? ProcessListSettings { get; set; }
+            public RefreshSettings? RefreshSettings { get; set; }
         }
     }
 }

@@ -28,6 +28,7 @@ namespace WinState.Models
                 }
             };
         }
+
     }
 
     /// <summary>
@@ -35,6 +36,11 @@ namespace WinState.Models
     /// </summary>
     public class TrayIconEntry
     {
+        // Default warning-color thresholds for percentage-based icons (CPU/GPU/RAM/DISK).
+        public const int DefaultWarn = 70;
+        public const int DefaultHigh = 80;
+        public const int DefaultCritical = 90;
+
         /// <summary>
         /// Unique identifier: CPU, GPU, RAM, DISK, NET, POWER
         /// </summary>
@@ -54,5 +60,20 @@ namespace WinState.Models
         /// Order index for icon creation (lower = created first).
         /// </summary>
         public int Order { get; set; }
+
+        /// <summary>
+        /// Usage % at which the icon text turns yellow (percentage icons only).
+        /// </summary>
+        public int WarnThreshold { get; set; } = DefaultWarn;
+
+        /// <summary>
+        /// Usage % at which the icon text turns orange.
+        /// </summary>
+        public int HighThreshold { get; set; } = DefaultHigh;
+
+        /// <summary>
+        /// Usage % at which the icon text turns red.
+        /// </summary>
+        public int CriticalThreshold { get; set; } = DefaultCritical;
     }
 }

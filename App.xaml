@@ -12,6 +12,58 @@
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+
+            <!--  Shared graph series colors (kept constant across light/dark themes)  -->
+            <Color x:Key="GraphBlueColor">#3399FF</Color>
+            <Color x:Key="GraphRedColor">#FF3333</Color>
+            <SolidColorBrush x:Key="GraphBlueBrush" Color="{StaticResource GraphBlueColor}" />
+            <SolidColorBrush x:Key="GraphRedBrush" Color="{StaticResource GraphRedColor}" />
+            <SolidColorBrush x:Key="GraphBlueFillBrush" Opacity="0.35" Color="{StaticResource GraphBlueColor}" />
+            <SolidColorBrush x:Key="GraphRedFillBrush" Opacity="0.35" Color="{StaticResource GraphRedColor}" />
+            <SolidColorBrush x:Key="GraphGridBrush" Opacity="0.25" Color="{StaticResource GraphBlueColor}" />
+
+            <!--  Page header title  -->
+            <Style x:Key="PageTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="28" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="Margin" Value="0,0,0,8" />
+            </Style>
+
+            <!--  Card surface used across monitoring pages  -->
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlElevationBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="16,14" />
+                <Setter Property="Margin" Value="0,0,0,12" />
+            </Style>
+
+            <!--  Small uppercase section label inside a card  -->
+            <Style x:Key="CardHeader" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="Margin" Value="0,0,0,8" />
+            </Style>
+
+            <Style x:Key="MetricLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="Margin" Value="0,2" />
+            </Style>
+
+            <Style x:Key="MetricValue" TargetType="TextBlock">
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="HorizontalAlignment" Value="Right" />
+                <Setter Property="Margin" Value="0,2" />
+            </Style>
+
+            <!--  Thin progress bar used for usage/capacity meters  -->
+            <Style x:Key="MeterBar" TargetType="ProgressBar">
+                <Setter Property="Height" Value="6" />
+                <Setter Property="Maximum" Value="100" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

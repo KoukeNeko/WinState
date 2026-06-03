@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Linq;
 using WinState.Models;
 using WinState.Services;
@@ -25,8 +25,27 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
 
+        // Per-category process-list counts.
         [ObservableProperty]
-        private int _cpuProcessCount = 15;
+        private int _cpuProcessCount = ProcessListSettings.Default;
+        [ObservableProperty]
+        private int _memoryProcessCount = ProcessListSettings.Default;
+        [ObservableProperty]
+        private int _networkProcessCount = ProcessListSettings.Default;
+        [ObservableProperty]
+        private int _diskProcessCount = ProcessListSettings.Default;
+
+        // Per-category refresh intervals (ms).
+        [ObservableProperty]
+        private int _cpuRefreshMs = RefreshSettings.Default;
+        [ObservableProperty]
+        private int _gpuRefreshMs = RefreshSettings.Default;
+        [ObservableProperty]
+        private int _memoryRefreshMs = RefreshSettings.Default;
+        [ObservableProperty]
+        private int _diskRefreshMs = RefreshSettings.Default;
+        [ObservableProperty]
+        private int _networkRefreshMs = RefreshSettings.Default;
 
         public SettingsViewModel(IUserSettingsService userSettingsService)
         {
@@ -39,33 +58,78 @@ namespace WinState.ViewModels.Pages
         {
             CurrentTheme = ApplicationThemeManager.GetAppTheme();
             AppVersion = $"WinState - {GetAssemblyVersion()}";
-            
+
             LoadTrayIconSettings();
-            LoadCpuSettings();
+            LoadProcessListSettings();
+            LoadRefreshSettings();
 
             _isInitialized = true;
         }
 
-        private void LoadCpuSettings()
+        private void LoadProcessListSettings()
         {
-            var settings = _userSettingsService.GetCpuSettings();
-            CpuProcessCount = settings.ProcessCount;
+            var settings = _userSettingsService.GetProcessListSettings();
+            CpuProcessCount = settings.Cpu;
+            MemoryProcessCount = settings.Memory;
+            NetworkProcessCount = settings.Network;
+            DiskProcessCount = settings.Disk;
         }
 
-        partial void OnCpuProcessCountChanged(int value)
+        private void SaveProcessListSettings()
         {
-            if (_isInitialized && value >= 1 && value <= 50)
+            if (!_isInitialized) return;
+            _userSettingsService.SaveProcessListSettings(new ProcessListSettings
             {
-                var settings = new CpuSettings { ProcessCount = value };
-                _userSettingsService.SaveCpuSettings(settings);
-            }
+                Cpu = CpuProcessCount,
+                Memory = MemoryProcessCount,
+                Network = NetworkProcessCount,
+                Disk = DiskProcessCount
+            });
         }
+
+        private static bool IsValidCount(int value) => value >= 1 && value <= 50;
+
+        partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+        partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+        partial void OnNetworkProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+        partial void OnDiskProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+
+        private void LoadRefreshSettings()
+        {
+            var settings = _userSettingsService.GetRefreshSettings();
+            CpuRefreshMs = settings.Cpu;
+            GpuRefreshMs = settings.Gpu;
+            MemoryRefreshMs = settings.Memory;
+            DiskRefreshMs = settings.Disk;
+            NetworkRefreshMs = settings.Network;
+        }
+
+        private void SaveRefreshSettings()
+        {
+            if (!_isInitialized) return;
+            _userSettingsService.SaveRefreshSettings(new RefreshSettings
+            {
+                Cpu = CpuRefreshMs,
+                Gpu = GpuRefreshMs,
+                Memory = MemoryRefreshMs,
+                Disk = DiskRefreshMs,
+                Network = NetworkRefreshMs
+            });
+        }
+
+        private static bool IsValidInterval(int value) => value >= RefreshSettings.Min && value <= RefreshSettings.Max;
+
+        partial void OnCpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnGpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnMemoryRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnDiskRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnNetworkRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
 
         private void LoadTrayIconSettings()
         {
             var settings = _userSettingsService.GetTrayIconSettings();
             TrayIcons.Clear();
-            
+
             foreach (var entry in settings.Icons.OrderBy(i => i.Order))
             {
                 var vm = new TrayIconEntryViewModel
@@ -73,11 +137,16 @@ namespace WinState.ViewModels.Pages
                     Id = entry.Id,
                     DisplayName = entry.DisplayName,
                     IsVisible = entry.IsVisible,
-                    Order = entry.Order
+                    Order = entry.Order,
+                    WarnThreshold = entry.WarnThreshold,
+                    HighThreshold = entry.HighThreshold,
+                    CriticalThreshold = entry.CriticalThreshold
                 };
-                vm.PropertyChanged += (s, e) => 
+                vm.PropertyChanged += (s, e) =>
                 {
-                    HasUnsavedChanges = true;
+                    // Only visibility/order changes require a restart; threshold edits apply live.
+                    if (e.PropertyName == nameof(TrayIconEntryViewModel.IsVisible))
+                        HasUnsavedChanges = true;
                     SaveTrayIconSettings();
                 };
                 TrayIcons.Add(vm);
@@ -93,10 +162,13 @@ namespace WinState.ViewModels.Pages
                     Id = vm.Id,
                     DisplayName = vm.DisplayName,
                     IsVisible = vm.IsVisible,
-                    Order = index
+                    Order = index,
+                    WarnThreshold = vm.WarnThreshold,
+                    HighThreshold = vm.HighThreshold,
+                    CriticalThreshold = vm.CriticalThreshold
                 }).ToList()
             };
-            
+
             _userSettingsService.SaveTrayIconSettings(settings);
         }
 
@@ -135,7 +207,7 @@ namespace WinState.ViewModels.Pages
         private void OnMoveIconUp(TrayIconEntryViewModel? icon)
         {
             if (icon == null) return;
-            
+
             var index = TrayIcons.IndexOf(icon);
             if (index > 0)
             {
@@ -149,7 +221,7 @@ namespace WinState.ViewModels.Pages
         private void OnMoveIconDown(TrayIconEntryViewModel? icon)
         {
             if (icon == null) return;
-            
+
             var index = TrayIcons.IndexOf(icon);
             if (index < TrayIcons.Count - 1)
             {
@@ -198,5 +270,19 @@ namespace WinState.ViewModels.Pages
 
         [ObservableProperty]
         private int _order;
+
+        [ObservableProperty]
+        private int _warnThreshold = TrayIconEntry.DefaultWarn;
+
+        [ObservableProperty]
+        private int _highThreshold = TrayIconEntry.DefaultHigh;
+
+        [ObservableProperty]
+        private int _criticalThreshold = TrayIconEntry.DefaultCritical;
+
+        /// <summary>
+        /// True for percentage-based icons whose warning thresholds are meaningful.
+        /// </summary>
+        public bool IsPercentageIcon => Id is "CPU" or "GPU" or "RAM" or "DISK";
     }
 }
