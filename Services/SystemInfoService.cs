@@ -19,6 +19,20 @@ namespace WinState.Services
     {
         private readonly System.Timers.Timer _timer;
         private readonly Computer _computer;
+        private readonly IUserSettingsService _userSettingsService;
+
+        // A single timer ticks at a small base interval; each category runs only once its own
+        // configured interval has elapsed. One timer keeps all hardware/counter access on one
+        // thread (LibreHardwareMonitor and PerformanceCounter are not thread-safe).
+        private const int BaseTickMs = 250;
+        // When hidden in the tray, no category polls faster than this (see OnTimerTickAsync).
+        private const int HiddenRefreshMs = 2000;
+        private int _isUpdating;
+        private readonly System.Diagnostics.Stopwatch _cpuStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        private readonly System.Diagnostics.Stopwatch _gpuStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        private readonly System.Diagnostics.Stopwatch _memoryStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        private readonly System.Diagnostics.Stopwatch _diskStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        private readonly System.Diagnostics.Stopwatch _networkStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         public List<SensorItem> DetailedSensors { get; private set; } = new List<SensorItem>();
         private List<ISensor> _allDetailedSensors = new List<ISensor>();
@@ -117,6 +131,8 @@ namespace WinState.Services
 
         // ETW Session for Network Monitoring
         private TraceEventSession? _etwSession;
+        private readonly object _etwLock = new object();
+        private bool _etwRunning;
         private readonly ConcurrentDictionary<int, (long Upload, long Download)> _processNetworkUsage = new();
 
         public struct NetworkProcessInfo
@@ -194,11 +210,13 @@ namespace WinState.Services
         public string PublicIpAddress { get; private set; } = "";
         public string NetworkName { get; private set; } = "";
 
-        public SystemInfoService()
+        public SystemInfoService(IUserSettingsService userSettingsService)
         {
-            // 每 1 秒觸發
-            _timer = new System.Timers.Timer(1000);
-            _timer.Elapsed += async (s, e) => await UpdateDataAsync();
+            _userSettingsService = userSettingsService;
+
+            // Base tick; per-category gating happens inside the handler.
+            _timer = new System.Timers.Timer(BaseTickMs);
+            _timer.Elapsed += async (s, e) => await OnTimerTickAsync();
 
             // 初始化 LibreHardwareMonitor
             _computer = new Computer
@@ -227,12 +245,21 @@ namespace WinState.Services
             InitializeCpuCounters();
             InitializeRamCounters();
             InitializeDiskCounters();
-            
-            // Initialize ETW for per-process network monitoring
-            InitializeEtwSession();
+
+            // ETW per-process network/disk monitoring is started lazily, only while a UI surface
+            // is visible (see AddUiInterest). Its system-wide kernel trace is the largest cost,
+            // so it stays off while the app sits hidden in the tray.
 
             // Initial fetch of Public IP (async)
             Task.Run(async () => await FetchPublicIpAsync());
+
+            // The app launches straight into the tray, so trim the launch-time footprint once it
+            // has settled (only while still hidden, so we never fight an open window).
+            Task.Run(async () =>
+            {
+                await Task.Delay(8000);
+                if (!IsUiActive) TrimMemory();
+            });
         }
 
         private async Task FetchPublicIpAsync()
@@ -287,8 +314,12 @@ namespace WinState.Services
             }
         }
 
-        private void UpdateNetworkSpeeds()
+        private void UpdateNetworkSpeeds(double elapsedSec)
         {
+            // Bytes transferred since the last network update are divided by the actual elapsed
+            // time so the reported rate stays in bytes/sec regardless of the refresh interval.
+            double seconds = Math.Max(elapsedSec, 0.001);
+
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
             if (nics == null || nics.Length < 1)
             {
@@ -305,8 +336,8 @@ namespace WinState.Services
                     continue;
 
                 IPInterfaceStatistics stats = adapter.GetIPStatistics();
-                long uploadSpeed = stats.BytesSent - previousSent.GetValueOrDefault(adapter.Description, stats.BytesSent);
-                long downloadSpeed = stats.BytesReceived - previousReceived.GetValueOrDefault(adapter.Description, stats.BytesReceived);
+                long uploadSpeed = (long)((stats.BytesSent - previousSent.GetValueOrDefault(adapter.Description, stats.BytesSent)) / seconds);
+                long downloadSpeed = (long)((stats.BytesReceived - previousReceived.GetValueOrDefault(adapter.Description, stats.BytesReceived)) / seconds);
                 long totalTraffic = uploadSpeed + downloadSpeed;
 
                 UploadSpeeds[adapter.Description] = uploadSpeed;
@@ -750,6 +781,71 @@ namespace WinState.Services
             _timer.Start();
         }
 
+        // --- UI visibility gating -------------------------------------------------------------
+        // Heavy, UI-only work (per-process lists, SMART/detailed-sensor polling and the ETW
+        // kernel trace) runs only while at least one window is visible. Windows call
+        // AddUiInterest/RemoveUiInterest from their IsVisibleChanged handlers; the ref count
+        // also drives the ETW session on/off.
+        private int _uiInterest;
+        public bool IsUiActive => Volatile.Read(ref _uiInterest) > 0;
+
+        public void AddUiInterest()
+        {
+            if (Interlocked.Increment(ref _uiInterest) == 1)
+                StartEtw();
+        }
+
+        public void RemoveUiInterest()
+        {
+            int remaining = Interlocked.Decrement(ref _uiInterest);
+            if (remaining < 0)
+            {
+                Interlocked.Exchange(ref _uiInterest, 0); // defensive: never go negative
+                return;
+            }
+            if (remaining == 0)
+            {
+                StopEtw();
+                TrimMemory(); // fully in the tray now — hand memory back to the OS
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern IntPtr GetCurrentProcess();
+
+        [System.Runtime.InteropServices.DllImport("psapi.dll")]
+        private static extern bool EmptyWorkingSet(IntPtr hProcess);
+
+        private int _trimming;
+
+        // Reclaims memory when the app drops fully into the tray: a one-shot compacting collection
+        // hands the managed heap back, and EmptyWorkingSet trims the reported working set (the
+        // pages move to standby and fault back in when a window is reopened). Runs off the caller's
+        // thread and is guarded so it never overlaps — this is not a per-tick cost.
+        private void TrimMemory()
+        {
+            if (Interlocked.Exchange(ref _trimming, 1) == 1)
+                return;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+                        System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                    EmptyWorkingSet(GetCurrentProcess());
+                }
+                catch { }
+                finally
+                {
+                    Interlocked.Exchange(ref _trimming, 0);
+                }
+            });
+        }
+
         // CPU Counters
         private PerformanceCounter? _cpuUserCounter;
         private PerformanceCounter? _cpuPrivilegedCounter;
@@ -883,7 +979,7 @@ namespace WinState.Services
                 _previousProcessTimes = newProcessTimes;
 
                 // Sort by CPU usage descending and take top 15
-                var topList = tempProcessInfos.OrderByDescending(p => p.CpuUsage).Take(15).ToList();
+                var topList = tempProcessInfos.OrderByDescending(p => p.CpuUsage).Take(_userSettingsService.GetProcessListSettings().Cpu).ToList();
                 
                 var resultList = new List<ProcessInfo>();
                 foreach (var item in topList)
@@ -954,96 +1050,182 @@ namespace WinState.Services
             }
         }
 
-        private async Task UpdateDataAsync()
+        private Task OnTimerTickAsync()
         {
+            // Skip this tick if the previous update is still running (slow tick guard).
+            if (Interlocked.Exchange(ref _isUpdating, 1) == 1)
+                return Task.CompletedTask;
+
             try
             {
-                UpdateDetailedSensors();
+                var refresh = _userSettingsService.GetRefreshSettings();
 
-                // Get CPU usage
-                CpuUsage = GetCpuUsage();
+                // While hidden in the tray, poll no faster than HiddenRefreshMs regardless of the
+                // configured (UI) intervals. The tray only shows rounded numbers, so updating them
+                // a little less often is unnoticeable, while the slower hardware/counter polling
+                // roughly halves the app's idle CPU.
+                int floor = IsUiActive ? 0 : HiddenRefreshMs;
+                int cpuMs = Math.Max(refresh.Cpu, floor);
+                int gpuMs = Math.Max(refresh.Gpu, floor);
+                int memMs = Math.Max(refresh.Memory, floor);
+                int diskMs = Math.Max(refresh.Disk, floor);
+                int netMs = Math.Max(refresh.Network, floor);
 
-                // Get GPU usage
-                UpdateGpuData();
+                bool any = false;
 
-                // Get RAM usage
-                UpdateRamData();
-
-                // Get Disk usage
-                DiskUsage = GetDiskUsage();
-
-                // Get Network usage
-                (NetworkUpload, NetworkDownload, NetworkUploadUnit, NetworkDownloadUnit) = GetNetworkUsage();
-
-                // Update CPU Breakdown
-                if (_cpuUserCounter != null && _cpuPrivilegedCounter != null)
+                if (_cpuStopwatch.ElapsedMilliseconds >= cpuMs)
                 {
-                    CpuUserUsage = _cpuUserCounter.NextValue();
-                    CpuKernelUsage = _cpuPrivilegedCounter.NextValue();
-                    
-                    // Fix: Calculate Total CpuUsage from the components to ensure consistency with graph
-                    CpuUsage = CpuUserUsage + CpuKernelUsage;
-                    // Clamp to 100
-                    if (CpuUsage > 100) CpuUsage = 100;
-
-                    // Update History
-                    if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
-                    CpuUserHistory.Enqueue(CpuUserUsage);
-                    
-                    if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
-                    CpuKernelHistory.Enqueue(CpuKernelUsage);
-                }
-                else 
-                {
-                    // Fallback if counters are null
-                    CpuUsage = GetCpuUsage();
+                    _cpuStopwatch.Restart();
+                    UpdateCpu();
+                    any = true;
                 }
 
-                // Get CPU power consumption
-                CpuPower = GetCpuPowerFromHardwareMonitor();
-                
-                // Update other CPU sensors
-                if (_cpuClockSensor != null) CpuClock = _cpuClockSensor.Value.GetValueOrDefault();
-                if (_cpuTemperatureSensor != null) CpuTemperature = _cpuTemperatureSensor.Value.GetValueOrDefault();
-                if (_cpuVoltageSensor != null) CpuVoltage = _cpuVoltageSensor.Value.GetValueOrDefault();
-                
-                Uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
-
-                // Update Process CPU Usage
-                UpdateProcessCpuUsage();
-
-                // Update Per-Core Usage (from Counters)
-                for (int i = 0; i < _cpuCoreUserCounters.Count; i++)
+                if (_gpuStopwatch.ElapsedMilliseconds >= gpuMs)
                 {
-                    float user = _cpuCoreUserCounters[i].NextValue();
-                    float kernel = _cpuCorePrivilegedCounters[i].NextValue();
-                    
-                    if (CpuCoresHistory.ContainsKey(i))
-                    {
-                        var queue = CpuCoresHistory[i];
-                        if (queue.Count >= 60) queue.Dequeue();
-                        queue.Enqueue((user, kernel));
-                    }
+                    _gpuStopwatch.Restart();
+                    UpdateGpu();
+                    any = true;
                 }
 
-                // Update LHM sensors just in case we need them elsewhere, but not for history
-                if (_cpuHardware != null)
+                if (_memoryStopwatch.ElapsedMilliseconds >= memMs)
                 {
-                    _cpuHardware.Update();
+                    _memoryStopwatch.Restart();
+                    UpdateMemory();
+                    any = true;
                 }
 
-                UpdateNetworkSpeeds();
-                UpdateTopNetworkProcesses();
-                UpdateDiskData();
-                UpdateTopDiskProcesses();
-                UpdateDetailedSensors();
+                if (_diskStopwatch.ElapsedMilliseconds >= diskMs)
+                {
+                    double elapsedSec = _diskStopwatch.Elapsed.TotalSeconds;
+                    _diskStopwatch.Restart();
+                    UpdateDisk(elapsedSec);
+                    any = true;
+                }
 
-                // Notify external (ViewModel)
-                DataUpdated?.Invoke(this, EventArgs.Empty);
-            } catch (Exception ex)
+                if (_networkStopwatch.ElapsedMilliseconds >= netMs)
+                {
+                    double elapsedSec = _networkStopwatch.Elapsed.TotalSeconds;
+                    _networkStopwatch.Restart();
+                    UpdateNetwork(elapsedSec);
+                    any = true;
+                }
+
+                // Notify external (ViewModel) once if anything changed this tick.
+                if (any)
+                    DataUpdated?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating system info: {ex.Message}");
             }
+            finally
+            {
+                Interlocked.Exchange(ref _isUpdating, 0);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private void UpdateCpu()
+        {
+            bool uiActive = IsUiActive;
+
+            // Refresh hardware exactly once per tick. While a window is visible we refresh every
+            // sensor (the Sensors page needs them); otherwise we refresh only the CPU for the tray
+            // icon. Previously the CPU was updated up to four times per tick (here, in GetCpuUsage,
+            // in GetCpuPowerFromHardwareMonitor and again at the end).
+            if (uiActive)
+                UpdateDetailedSensors();
+            else
+                _cpuHardware?.Update();
+
+            // Get CPU usage
+            CpuUsage = GetCpuUsage();
+
+            // Update CPU Breakdown
+            if (_cpuUserCounter != null && _cpuPrivilegedCounter != null)
+            {
+                CpuUserUsage = _cpuUserCounter.NextValue();
+                CpuKernelUsage = _cpuPrivilegedCounter.NextValue();
+
+                // Fix: Calculate Total CpuUsage from the components to ensure consistency with graph
+                CpuUsage = CpuUserUsage + CpuKernelUsage;
+                // Clamp to 100
+                if (CpuUsage > 100) CpuUsage = 100;
+
+                // Update History
+                if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
+                CpuUserHistory.Enqueue(CpuUserUsage);
+
+                if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
+                CpuKernelHistory.Enqueue(CpuKernelUsage);
+            }
+
+            // Get CPU power consumption
+            CpuPower = GetCpuPowerFromHardwareMonitor();
+
+            // Update other CPU sensors
+            if (_cpuClockSensor != null) CpuClock = _cpuClockSensor.Value.GetValueOrDefault();
+            if (_cpuTemperatureSensor != null) CpuTemperature = _cpuTemperatureSensor.Value.GetValueOrDefault();
+            if (_cpuVoltageSensor != null) CpuVoltage = _cpuVoltageSensor.Value.GetValueOrDefault();
+
+            Uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+
+            // The per-process CPU list and per-core history only feed the windows, so skip the
+            // full process enumeration and per-core counters while hidden in the tray.
+            if (!uiActive)
+                return;
+
+            // Update Process CPU Usage
+            UpdateProcessCpuUsage();
+
+            // Update Per-Core Usage (from Counters)
+            for (int i = 0; i < _cpuCoreUserCounters.Count; i++)
+            {
+                float user = _cpuCoreUserCounters[i].NextValue();
+                float kernel = _cpuCorePrivilegedCounters[i].NextValue();
+
+                if (CpuCoresHistory.ContainsKey(i))
+                {
+                    var queue = CpuCoresHistory[i];
+                    if (queue.Count >= 60) queue.Dequeue();
+                    queue.Enqueue((user, kernel));
+                }
+            }
+        }
+
+        private void UpdateGpu()
+        {
+            UpdateGpuData();
+        }
+
+        private void UpdateMemory()
+        {
+            // UpdateRamData also refreshes the top-memory process list.
+            UpdateRamData();
+        }
+
+        private void UpdateDisk(double elapsedSec)
+        {
+            DiskUsage = GetDiskUsage();
+
+            // SMART polling (per-drive hardware.Update) and the per-process disk list only feed
+            // the windows, so skip them while hidden in the tray.
+            if (IsUiActive)
+            {
+                UpdateDiskData();
+                UpdateTopDiskProcesses(elapsedSec);
+            }
+        }
+
+        private void UpdateNetwork(double elapsedSec)
+        {
+            (NetworkUpload, NetworkDownload, NetworkUploadUnit, NetworkDownloadUnit) = GetNetworkUsage();
+            UpdateNetworkSpeeds(elapsedSec);
+
+            // The per-process network list only feeds the windows.
+            if (IsUiActive)
+                UpdateTopNetworkProcesses(elapsedSec);
         }
 
         private double GetCpuUsage()
@@ -1051,10 +1233,7 @@ namespace WinState.Services
             if (_cpuHardware == null || _cpuTotalLoadSensor == null)
                 return 0.0;
 
-            // Update CPU hardware 一次
-            _cpuHardware.Update();
-
-            // 直接讀取已快取的 Sensor
+            // Hardware was already refreshed once in UpdateCpu; just read the cached sensor.
             return _cpuTotalLoadSensor.Value.GetValueOrDefault();
         }
 
@@ -1190,22 +1369,18 @@ namespace WinState.Services
 
         private double GetCpuPowerFromHardwareMonitor()
         {
-            // 原本程式碼寫在方法裡面掃描所有 hardware/sensor。
-            // 現在已在 InitializeHardwareAndSensors() 時，就將它快取到 _cpuPowerSensor 裡。
-            // 因此只要判斷 _cpuPowerSensor 不為 null，就讀取即可。
+            // The power sensor was cached in InitializeHardwareAndSensors and the CPU hardware is
+            // already refreshed once per tick in UpdateCpu, so just read the cached sensor.
             if (_cpuHardware == null || _cpuPowerSensor == null)
                 return -1;
 
-            // Update CPU 硬體一次
-            _cpuHardware.Update();
-
-            // 讀快取的 CPU Power Sensor
             return _cpuPowerSensor.Value.GetValueOrDefault(-1);
         }
 
         public void Cleanup()
         {
             _timer.Stop();
+            StopEtw();
             _computer.Close();
             _uploadCounter?.Close();
             _downloadCounter?.Close();
@@ -1278,7 +1453,9 @@ namespace WinState.Services
                 RamApp = RamUsed - RamWired - RamCompressed - RamPagedPool;
                 if (RamApp < 0) RamApp = 0;
 
-                UpdateTopMemoryProcesses();
+                // The per-process memory list only feeds the windows.
+                if (IsUiActive)
+                    UpdateTopMemoryProcesses();
             }
             catch (Exception ex)
             {
@@ -1306,7 +1483,7 @@ namespace WinState.Services
                 }
 
                 // Sort and take top 15
-                var topList = tempProcesses.OrderByDescending(x => x.MemoryUsage).Take(15).ToList();
+                var topList = tempProcesses.OrderByDescending(x => x.MemoryUsage).Take(_userSettingsService.GetProcessListSettings().Memory).ToList();
 
                 var resultList = new List<MemoryProcessInfo>();
                 foreach (var item in topList)
@@ -1334,76 +1511,127 @@ namespace WinState.Services
             return _cachedTopMemoryProcesses;
         }
 
-        private void InitializeEtwSession()
+        // Starts the per-process network/disk kernel trace. This is the single largest cost in
+        // the app, so it runs only while a window is visible (driven by AddUiInterest). Requires
+        // Administrator (the app manifest requests it); Source.Process() blocks until the session
+        // is disposed in StopEtw, hence the dedicated background thread.
+        private void StartEtw()
         {
+            lock (_etwLock)
+            {
+                if (_etwRunning) return;
+                _etwRunning = true;
+            }
+
             Task.Run(() =>
             {
+                TraceEventSession session;
                 try
                 {
-                    // Note: This requires Admin privileges. The app manifest should request requireAdministrator.
-                    _etwSession = new TraceEventSession("WinStateNetworkMonitor");
-                    
-                    _etwSession.EnableKernelProvider(
-                        KernelTraceEventParser.Keywords.NetworkTCPIP | 
+                    session = new TraceEventSession("WinStateNetworkMonitor") { StopOnDispose = true };
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ETW session create failed: {ex.Message}");
+                    lock (_etwLock) { _etwRunning = false; }
+                    return;
+                }
+
+                lock (_etwLock)
+                {
+                    // Interest was dropped before the session came up; tear it back down.
+                    if (!_etwRunning)
+                    {
+                        try { session.Dispose(); } catch { }
+                        return;
+                    }
+                    _etwSession = session;
+                }
+
+                try
+                {
+                    session.EnableKernelProvider(
+                        KernelTraceEventParser.Keywords.NetworkTCPIP |
                         KernelTraceEventParser.Keywords.DiskIO
                     );
 
                     // Network Events
-                    _etwSession.Source.Kernel.TcpIpRecv += data =>
+                    session.Source.Kernel.TcpIpRecv += data =>
                     {
-                        _processNetworkUsage.AddOrUpdate(data.ProcessID, 
-                            (0, data.size), 
+                        _processNetworkUsage.AddOrUpdate(data.ProcessID,
+                            (0, data.size),
                             (key, old) => (old.Upload, old.Download + data.size));
                     };
 
-                    _etwSession.Source.Kernel.TcpIpSend += data =>
+                    session.Source.Kernel.TcpIpSend += data =>
                     {
-                        _processNetworkUsage.AddOrUpdate(data.ProcessID, 
-                            (data.size, 0), 
+                        _processNetworkUsage.AddOrUpdate(data.ProcessID,
+                            (data.size, 0),
                             (key, old) => (old.Upload + data.size, old.Download));
                     };
-                    
-                    _etwSession.Source.Kernel.UdpIpRecv += data =>
+
+                    session.Source.Kernel.UdpIpRecv += data =>
                     {
-                         _processNetworkUsage.AddOrUpdate(data.ProcessID, 
-                            (0, data.size), 
+                         _processNetworkUsage.AddOrUpdate(data.ProcessID,
+                            (0, data.size),
                             (key, old) => (old.Upload, old.Download + data.size));
                     };
-                    _etwSession.Source.Kernel.UdpIpSend += data =>
+                    session.Source.Kernel.UdpIpSend += data =>
                     {
-                         _processNetworkUsage.AddOrUpdate(data.ProcessID, 
-                            (data.size, 0), 
+                         _processNetworkUsage.AddOrUpdate(data.ProcessID,
+                            (data.size, 0),
                             (key, old) => (old.Upload + data.size, old.Download));
                     };
 
                     // Disk Events
-                    _etwSession.Source.Kernel.DiskIORead += data =>
+                    session.Source.Kernel.DiskIORead += data =>
                     {
                         _processDiskUsage.AddOrUpdate(data.ProcessID,
                             (data.TransferSize, 0),
                             (key, old) => (old.Read + data.TransferSize, old.Write));
                     };
-                    
-                    _etwSession.Source.Kernel.DiskIOWrite += data =>
+
+                    session.Source.Kernel.DiskIOWrite += data =>
                     {
                         _processDiskUsage.AddOrUpdate(data.ProcessID,
                             (0, data.TransferSize),
                             (key, old) => (old.Read, old.Write + data.TransferSize));
                     };
 
-                    _etwSession.Source.Process();
+                    session.Source.Process(); // blocks until the session is disposed
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"ETW Initialization failed: {ex.Message}");
+                    Debug.WriteLine($"ETW processing stopped: {ex.Message}");
                 }
             });
         }
 
-        private void UpdateTopNetworkProcesses()
+        // Stops the kernel trace and discards any partial per-process counters so the next
+        // start begins from a clean slate.
+        private void StopEtw()
+        {
+            TraceEventSession? toDispose;
+            lock (_etwLock)
+            {
+                if (!_etwRunning) return;
+                _etwRunning = false;
+                toDispose = _etwSession;
+                _etwSession = null;
+            }
+
+            try { toDispose?.Dispose(); } catch { } // unblocks Source.Process()
+
+            _processNetworkUsage.Clear();
+            _processDiskUsage.Clear();
+        }
+
+        private void UpdateTopNetworkProcesses(double elapsedSec)
         {
             try
             {
+                double seconds = Math.Max(elapsedSec, 0.001);
+
                 // Snapshot and clear the counters
                 var snapshot = new Dictionary<int, (long Upload, long Download)>(_processNetworkUsage);
                 _processNetworkUsage.Clear();
@@ -1419,18 +1647,20 @@ namespace WinState.Services
                     if (kvp.Key == 0 || kvp.Key == 4) continue; // System Idle Process and System
                     if (kvp.Value.Upload == 0 && kvp.Value.Download == 0) continue;
 
-                    try 
+                    try
                     {
                         var p = Process.GetProcessById(kvp.Key);
-                        tempNetProcesses.Add((p, p.ProcessName, p.Id, kvp.Value.Upload, kvp.Value.Download));
+                        long up = (long)(kvp.Value.Upload / seconds);
+                        long down = (long)(kvp.Value.Download / seconds);
+                        tempNetProcesses.Add((p, p.ProcessName, p.Id, up, down));
                     }
                     catch (Exception)
-                    { 
+                    {
                         // Process might have exited or access denied
                     }
                 }
-                
-                var topList = tempNetProcesses.OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed).Take(15).ToList();
+
+                var topList = tempNetProcesses.OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed).Take(_userSettingsService.GetProcessListSettings().Network).ToList();
 
                 var resultList = new List<NetworkProcessInfo>();
                 foreach (var item in topList)
@@ -1578,10 +1808,13 @@ namespace WinState.Services
             return _cachedDiskInfo;
         }
 
-        private void UpdateTopDiskProcesses()
+        private void UpdateTopDiskProcesses(double elapsedSec)
         {
             try
             {
+                // ETW accumulates raw bytes between calls; divide by elapsed time for bytes/sec.
+                double seconds = Math.Max(elapsedSec, 0.001);
+
                 var snapshot = new Dictionary<int, (long Read, long Write)>(_processDiskUsage);
                 _processDiskUsage.Clear();
 
@@ -1600,16 +1833,18 @@ namespace WinState.Services
                     try
                     {
                         var p = Process.GetProcessById(kvp.Key);
-                        tempDiskProcesses.Add((p, p.ProcessName, p.Id, kvp.Value.Read, kvp.Value.Write));
+                        long read = (long)(kvp.Value.Read / seconds);
+                        long write = (long)(kvp.Value.Write / seconds);
+                        tempDiskProcesses.Add((p, p.ProcessName, p.Id, read, write));
                     }
                     catch { }
                 }
 
-                TotalDiskRead = totalRead;
-                TotalDiskWrite = totalWrite;
+                TotalDiskRead = (long)(totalRead / seconds);
+                TotalDiskWrite = (long)(totalWrite / seconds);
 
                 // Sort by Total Speed
-                var topList = tempDiskProcesses.OrderByDescending(p => p.ReadSpeed + p.WriteSpeed).Take(15).ToList();
+                var topList = tempDiskProcesses.OrderByDescending(p => p.ReadSpeed + p.WriteSpeed).Take(_userSettingsService.GetProcessListSettings().Disk).ToList();
 
                 var resultList = new List<DiskProcessInfo>();
                 foreach (var item in topList)

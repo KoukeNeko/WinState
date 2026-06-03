@@ -46,8 +46,9 @@ namespace WinState.Views.Windows
         }
 
         public MainWindowViewModel ViewModel { get; }
-        
+
         private readonly IUserSettingsService _userSettingsService;
+        private readonly SystemInfoService _systemInfoService;
         private readonly List<Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIcons = new();
         // Maps each visible icon id to its tray icon and the ViewModel property carrying its image.
         private readonly Dictionary<string, Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIconsById = new();
@@ -57,17 +58,23 @@ namespace WinState.Views.Windows
             MainWindowViewModel viewModel,
             INavigationViewPageProvider pageService,
             INavigationService navigationService,
-            IUserSettingsService userSettingsService
+            IUserSettingsService userSettingsService,
+            SystemInfoService systemInfoService
         )
         {
             ViewModel = viewModel;
             _userSettingsService = userSettingsService;
+            _systemInfoService = systemInfoService;
             DataContext = this;
 
             SystemThemeWatcher.Watch(this);
 
             InitializeComponent();
-            
+
+            // Pause the service's heavy, UI-only data collection while this window is hidden in
+            // the tray, and resume it when shown.
+            IsVisibleChanged += OnUiSurfaceVisibilityChanged;
+
             // Create tray icons dynamically based on settings
             CreateTrayIcons();
             
@@ -227,6 +234,17 @@ namespace WinState.Views.Windows
             Visibility = Visibility.Hidden;
         }
 
+        // Shared by the main window and every tray popup. Each visible surface adds one unit of
+        // "UI interest"; the service runs its heavy collection (and the ETW trace) only while the
+        // count is above zero.
+        private void OnUiSurfaceVisibilityChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue)
+                _systemInfoService.AddUiInterest();
+            else
+                _systemInfoService.RemoveUiInterest();
+        }
+
         private Dictionary<string, TrayPopupHostWindow> _trayHostWindows = new Dictionary<string, TrayPopupHostWindow>();
 
         private void OnTrayIconClick(object sender, RoutedEventArgs e)
@@ -239,6 +257,8 @@ namespace WinState.Views.Windows
                 trayHostWindow = new TrayPopupHostWindow();
                 trayHostWindow.DataContext = ViewModel;
                 trayHostWindow.PopupContent.Category = category;
+                // A visible popup counts as UI interest too, so live data flows while it is open.
+                trayHostWindow.IsVisibleChanged += OnUiSurfaceVisibilityChanged;
                 _trayHostWindows[category] = trayHostWindow;
             }
 

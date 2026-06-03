@@ -338,10 +338,20 @@ namespace WinState.ViewModels.Windows
             // Ensure all UI updates are on the UI thread
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
+                // GPU scalars feed the tray icon and are cheap to copy, so refresh them first.
+                UpdateGpus();
+
+                // The tray icons are always visible, so they must update every tick.
+                UpdateTrayIcons();
+
+                // Everything below only feeds the main window and tray popups. When they are all
+                // hidden, skip the graph/list/icon work entirely (the service skips the matching
+                // data collection too), so the tray app costs almost nothing while idle.
+                if (!_systemInfoService.IsUiActive)
+                    return;
+
                 OnPropertyChanged(nameof(CpuUsage));
                 OnPropertyChanged(nameof(DetailedSensors));
-                
-                UpdateGpus();
 
                 OnPropertyChanged(nameof(RamUsage));
                 OnPropertyChanged(nameof(DiskUsage));
@@ -363,13 +373,11 @@ namespace WinState.ViewModels.Windows
                 OnPropertyChanged(nameof(NetworkUploadText));
                 OnPropertyChanged(nameof(DiskSmartInfos));
 
-                UpdateGpus();
                 UpdateCpuHistory();
                 UpdateRamDetails();
                 UpdateNetworkDetails();
                 UpdateDiskDetails();
                 UpdateCores();
-                UpdateTrayIcons();
             });
         }
 
@@ -520,7 +528,7 @@ namespace WinState.ViewModels.Windows
                 });
             }
 
-            while (TopNetworkProcesses.Count < 15)
+            while (TopNetworkProcesses.Count < _userSettingsService.GetProcessListSettings().Network)
             {
                 TopNetworkProcesses.Add(new NetworkProcessViewModel { Name = "", Upload = "", Download = "", Icon = null });
             }
@@ -550,49 +558,91 @@ namespace WinState.ViewModels.Windows
             }
         }
 
+        // Caches the rendered "signature" of each tray icon so a stable value does not rebuild and
+        // re-rasterize its GDI bitmap every tick.
+        private readonly Dictionary<string, string> _trayIconKeys = new();
+
         private void UpdateTrayIcons()
         {
             // Size the icons to the taskbar monitor's actual DPI so they stay crisp and
             // correctly sized under any display scaling.
             int iconSize = NotifyIconHelper.GetNotificationAreaIconSize();
 
-            // Each property assignment raises PropertyChanged synchronously, so the view repoints
-            // the tray at the new icon before we free the previous GDI handle.
-            var old = (CpuIcon, GpuIcon, RamIcon, DiskIcon, NetworkIcon, PowerIcon);
+            // Per-icon warning-color thresholds come from user settings.
+            var traySettings = _userSettingsService.GetTrayIconSettings();
 
             // CPU
-            CpuIcon = CreateTextIcon("CPU", CpuUsage.ToString(), iconSize);
+            SetTextTrayIcon("CPU", "CPU", CpuUsage, iconSize, GetThresholds(traySettings, "CPU"),
+                CpuIcon, icon => CpuIcon = icon);
             CpuToolTip = $"CPU: {CpuUsage}%";
 
             // GPU
             double maxGpuUsage = Gpus.Any() ? Gpus.Max(g => g.Usage) : 0;
-            GpuIcon = CreateTextIcon("GPU", maxGpuUsage.ToString(), iconSize);
+            SetTextTrayIcon("GPU", "GPU", maxGpuUsage, iconSize, GetThresholds(traySettings, "GPU"),
+                GpuIcon, icon => GpuIcon = icon);
             GpuToolTip = $"GPU: {maxGpuUsage}%";
 
             // RAM
-            RamIcon = CreateTextIcon("RAM", RamUsage.ToString(), iconSize);
+            SetTextTrayIcon("RAM", "RAM", RamUsage, iconSize, GetThresholds(traySettings, "RAM"),
+                RamIcon, icon => RamIcon = icon);
             RamToolTip = $"RAM: {RamUsage}%";
 
             // DISK
-            DiskIcon = CreateTextIcon("DISK", DiskUsage.ToString(), iconSize);
+            SetTextTrayIcon("DISK", "DISK", DiskUsage, iconSize, GetThresholds(traySettings, "DISK"),
+                DiskIcon, icon => DiskIcon = icon);
             DiskToolTip = $"DISK: {DiskUsage}%";
 
             // NETWORK
             long download = _systemInfoService.DownloadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var d) ? d : 0;
             long upload = _systemInfoService.UploadSpeeds.TryGetValue(_systemInfoService.PrimaryExternalInterface, out var u) ? u : 0;
-            NetworkIcon = CreateNetworkIcon(upload, download, iconSize);
+            SetNetworkTrayIcon(upload, download, iconSize);
             NetworkToolTip = $"NET: {SpeedHumanReadable(upload)} / {SpeedHumanReadable(download)}";
 
-            // POWER
-            PowerIcon = CreateTextIcon("PWR", CpuPower.ToString(), iconSize);
+            // POWER (no percentage color treatment)
+            SetTextTrayIcon("PWR", "PWR", CpuPower, iconSize, default,
+                PowerIcon, icon => PowerIcon = icon);
             PowerToolTip = $"PWR: {CpuPower}W";
+        }
 
-            DisposeTrayIcon(old.Item1);
-            DisposeTrayIcon(old.Item2);
-            DisposeTrayIcon(old.Item3);
-            DisposeTrayIcon(old.Item4);
-            DisposeTrayIcon(old.Item5);
-            DisposeTrayIcon(old.Item6);
+        // Builds a text tray icon only when its visible content (size, label, rounded number,
+        // thresholds) actually changes; otherwise the existing icon is kept untouched.
+        private void SetTextTrayIcon(string id, string label, double value, int iconSize,
+            (int Warn, int High, int Critical) thresholds,
+            Drawing.Icon? current, Action<Drawing.Icon> assign)
+        {
+            string key = $"{iconSize}|{label}|{value:F0}|{thresholds.Warn},{thresholds.High},{thresholds.Critical}";
+            if (current != null && _trayIconKeys.TryGetValue(id, out var prev) && prev == key)
+                return;
+
+            var icon = CreateTextIcon(label, value.ToString(), iconSize, thresholds);
+            assign(icon);
+            _trayIconKeys[id] = key;
+            DisposeTrayIcon(current);
+        }
+
+        // The network icon only shows each arrow as active/idle, so it only needs rebuilding when
+        // an arrow crosses the activity threshold (or the DPI size changes).
+        private void SetNetworkTrayIcon(long upload, long download, int iconSize)
+        {
+            const long threshold = 1024;
+            string key = $"{iconSize}|{(upload > threshold ? 1 : 0)}|{(download > threshold ? 1 : 0)}";
+            if (NetworkIcon != null && _trayIconKeys.TryGetValue("NET", out var prev) && prev == key)
+                return;
+
+            var old = NetworkIcon;
+            NetworkIcon = CreateNetworkIcon(upload, download, iconSize);
+            _trayIconKeys["NET"] = key;
+            DisposeTrayIcon(old);
+        }
+
+        // Resolves the warning-color thresholds for a percentage icon from saved settings,
+        // falling back to the defaults if the entry is missing.
+        private static (int Warn, int High, int Critical) GetThresholds(Models.TrayIconSettings settings, string id)
+        {
+            var entry = settings.Icons.FirstOrDefault(i => i.Id == id);
+            return entry == null
+                ? (Models.TrayIconEntry.DefaultWarn, Models.TrayIconEntry.DefaultHigh, Models.TrayIconEntry.DefaultCritical)
+                : (entry.WarnThreshold, entry.HighThreshold, entry.CriticalThreshold);
         }
 
         // Icons returned by Icon.FromHandle do not own their HICON, so the handle must be
@@ -699,7 +749,7 @@ namespace WinState.ViewModels.Windows
                 });
             }
 
-            while (TopProcesses.Count < _userSettingsService.GetCpuSettings().ProcessCount)
+            while (TopProcesses.Count < _userSettingsService.GetProcessListSettings().Cpu)
             {
                 TopProcesses.Add(new ProcessViewModel { Name = "", CpuUsage = 0, Icon = null });
             }
@@ -785,7 +835,7 @@ namespace WinState.ViewModels.Windows
                 });
             }
 
-            while (TopMemoryProcesses.Count < 15)
+            while (TopMemoryProcesses.Count < _userSettingsService.GetProcessListSettings().Memory)
             {
                 TopMemoryProcesses.Add(new MemoryProcessViewModel { Name = "", FormattedMemoryUsage = "", Icon = null });
             }
@@ -948,7 +998,7 @@ namespace WinState.ViewModels.Windows
                 });
             }
             
-            while (TopDiskProcesses.Count < 15)
+            while (TopDiskProcesses.Count < _userSettingsService.GetProcessListSettings().Disk)
             {
                 TopDiskProcesses.Add(new DiskProcessViewModel { Name = "", Read = "", Write = "", Icon = null });
             }
@@ -1004,7 +1054,7 @@ namespace WinState.ViewModels.Windows
 
 
 
-        static Drawing.Icon CreateTextIcon(string text1, string text2, int iconSize)
+        static Drawing.Icon CreateTextIcon(string text1, string text2, int iconSize, (int Warn, int High, int Critical) thresholds)
         {
             if (text2.Length >= 3)
             {
@@ -1040,15 +1090,15 @@ namespace WinState.ViewModels.Windows
                 if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK")
                     && double.TryParse(text2, out double value))
                 {
-                    if (value >= 90)
+                    if (value >= thresholds.Critical)
                     {
                         brush = new Drawing.SolidBrush(Drawing.Color.OrangeRed);
                     }
-                    else if (value >= 80)
+                    else if (value >= thresholds.High)
                     {
                         brush = new Drawing.SolidBrush(Drawing.Color.Orange);
                     }
-                    else if (value >= 70)
+                    else if (value >= thresholds.Warn)
                     {
                         brush = new Drawing.SolidBrush(Drawing.Color.Yellow);
                     }
