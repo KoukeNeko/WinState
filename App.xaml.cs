@@ -56,20 +56,15 @@ namespace WinState
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<DataPage>();
                 services.AddSingleton<DataViewModel>();
-                services.AddSingleton<SettingsPage>();
+
+                // The main window is now a macOS-style settings window: one shared
+                // SettingsViewModel backs each category page in the navigation.
                 services.AddSingleton<SettingsViewModel>();
-                services.AddSingleton<CpuPage>();
-                services.AddSingleton<CpuViewModel>();
-                services.AddSingleton<GpuPage>();
-                services.AddSingleton<GpuViewModel>();
-                services.AddSingleton<MemoryPage>();
-                services.AddSingleton<MemoryViewModel>();
-                services.AddSingleton<DiskPage>();
-                services.AddSingleton<DiskViewModel>();
-                services.AddSingleton<NetworkPage>();
-                services.AddSingleton<NetworkViewModel>();
-                services.AddSingleton<SensorsPage>();
-                services.AddSingleton<SensorsViewModel>();
+                services.AddSingleton<AppearancePage>();
+                services.AddSingleton<TrayIconsPage>();
+                services.AddSingleton<ProcessListPage>();
+                services.AddSingleton<RefreshRatePage>();
+                services.AddSingleton<AboutPage>();
 
                 services.AddSingleton<INotifyIconService, CustomNotifyIconService>();
 

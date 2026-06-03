@@ -1,0 +1,146 @@
+<Page
+    x:Class="WinState.Views.Pages.TrayIconsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WinState.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="TrayIconsPage"
+    d:DesignHeight="650"
+    d:DesignWidth="800"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Page.Resources>
+
+    <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            MaxWidth="760"
+            HorizontalAlignment="Left"
+            Margin="0,0,0,24">
+
+            <TextBlock Style="{StaticResource SettingsTitle}" Text="系統匣圖示" />
+
+            <TextBlock
+                Style="{StaticResource SettingsGroupLabel}"
+                Text="勾選要顯示的項目並調整順序；百分比圖示可設定變色門檻（黃 / 橘 / 紅）。" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <ItemsControl Margin="8,8" ItemsSource="{Binding ViewModel.TrayIcons}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Margin="0,3"
+                                Padding="10,8"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="6">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox
+                                            Grid.Column="0"
+                                            Margin="0,0,12,0"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding IsVisible}" />
+
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            FontWeight="Medium"
+                                            Text="{Binding DisplayName}" />
+
+                                        <ui:Button
+                                            Grid.Column="2"
+                                            Margin="4,0"
+                                            Padding="8,4"
+                                            Appearance="Secondary"
+                                            Command="{Binding DataContext.ViewModel.MoveIconUpCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                            CommandParameter="{Binding}"
+                                            Icon="{ui:SymbolIcon ChevronUp24}"
+                                            ToolTip="上移" />
+
+                                        <ui:Button
+                                            Grid.Column="3"
+                                            Padding="8,4"
+                                            Appearance="Secondary"
+                                            Command="{Binding DataContext.ViewModel.MoveIconDownCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                            CommandParameter="{Binding}"
+                                            Icon="{ui:SymbolIcon ChevronDown24}"
+                                            ToolTip="下移" />
+                                    </Grid>
+
+                                    <!--  Warning thresholds (percentage icons only)  -->
+                                    <StackPanel
+                                        Margin="0,10,0,2"
+                                        Orientation="Horizontal"
+                                        Visibility="{Binding IsPercentageIcon, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock
+                                            Width="40"
+                                            VerticalAlignment="Center"
+                                            Foreground="Goldenrod"
+                                            Text="黃 %" />
+                                        <ui:NumberBox
+                                            Width="92"
+                                            Margin="0,0,12,0"
+                                            Maximum="100"
+                                            Minimum="1"
+                                            SpinButtonPlacementMode="Inline"
+                                            Value="{Binding WarnThreshold, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Width="40"
+                                            VerticalAlignment="Center"
+                                            Foreground="Orange"
+                                            Text="橘 %" />
+                                        <ui:NumberBox
+                                            Width="92"
+                                            Margin="0,0,12,0"
+                                            Maximum="100"
+                                            Minimum="1"
+                                            SpinButtonPlacementMode="Inline"
+                                            Value="{Binding HighThreshold, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Width="40"
+                                            VerticalAlignment="Center"
+                                            Foreground="OrangeRed"
+                                            Text="紅 %" />
+                                        <ui:NumberBox
+                                            Width="92"
+                                            Maximum="100"
+                                            Minimum="1"
+                                            SpinButtonPlacementMode="Inline"
+                                            Value="{Binding CriticalThreshold, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <StackPanel Orientation="Horizontal">
+                <ui:Button
+                    Appearance="Secondary"
+                    Command="{Binding ViewModel.ResetIconOrderCommand}"
+                    Content="還原預設"
+                    Icon="{ui:SymbolIcon ArrowReset24}" />
+            </StackPanel>
+
+            <ui:InfoBar
+                Margin="0,12,0,0"
+                IsOpen="{Binding ViewModel.HasUnsavedChanges}"
+                Message="圖示順序與顯示的變更會在重新啟動應用程式後生效（門檻變更即時套用）。"
+                Severity="Informational"
+                Title="需要重新啟動" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

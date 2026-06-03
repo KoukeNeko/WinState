@@ -104,46 +104,34 @@ namespace WinState.ViewModels.Windows
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WPF UI - WinState";
+        private string _applicationTitle = "WinState 設定";
 
         [ObservableProperty]
         private ObservableCollection<object> _menuItems = new()
         {
             new NavigationViewItem()
             {
-                Content = "CPU",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Board24 },
-                TargetPageType = typeof(WinState.Views.Pages.CpuPage)
+                Content = "外觀",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.PaintBrush24 },
+                TargetPageType = typeof(WinState.Views.Pages.AppearancePage)
             },
             new NavigationViewItem()
             {
-                Content = "GPU",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Video24 },
-                TargetPageType = typeof(WinState.Views.Pages.GpuPage)
+                Content = "系統匣圖示",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.AppsList24 },
+                TargetPageType = typeof(WinState.Views.Pages.TrayIconsPage)
             },
             new NavigationViewItem()
             {
-                Content = "Memory",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.DeveloperBoard24 },
-                TargetPageType = typeof(WinState.Views.Pages.MemoryPage)
+                Content = "程序清單",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.AppsListDetail24 },
+                TargetPageType = typeof(WinState.Views.Pages.ProcessListPage)
             },
             new NavigationViewItem()
             {
-                Content = "Disk",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Storage24 },
-                TargetPageType = typeof(WinState.Views.Pages.DiskPage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "Network",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.NetworkCheck24 },
-                TargetPageType = typeof(WinState.Views.Pages.NetworkPage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "Sensors",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.DataHistogram24 },
-                TargetPageType = typeof(WinState.Views.Pages.SensorsPage)
+                Content = "更新頻率",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowSync24 },
+                TargetPageType = typeof(WinState.Views.Pages.RefreshRatePage)
             }
         };
 
@@ -152,9 +140,9 @@ namespace WinState.ViewModels.Windows
         {
             new NavigationViewItem()
             {
-                Content = "Settings",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Settings24 },
-                TargetPageType = typeof(WinState.Views.Pages.SettingsPage)
+                Content = "關於",
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 },
+                TargetPageType = typeof(WinState.Views.Pages.AboutPage)
             }
         };
 
@@ -319,7 +307,7 @@ namespace WinState.ViewModels.Windows
                 mainWindow.Show();
                 mainWindow.WindowState = WindowState.Normal;
                 mainWindow.Activate();
-                mainWindow.Navigate(typeof(Views.Pages.SettingsPage));
+                mainWindow.Navigate(typeof(Views.Pages.AppearancePage));
             }
         }
 

@@ -1,0 +1,93 @@
+<Page
+    x:Class="WinState.Views.Pages.RefreshRatePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:WinState.Views.Pages"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="RefreshRatePage"
+    d:DesignHeight="650"
+    d:DesignWidth="800"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel
+            MaxWidth="760"
+            HorizontalAlignment="Left"
+            Margin="0,0,0,24">
+
+            <TextBlock Style="{StaticResource SettingsTitle}" Text="更新頻率" />
+
+            <TextBlock
+                Style="{StaticResource SettingsGroupLabel}"
+                Text="每個類別資料的重新整理間隔，單位毫秒（250–10000）。隱藏在系統匣時會自動放慢以節省資源。" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <StackPanel>
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Board24" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="CPU" />
+                        <ui:NumberBox Grid.Column="2" Width="130" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.CpuRefreshMs, Mode=TwoWay}" />
+                    </Grid>
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Video24" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="GPU" />
+                        <ui:NumberBox Grid.Column="2" Width="130" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.GpuRefreshMs, Mode=TwoWay}" />
+                    </Grid>
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="DeveloperBoard24" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="記憶體" />
+                        <ui:NumberBox Grid.Column="2" Width="130" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.MemoryRefreshMs, Mode=TwoWay}" />
+                    </Grid>
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Storage24" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="磁碟" />
+                        <ui:NumberBox Grid.Column="2" Width="130" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.DiskRefreshMs, Mode=TwoWay}" />
+                    </Grid>
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="NetworkCheck24" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="網路" />
+                        <ui:NumberBox Grid.Column="2" Width="130" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.NetworkRefreshMs, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
