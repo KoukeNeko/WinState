@@ -21,28 +21,30 @@ CPU · GPU · RAM · Disk · Network · Power — at a glance, with rich frosted
 
 ## 📸 Screenshots / 截圖
 
-> Tray-icon flyouts. **Paste a screenshot under each heading** when editing this file on GitHub — drag-and-drop uploads the image and inserts it automatically.
-> 在 GitHub 網頁編輯本檔時，把截圖拖放到各標題下方即可（會自動上傳並插入）。
-
 **CPU**
 
-<!-- 👉 paste CPU screenshot here -->
+<img width="480" height="1516" alt="image" src="https://github.com/user-attachments/assets/eb822672-2c68-4d78-9fd1-0eda48958628" />
+
 
 **GPU**
 
-<!-- 👉 paste GPU screenshot here -->
+<img width="480" height="693" alt="image" src="https://github.com/user-attachments/assets/2caf1112-419e-4508-abcf-d8586c7ad67c" />
+
 
 **Memory (RAM)**
 
-<!-- 👉 paste Memory screenshot here -->
+<img width="480" height="1287" alt="image" src="https://github.com/user-attachments/assets/d2f41eca-adc1-4f92-b241-e6369e596b91" />
+
 
 **Network**
 
-<!-- 👉 paste Network screenshot here -->
+<img width="480" height="1100" alt="image" src="https://github.com/user-attachments/assets/27b125fb-e031-489d-9432-a0bd58f9718d" />
+
 
 **Sensors**
 
-<!-- 👉 paste Sensors screenshot here -->
+<img width="480" height="1456" alt="image" src="https://github.com/user-attachments/assets/0a0e7d6e-ca89-43c4-b421-6e1e1059d848" />
+
 
 ---
 
