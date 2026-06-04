@@ -1124,7 +1124,6 @@
                                     <TextBlock Grid.Row="14" Text="PCIe Tx:" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="14" Grid.Column="1" Text="{Binding PcieTxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                                 </Grid>
-                                <Rectangle Height="1" Fill="#333333" Margin="0,5"/>
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
