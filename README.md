@@ -15,9 +15,34 @@ CPU · GPU · RAM · Disk · Network · Power — at a glance, with rich frosted
 
 **[English](#english) · [繁體中文](#繁體中文)**
 
-<img src="https://github.com/user-attachments/assets/1c0ec4a4-85c4-4f5e-af2e-a81d5a60f897" alt="WinState screenshot" />
-
 </div>
+
+---
+
+## 📸 Screenshots / 截圖
+
+> Tray-icon flyouts. **Paste a screenshot under each heading** when editing this file on GitHub — drag-and-drop uploads the image and inserts it automatically.
+> 在 GitHub 網頁編輯本檔時，把截圖拖放到各標題下方即可（會自動上傳並插入）。
+
+**CPU**
+
+<!-- 👉 paste CPU screenshot here -->
+
+**GPU**
+
+<!-- 👉 paste GPU screenshot here -->
+
+**Memory (RAM)**
+
+<!-- 👉 paste Memory screenshot here -->
+
+**Network**
+
+<!-- 👉 paste Network screenshot here -->
+
+**Sensors**
+
+<!-- 👉 paste Sensors screenshot here -->
 
 ---
 
