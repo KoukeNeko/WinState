@@ -1039,8 +1039,6 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
                                     <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
@@ -1061,45 +1059,37 @@
                                     <TextBlock Grid.Row="4" Text="Hot Spot:" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HotSpot, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
-                                    <!-- Memory Junction -->
-                                    <TextBlock Grid.Row="5" Text="Mem Junction:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MemoryJunction, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
-
-                                    <!-- Voltage -->
-                                    <TextBlock Grid.Row="6" Text="Core Voltage:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Voltage, StringFormat={}{0:0.000} V}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
-
                                     <!-- Power Draw -->
-                                    <TextBlock Grid.Row="7" Text="Power Draw:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Power, StringFormat={}{0:0.0} W}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="5" Text="Power Draw:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Power, StringFormat={}{0:0.0} W}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Fan Speed -->
-                                    <TextBlock Grid.Row="8" Text="Fan Speed:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding FanRpm, StringFormat={}{0:0} RPM}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="6" Text="Fan Speed:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FanRpm, StringFormat={}{0:0} RPM}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Controller -->
-                                    <TextBlock Grid.Row="9" Text="Mem Controller:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding MemoryControllerLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="7" Text="Mem Controller:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding MemoryControllerLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Video Engine -->
-                                    <TextBlock Grid.Row="10" Text="Video Engine:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding VideoEngineLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="8" Text="Video Engine:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding VideoEngineLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Used -->
-                                    <TextBlock Grid.Row="11" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding MemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="9" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding MemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Total -->
-                                    <TextBlock Grid.Row="12" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding MemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="10" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding MemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- PCIe Rx -->
-                                    <TextBlock Grid.Row="13" Text="PCIe Rx:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding PcieRxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="11" Text="PCIe Rx:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding PcieRxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- PCIe Tx -->
-                                    <TextBlock Grid.Row="14" Text="PCIe Tx:" Foreground="#888" Margin="0,2"/>
-                                    <TextBlock Grid.Row="14" Grid.Column="1" Text="{Binding PcieTxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Row="12" Text="PCIe Tx:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding PcieTxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                                 </Grid>
                             </StackPanel>
                         </DataTemplate>
