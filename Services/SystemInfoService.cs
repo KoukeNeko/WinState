@@ -60,8 +60,10 @@ namespace WinState.Services
             public double Temperature { get; set; }
             public double Clock { get; set; }
             public double HotSpot { get; set; }
+            public double MemoryJunction { get; set; }
             public double MemoryClock { get; set; }
             public double Power { get; set; }
+            public double Voltage { get; set; }
             public double FanRpm { get; set; }
             public double MemoryControllerLoad { get; set; }
             public double VideoEngineLoad { get; set; }
@@ -76,8 +78,10 @@ namespace WinState.Services
             public ISensor? TemperatureSensor { get; set; }
             public ISensor? ClockSensor { get; set; }
             public ISensor? HotSpotSensor { get; set; }
+            public ISensor? MemoryJunctionSensor { get; set; }
             public ISensor? MemoryClockSensor { get; set; }
             public ISensor? PowerSensor { get; set; }
+            public ISensor? VoltageSensor { get; set; }
             public ISensor? FanSensor { get; set; }
             public ISensor? MemoryControllerSensor { get; set; }
             public ISensor? VideoEngineSensor { get; set; }
@@ -612,13 +616,21 @@ namespace WinState.Services
                                 }
                             }
 
-                            // Hot Spot / junction temperature
+                            // Hot Spot temperature
                             if (sensor.SensorType == SensorType.Temperature && sensor.Name.Contains("Hot Spot"))
                                 gpuInfo.HotSpotSensor = sensor;
+
+                            // Memory junction temperature
+                            if (sensor.SensorType == SensorType.Temperature && sensor.Name.Contains("Memory Junction"))
+                                gpuInfo.MemoryJunctionSensor = sensor;
 
                             // Power draw (whole board / package)
                             if (sensor.SensorType == SensorType.Power && gpuInfo.PowerSensor == null)
                                 gpuInfo.PowerSensor = sensor;
+
+                            // Core voltage
+                            if (sensor.SensorType == SensorType.Voltage && gpuInfo.VoltageSensor == null)
+                                gpuInfo.VoltageSensor = sensor;
 
                             // Fan speed (RPM) — take the first fan
                             if (sensor.SensorType == SensorType.Fan && gpuInfo.FanSensor == null)
@@ -1360,8 +1372,10 @@ namespace WinState.Services
                 if (gpu.TemperatureSensor != null) gpu.Temperature = gpu.TemperatureSensor.Value.GetValueOrDefault();
                 if (gpu.ClockSensor != null) gpu.Clock = gpu.ClockSensor.Value.GetValueOrDefault();
                 if (gpu.HotSpotSensor != null) gpu.HotSpot = gpu.HotSpotSensor.Value.GetValueOrDefault();
+                if (gpu.MemoryJunctionSensor != null) gpu.MemoryJunction = gpu.MemoryJunctionSensor.Value.GetValueOrDefault();
                 if (gpu.MemoryClockSensor != null) gpu.MemoryClock = gpu.MemoryClockSensor.Value.GetValueOrDefault();
                 if (gpu.PowerSensor != null) gpu.Power = gpu.PowerSensor.Value.GetValueOrDefault();
+                if (gpu.VoltageSensor != null) gpu.Voltage = gpu.VoltageSensor.Value.GetValueOrDefault();
                 if (gpu.FanSensor != null) gpu.FanRpm = gpu.FanSensor.Value.GetValueOrDefault();
                 if (gpu.MemoryControllerSensor != null) gpu.MemoryControllerLoad = gpu.MemoryControllerSensor.Value.GetValueOrDefault();
                 if (gpu.VideoEngineSensor != null) gpu.VideoEngineLoad = gpu.VideoEngineSensor.Value.GetValueOrDefault();

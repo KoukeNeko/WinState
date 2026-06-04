@@ -356,8 +356,10 @@ namespace WinState.ViewModels.Windows
                 vm.Temperature = info.Temperature;
                 vm.Clock = info.Clock;
                 vm.HotSpot = info.HotSpot;
+                vm.MemoryJunction = info.MemoryJunction;
                 vm.MemoryClock = info.MemoryClock;
                 vm.Power = info.Power;
+                vm.Voltage = info.Voltage;
                 vm.FanRpm = info.FanRpm;
                 vm.MemoryControllerLoad = info.MemoryControllerLoad;
                 vm.VideoEngineLoad = info.VideoEngineLoad;
@@ -1233,8 +1235,10 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private double _temperature;
         [ObservableProperty] private double _clock;
         [ObservableProperty] private double _hotSpot;
+        [ObservableProperty] private double _memoryJunction;
         [ObservableProperty] private double _memoryClock;
         [ObservableProperty] private double _power;
+        [ObservableProperty] private double _voltage;
         [ObservableProperty] private double _fanRpm;
         [ObservableProperty] private double _memoryControllerLoad;
         [ObservableProperty] private double _videoEngineLoad;
