@@ -3,7 +3,11 @@ name: build
 on:
   push:
     branches: [dev, alpha, master]
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
 
 jobs:
