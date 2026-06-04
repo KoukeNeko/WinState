@@ -6,7 +6,7 @@
 
 **A lightweight, real-time Windows system monitor that lives in your tray.**
 
-[![build](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml/badge.svg)](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml)
+[![build](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml/badge.svg?branch=dev)](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white)
 ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
 ![arch](https://img.shields.io/badge/arch-x64%20%7C%20arm64-blue)
