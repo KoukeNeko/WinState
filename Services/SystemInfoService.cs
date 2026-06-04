@@ -59,6 +59,14 @@ namespace WinState.Services
             public long MemoryTotal { get; set; }
             public double Temperature { get; set; }
             public double Clock { get; set; }
+            public double HotSpot { get; set; }
+            public double MemoryClock { get; set; }
+            public double Power { get; set; }
+            public double FanRpm { get; set; }
+            public double MemoryControllerLoad { get; set; }
+            public double VideoEngineLoad { get; set; }
+            public double PcieRx { get; set; }
+            public double PcieTx { get; set; }
 
             // Sensors
             public ISensor? CoreLoadSensor { get; set; }
@@ -67,6 +75,14 @@ namespace WinState.Services
             public ISensor? MemoryTotalSensor { get; set; }
             public ISensor? TemperatureSensor { get; set; }
             public ISensor? ClockSensor { get; set; }
+            public ISensor? HotSpotSensor { get; set; }
+            public ISensor? MemoryClockSensor { get; set; }
+            public ISensor? PowerSensor { get; set; }
+            public ISensor? FanSensor { get; set; }
+            public ISensor? MemoryControllerSensor { get; set; }
+            public ISensor? VideoEngineSensor { get; set; }
+            public ISensor? PcieRxSensor { get; set; }
+            public ISensor? PcieTxSensor { get; set; }
         }
 
         public List<GpuInfo> Gpus { get; private set; } = new List<GpuInfo>();
@@ -555,10 +571,11 @@ namespace WinState.Services
                                     gpuInfo.CoreLoadSensor = sensor;
                             }
 
-                            // GPU Memory Load
-                            if (sensor.SensorType == SensorType.Load && (sensor.Name == "GPU Memory" || sensor.Name.Contains("Memory")))
+                            // GPU Memory Load (VRAM usage %) — exclude the memory-controller load.
+                            if (sensor.SensorType == SensorType.Load && sensor.Name.Contains("Memory") && !sensor.Name.Contains("Controller"))
                             {
-                                gpuInfo.MemoryLoadSensor = sensor;
+                                if (gpuInfo.MemoryLoadSensor == null || sensor.Name == "GPU Memory")
+                                    gpuInfo.MemoryLoadSensor = sensor;
                             }
 
                             // GPU Memory Used
@@ -589,7 +606,35 @@ namespace WinState.Services
                                 {
                                     gpuInfo.ClockSensor = sensor;
                                 }
+                                else if (sensor.Name.Contains("Memory"))
+                                {
+                                    gpuInfo.MemoryClockSensor = sensor;
+                                }
                             }
+
+                            // Hot Spot / junction temperature
+                            if (sensor.SensorType == SensorType.Temperature && sensor.Name.Contains("Hot Spot"))
+                                gpuInfo.HotSpotSensor = sensor;
+
+                            // Power draw (whole board / package)
+                            if (sensor.SensorType == SensorType.Power && gpuInfo.PowerSensor == null)
+                                gpuInfo.PowerSensor = sensor;
+
+                            // Fan speed (RPM) — take the first fan
+                            if (sensor.SensorType == SensorType.Fan && gpuInfo.FanSensor == null)
+                                gpuInfo.FanSensor = sensor;
+
+                            // Memory controller / video engine activity
+                            if (sensor.SensorType == SensorType.Load && sensor.Name.Contains("Memory Controller"))
+                                gpuInfo.MemoryControllerSensor = sensor;
+                            if (sensor.SensorType == SensorType.Load && sensor.Name.Contains("Video Engine"))
+                                gpuInfo.VideoEngineSensor = sensor;
+
+                            // PCIe throughput
+                            if (sensor.SensorType == SensorType.Throughput && sensor.Name.Contains("PCIe Rx"))
+                                gpuInfo.PcieRxSensor = sensor;
+                            if (sensor.SensorType == SensorType.Throughput && sensor.Name.Contains("PCIe Tx"))
+                                gpuInfo.PcieTxSensor = sensor;
                         }
                         Gpus.Add(gpuInfo);
                         break;
@@ -1314,6 +1359,14 @@ namespace WinState.Services
                 
                 if (gpu.TemperatureSensor != null) gpu.Temperature = gpu.TemperatureSensor.Value.GetValueOrDefault();
                 if (gpu.ClockSensor != null) gpu.Clock = gpu.ClockSensor.Value.GetValueOrDefault();
+                if (gpu.HotSpotSensor != null) gpu.HotSpot = gpu.HotSpotSensor.Value.GetValueOrDefault();
+                if (gpu.MemoryClockSensor != null) gpu.MemoryClock = gpu.MemoryClockSensor.Value.GetValueOrDefault();
+                if (gpu.PowerSensor != null) gpu.Power = gpu.PowerSensor.Value.GetValueOrDefault();
+                if (gpu.FanSensor != null) gpu.FanRpm = gpu.FanSensor.Value.GetValueOrDefault();
+                if (gpu.MemoryControllerSensor != null) gpu.MemoryControllerLoad = gpu.MemoryControllerSensor.Value.GetValueOrDefault();
+                if (gpu.VideoEngineSensor != null) gpu.VideoEngineLoad = gpu.VideoEngineSensor.Value.GetValueOrDefault();
+                if (gpu.PcieRxSensor != null) gpu.PcieRx = gpu.PcieRxSensor.Value.GetValueOrDefault();
+                if (gpu.PcieTxSensor != null) gpu.PcieTx = gpu.PcieTxSensor.Value.GetValueOrDefault();
             }
         }
 

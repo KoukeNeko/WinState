@@ -355,6 +355,14 @@ namespace WinState.ViewModels.Windows
                 vm.MemoryTotalString = BytesToReadable((long)info.MemoryTotal);
                 vm.Temperature = info.Temperature;
                 vm.Clock = info.Clock;
+                vm.HotSpot = info.HotSpot;
+                vm.MemoryClock = info.MemoryClock;
+                vm.Power = info.Power;
+                vm.FanRpm = info.FanRpm;
+                vm.MemoryControllerLoad = info.MemoryControllerLoad;
+                vm.VideoEngineLoad = info.VideoEngineLoad;
+                vm.PcieRxString = BytesToReadable((long)info.PcieRx) + "/s";
+                vm.PcieTxString = BytesToReadable((long)info.PcieTx) + "/s";
             }
         }
 
@@ -1224,5 +1232,13 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private string _memoryTotalString = "";
         [ObservableProperty] private double _temperature;
         [ObservableProperty] private double _clock;
+        [ObservableProperty] private double _hotSpot;
+        [ObservableProperty] private double _memoryClock;
+        [ObservableProperty] private double _power;
+        [ObservableProperty] private double _fanRpm;
+        [ObservableProperty] private double _memoryControllerLoad;
+        [ObservableProperty] private double _videoEngineLoad;
+        [ObservableProperty] private string _pcieRxString = "";
+        [ObservableProperty] private string _pcieTxString = "";
     }
 }
