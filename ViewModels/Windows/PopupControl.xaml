@@ -1003,6 +1003,16 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,0,0,15">
+                                <StackPanel.Resources>
+                                    <!-- Pin the detail rows to a fixed size. They set no FontSize of
+                                         their own, so without this they fall back to the (larger)
+                                         system message-font size. Elements that set FontSize
+                                         explicitly (name, bars, DETAILS header) are unaffected. -->
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontFamily" Value="Segoe UI"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                    </Style>
+                                </StackPanel.Resources>
                                 <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                                 
                                 <!-- Bars -->
