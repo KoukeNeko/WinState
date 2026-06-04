@@ -27,6 +27,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Refresh contributors snapshot
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/fetch-contributors.ps1
+
       - name: Publish self-contained single-file exe
         run: >
           dotnet publish WinState.csproj

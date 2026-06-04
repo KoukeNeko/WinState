@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Media;
@@ -71,7 +70,7 @@ namespace WinState.ViewModels.Pages
             LoadTrayIconSettings();
             LoadProcessListSettings();
             LoadRefreshSettings();
-            _ = LoadContributorsAsync();
+            LoadContributors();
 
             _isInitialized = true;
         }
@@ -188,91 +187,53 @@ namespace WinState.ViewModels.Pages
                 ?? String.Empty;
         }
 
-        // ---- Contributors (GitHub API + offline avatar cache) -------------------------------
+        // ---- Contributors (embedded at build time by scripts/fetch-contributors.ps1) ---------
 
-        private const string ContributorsRepo = "KoukeNeko/WinState";
-
-        private static readonly HttpClient _http = CreateHttpClient();
-
-        private static HttpClient CreateHttpClient()
+        // Reads the contributor snapshot embedded as application resources, so the list and avatars
+        // show instantly and fully offline. The snapshot is refreshed per build/release.
+        private void LoadContributors()
         {
-            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            // GitHub's API rejects requests without a User-Agent.
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("WinState-app");
-            return http;
-        }
-
-        private static string ContributorsCacheDir => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "WinState", "contributors");
-
-        // Pulls the contributor list from GitHub (caching it so offline launches still work),
-        // then fills Contributors with cached-or-downloaded avatars.
-        private async Task LoadContributorsAsync()
-        {
-            string dir = ContributorsCacheDir;
-            string jsonPath = Path.Combine(dir, "contributors.json");
-            try { Directory.CreateDirectory(dir); } catch { }
-
-            List<ContributorDto>? list = null;
-
             try
             {
-                string json = await _http.GetStringAsync(
-                    $"https://api.github.com/repos/{ContributorsRepo}/contributors?per_page=100");
-                list = JsonSerializer.Deserialize<List<ContributorDto>>(json);
-                if (list is { Count: > 0 })
-                    try { File.WriteAllText(jsonPath, json); } catch { }
+                var resource = System.Windows.Application.GetResourceStream(
+                    new Uri("pack://application:,,,/Assets/contributors/contributors.json"));
+                if (resource is null)
+                    return;
+
+                string json;
+                using (var reader = new StreamReader(resource.Stream))
+                    json = reader.ReadToEnd();
+
+                var list = JsonSerializer.Deserialize<List<EmbeddedContributor>>(json);
+                if (list is null)
+                    return;
+
+                foreach (var c in list.Where(c => c.Login.Length > 0))
+                {
+                    Contributors.Add(new ContributorViewModel
+                    {
+                        Login = c.Login,
+                        ProfileUrl = c.HtmlUrl,
+                        Avatar = LoadEmbeddedAvatar(c.Avatar)
+                    });
+                }
             }
             catch
             {
-                // Offline or rate-limited: fall back to the last cached list.
-            }
-
-            if (list is null && File.Exists(jsonPath))
-            {
-                try { list = JsonSerializer.Deserialize<List<ContributorDto>>(File.ReadAllText(jsonPath)); }
-                catch { }
-            }
-
-            if (list is null)
-                return;
-
-            Contributors.Clear();
-            foreach (var c in list.Where(c => c.Login.Length > 0 && c.Type == "User"))
-            {
-                var vm = new ContributorViewModel { Login = c.Login, ProfileUrl = c.HtmlUrl };
-                Contributors.Add(vm);
-                vm.Avatar = await GetAvatarAsync(c.Login, c.AvatarUrl, dir);
+                // No snapshot embedded (e.g. a build without the fetch step) — show nothing.
             }
         }
 
-        // Returns a cached avatar, downloading and caching it on first use. Null if it has never
-        // been cached and we are offline.
-        private static async Task<ImageSource?> GetAvatarAsync(string login, string avatarUrl, string dir)
+        private static ImageSource? LoadEmbeddedAvatar(string fileName)
         {
-            string file = Path.Combine(dir, login + ".png");
-
-            if (!File.Exists(file) && avatarUrl.Length > 0)
-            {
-                try
-                {
-                    string url = avatarUrl + (avatarUrl.Contains('?') ? "&" : "?") + "s=144";
-                    byte[] bytes = await _http.GetByteArrayAsync(url);
-                    await File.WriteAllBytesAsync(file, bytes);
-                }
-                catch { return null; }
-            }
-
-            if (!File.Exists(file))
+            if (fileName.Length == 0)
                 return null;
-
             try
             {
                 var bmp = new BitmapImage();
                 bmp.BeginInit();
-                bmp.CacheOption = BitmapCacheOption.OnLoad; // load fully so the file isn't kept open
-                bmp.UriSource = new Uri(file);
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.UriSource = new Uri($"pack://application:,,,/Assets/contributors/{fileName}");
                 bmp.EndInit();
                 bmp.Freeze();
                 return bmp;
@@ -280,12 +241,11 @@ namespace WinState.ViewModels.Pages
             catch { return null; }
         }
 
-        private class ContributorDto
+        private class EmbeddedContributor
         {
             [JsonPropertyName("login")] public string Login { get; set; } = string.Empty;
-            [JsonPropertyName("avatar_url")] public string AvatarUrl { get; set; } = string.Empty;
-            [JsonPropertyName("html_url")] public string HtmlUrl { get; set; } = string.Empty;
-            [JsonPropertyName("type")] public string Type { get; set; } = string.Empty;
+            [JsonPropertyName("htmlUrl")] public string HtmlUrl { get; set; } = string.Empty;
+            [JsonPropertyName("avatar")] public string Avatar { get; set; } = string.Empty;
         }
 
         [RelayCommand]

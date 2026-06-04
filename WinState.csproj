@@ -36,6 +36,12 @@
     <Resource Include="Assets\wpfui-icon-1024.png" />
   </ItemGroup>
 
+  <!-- Contributors snapshot (refreshed by scripts/fetch-contributors.ps1 before publish). -->
+  <ItemGroup>
+    <None Remove="Assets\contributors\**\*" />
+    <Resource Include="Assets\contributors\**\*" />
+  </ItemGroup>
+
    <ItemGroup>
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
