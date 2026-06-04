@@ -1808,19 +1808,40 @@ namespace WinState.Services
                             if (hardware != null)
                             {
                                 hardware.Update();
+                                // SMART health is reported differently per drive: SATA SSDs expose a
+                                // direct "Remaining Life"/"Life Left" %, while NVMe drives expose
+                                // "Percentage Used" (so health = 100 - used). "Available Spare" is a
+                                // last resort. Crucially, "Available Spare Threshold" (typically
+                                // 5-10%) must be excluded or it gets mistaken for the health value.
+                                double? remainingLifeDirect = null;
+                                double? percentageUsed = null;
+                                double? availableSpare = null;
+
                                 foreach (var sensor in hardware.Sensors)
                                 {
+                                    var name = sensor.Name;
                                     if (sensor.SensorType == SensorType.Temperature)
                                         info.Temperature = sensor.Value ?? 0;
-                                    else if (sensor.Name.Contains("Remaining Life") || sensor.Name.Contains("Life Left") || sensor.Name.Contains("Available Spare"))
-                                        info.RemainingLife = sensor.Value ?? 0;
-                                    else if (sensor.Name.Contains("Power On Hours"))
+                                    else if (name.Contains("Remaining Life") || name.Contains("Life Left"))
+                                        remainingLifeDirect = sensor.Value;
+                                    else if (name.Contains("Percentage Used"))
+                                        percentageUsed = sensor.Value;
+                                    else if (name.Contains("Available Spare") && !name.Contains("Threshold"))
+                                        availableSpare = sensor.Value;
+                                    else if (name.Contains("Power On Hours"))
                                         info.PowerOnHours = sensor.Value ?? 0;
-                                    else if (sensor.Name.Contains("Data Read") || sensor.Name.Contains("Total Host Reads"))
+                                    else if (name.Contains("Data Read") || name.Contains("Total Host Reads"))
                                         info.TotalReads = sensor.Value ?? 0;
-                                    else if (sensor.Name.Contains("Data Written") || sensor.Name.Contains("Total Host Writes"))
+                                    else if (name.Contains("Data Written") || name.Contains("Total Host Writes"))
                                         info.TotalWrites = sensor.Value ?? 0;
                                 }
+
+                                if (remainingLifeDirect.HasValue)
+                                    info.RemainingLife = remainingLifeDirect.Value;
+                                else if (percentageUsed.HasValue)
+                                    info.RemainingLife = 100 - percentageUsed.Value;
+                                else if (availableSpare.HasValue)
+                                    info.RemainingLife = availableSpare.Value;
                             }
                         }
 
