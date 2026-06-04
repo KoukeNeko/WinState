@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using WinState.Helpers;
 using WinState.Models;
 using WinState.Services;
 using Wpf.Ui.Abstractions.Controls;
@@ -29,6 +30,14 @@ namespace WinState.ViewModels.Pages
 
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
+
+        // Launch WinState at logon. Backed by a Scheduled Task (see StartupManager), not by
+        // usersettings.json, so the task's existence is the single source of truth.
+        [ObservableProperty]
+        private bool _startWithWindows = false;
+
+        // Guards against the toggle write firing while we re-sync it to the real task state.
+        private bool _syncingStartup = false;
 
         // Per-category process-list counts.
         [ObservableProperty]
@@ -72,7 +81,24 @@ namespace WinState.ViewModels.Pages
             LoadRefreshSettings();
             LoadContributors();
 
+            // Reflect the real Scheduled Task state. Set before _isInitialized so the change
+            // handler treats it as a load, not a user toggle.
+            StartWithWindows = StartupManager.IsEnabled();
+
             _isInitialized = true;
+        }
+
+        partial void OnStartWithWindowsChanged(bool value)
+        {
+            if (!_isInitialized || _syncingStartup) return;
+
+            // If creating/removing the task fails, snap the toggle back to reality.
+            if (!StartupManager.SetEnabled(value))
+            {
+                _syncingStartup = true;
+                StartWithWindows = StartupManager.IsEnabled();
+                _syncingStartup = false;
+            }
         }
 
         private void LoadProcessListSettings()

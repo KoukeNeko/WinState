@@ -63,6 +63,39 @@
                 </Grid>
             </Border>
 
+            <!--  ===== 一般 =====  -->
+            <TextBlock
+                Margin="2,16,0,18"
+                Style="{StaticResource SettingsTitle}"
+                Text="一般" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <Grid Margin="16,13">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:SymbolIcon
+                        Grid.Column="0"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        FontSize="20"
+                        Symbol="Power24" />
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="開機時自動啟動" />
+                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="登入 Windows 時，自動以系統管理員權限啟動 WinState。" />
+                    </StackPanel>
+
+                    <ui:ToggleSwitch
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        IsChecked="{Binding ViewModel.StartWithWindows, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
             <!--  ===== 系統匣圖示 =====  -->
             <TextBlock
                 Margin="2,16,0,18"
