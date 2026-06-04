@@ -106,46 +106,6 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty]
         private string _applicationTitle = "WinState 設定";
 
-        [ObservableProperty]
-        private ObservableCollection<object> _menuItems = new()
-        {
-            new NavigationViewItem()
-            {
-                Content = "外觀",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.PaintBrush24 },
-                TargetPageType = typeof(WinState.Views.Pages.AppearancePage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "系統匣圖示",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.AppsList24 },
-                TargetPageType = typeof(WinState.Views.Pages.TrayIconsPage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "程序清單",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.AppsListDetail24 },
-                TargetPageType = typeof(WinState.Views.Pages.ProcessListPage)
-            },
-            new NavigationViewItem()
-            {
-                Content = "更新頻率",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowSync24 },
-                TargetPageType = typeof(WinState.Views.Pages.RefreshRatePage)
-            }
-        };
-
-        [ObservableProperty]
-        private ObservableCollection<object> _footerMenuItems = new()
-        {
-            new NavigationViewItem()
-            {
-                Content = "關於",
-                Icon = new SymbolIcon { Symbol = SymbolRegular.Info24 },
-                TargetPageType = typeof(WinState.Views.Pages.AboutPage)
-            }
-        };
-
         private readonly SystemInfoService _systemInfoService;
         public ObservableCollection<CoreUsageViewModel> Cores { get; private set; } = new ObservableCollection<CoreUsageViewModel>();
 
@@ -307,7 +267,6 @@ namespace WinState.ViewModels.Windows
                 mainWindow.Show();
                 mainWindow.WindowState = WindowState.Normal;
                 mainWindow.Activate();
-                mainWindow.Navigate(typeof(Views.Pages.AppearancePage));
             }
         }
 

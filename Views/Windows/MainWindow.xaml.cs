@@ -56,10 +56,9 @@ namespace WinState.Views.Windows
 
         public MainWindow(
             MainWindowViewModel viewModel,
-            INavigationViewPageProvider pageService,
-            INavigationService navigationService,
             IUserSettingsService userSettingsService,
-            SystemInfoService systemInfoService
+            SystemInfoService systemInfoService,
+            WinState.Views.Pages.SettingsPage settingsPage
         )
         {
             ViewModel = viewModel;
@@ -77,10 +76,9 @@ namespace WinState.Views.Windows
 
             // Create tray icons dynamically based on settings
             CreateTrayIcons();
-            
-            SetPageService(pageService);
 
-            navigationService.SetNavigationControl(RootNavigation);
+            // The window is a single settings page (no navigation sidebar).
+            RootContentHost.Content = settingsPage;
         }
 
         private void CreateTrayIcons()
@@ -189,11 +187,13 @@ namespace WinState.Views.Windows
 
         #region INavigationWindow methods
 
-        public INavigationView GetNavigation() => RootNavigation;
+        // Navigation is unused: the window hosts a single settings page directly, but the type is
+        // still resolved as INavigationWindow by the host, so the interface stays implemented.
+        public INavigationView GetNavigation() => null!;
 
-        public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
+        public bool Navigate(Type pageType) => false;
 
-        public void SetPageService(INavigationViewPageProvider pageService) => RootNavigation.SetPageProviderService(pageService);
+        public void SetPageService(INavigationViewPageProvider pageService) { }
 
         public void ShowWindow() => Show();
 
