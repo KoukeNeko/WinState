@@ -361,6 +361,59 @@
                 </Grid>
             </Border>
 
+            <!--  ===== 貢獻者 =====  -->
+            <TextBlock
+                Margin="2,16,0,18"
+                Style="{StaticResource SettingsTitle}"
+                Text="貢獻者" />
+
+            <TextBlock
+                Style="{StaticResource SettingsGroupLabel}"
+                Text="感謝所有為 WinState 付出的人。" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <StackPanel>
+                    <!--  陳德生 (KoukeNeko)  -->
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="36" Height="36" Margin="0,0,14,0" CornerRadius="18">
+                            <Border.Background>
+                                <ImageBrush ImageSource="https://avatars.githubusercontent.com/u/111033412?v=4" />
+                            </Border.Background>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="陳德生" />
+                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="@KoukeNeko" />
+                        </StackPanel>
+                        <ui:HyperlinkButton Grid.Column="2" VerticalAlignment="Center" Content="GitHub" NavigateUri="https://github.com/KoukeNeko" />
+                    </Grid>
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <!--  江晉緯 (MaoliWolf)  -->
+                    <Grid Margin="16,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="36" Height="36" Margin="0,0,14,0" CornerRadius="18">
+                            <Border.Background>
+                                <ImageBrush ImageSource="https://avatars.githubusercontent.com/u/14952501?v=4" />
+                            </Border.Background>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="江晉緯" />
+                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="@MaoliWolf" />
+                        </StackPanel>
+                        <ui:HyperlinkButton Grid.Column="2" VerticalAlignment="Center" Content="GitHub" NavigateUri="https://github.com/MaoliWolf" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>
