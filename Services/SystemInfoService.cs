@@ -1066,11 +1066,10 @@ namespace WinState.Services
                                 // Note: This is usage across ALL cores. To get % of total capacity, divide by Environment.ProcessorCount.
                                 // However, Task Manager usually shows % of total capacity.
                                 double usage = (cpuDelta / timeDelta) * 100.0 / Environment.ProcessorCount;
-                                
-                                if (usage > 0)
-                                {
-                                    tempProcessInfos.Add((process, process.ProcessName, process.Id, usage));
-                                }
+
+                                // Include every measured process (even 0%) so the list fills to the
+                                // configured count, Task-Manager style, instead of leaving blanks.
+                                tempProcessInfos.Add((process, process.ProcessName, process.Id, usage));
                             }
                         }
                     }
@@ -1756,22 +1755,19 @@ namespace WinState.Services
                 // Doing Process.GetProcessById for every ID every second might be heavy if there are many.
                 // But usually active network processes are few.
                 
-                foreach (var kvp in snapshot)
+                // Include every process (those with no traffic contribute 0) so the list fills to
+                // the configured count, Task-Manager style, instead of leaving blank rows.
+                foreach (var p in Process.GetProcesses())
                 {
-                    if (kvp.Key == 0 || kvp.Key == 4) continue; // System Idle Process and System
-                    if (kvp.Value.Upload == 0 && kvp.Value.Download == 0) continue;
-
                     try
                     {
-                        var p = Process.GetProcessById(kvp.Key);
-                        long up = (long)(kvp.Value.Upload / seconds);
-                        long down = (long)(kvp.Value.Download / seconds);
+                        if (p.Id == 0 || p.Id == 4) continue;
+                        snapshot.TryGetValue(p.Id, out var io);
+                        long up = (long)(io.Upload / seconds);
+                        long down = (long)(io.Download / seconds);
                         tempNetProcesses.Add((p, p.ProcessName, p.Id, up, down));
                     }
-                    catch (Exception)
-                    {
-                        // Process might have exited or access denied
-                    }
+                    catch { }
                 }
 
                 var topList = tempNetProcesses.OrderByDescending(p => p.UploadSpeed + p.DownloadSpeed).Take(_userSettingsService.GetProcessListSettings().Network).ToList();
@@ -1956,20 +1952,22 @@ namespace WinState.Services
                 var tempDiskProcesses = new List<(Process Process, string Name, int Id, long ReadSpeed, long WriteSpeed)>();
                 long totalRead = 0;
                 long totalWrite = 0;
-
                 foreach (var kvp in snapshot)
                 {
                     totalRead += kvp.Value.Read;
                     totalWrite += kvp.Value.Write;
+                }
 
-                    if (kvp.Key == 0 || kvp.Key == 4) continue;
-                    if (kvp.Value.Read == 0 && kvp.Value.Write == 0) continue;
-
+                // Include every process (those with no I/O contribute 0) so the list fills to the
+                // configured count, Task-Manager style, instead of leaving blank rows.
+                foreach (var p in Process.GetProcesses())
+                {
                     try
                     {
-                        var p = Process.GetProcessById(kvp.Key);
-                        long read = (long)(kvp.Value.Read / seconds);
-                        long write = (long)(kvp.Value.Write / seconds);
+                        if (p.Id == 0 || p.Id == 4) continue;
+                        snapshot.TryGetValue(p.Id, out var io);
+                        long read = (long)(io.Read / seconds);
+                        long write = (long)(io.Write / seconds);
                         tempDiskProcesses.Add((p, p.ProcessName, p.Id, read, write));
                     }
                     catch { }
