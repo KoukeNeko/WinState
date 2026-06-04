@@ -372,46 +372,34 @@
                 Text="感謝所有為 WinState 付出的人。" />
 
             <Border Style="{StaticResource SettingsGroup}">
-                <StackPanel>
-                    <!--  陳德生 (KoukeNeko)  -->
-                    <Grid Margin="16,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="36" Height="36" Margin="0,0,14,0" CornerRadius="18">
-                            <Border.Background>
-                                <ImageBrush ImageSource="https://avatars.githubusercontent.com/u/111033412?v=4" />
-                            </Border.Background>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="陳德生" />
-                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="@KoukeNeko" />
-                        </StackPanel>
-                        <ui:HyperlinkButton Grid.Column="2" VerticalAlignment="Center" Content="GitHub" NavigateUri="https://github.com/KoukeNeko" />
-                    </Grid>
-                    <Border Style="{StaticResource SettingsDivider}" />
-
-                    <!--  江晉緯 (MaoliWolf)  -->
-                    <Grid Margin="16,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="36" Height="36" Margin="0,0,14,0" CornerRadius="18">
-                            <Border.Background>
-                                <ImageBrush ImageSource="https://avatars.githubusercontent.com/u/14952501?v=4" />
-                            </Border.Background>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="江晉緯" />
-                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="@MaoliWolf" />
-                        </StackPanel>
-                        <ui:HyperlinkButton Grid.Column="2" VerticalAlignment="Center" Content="GitHub" NavigateUri="https://github.com/MaoliWolf" />
-                    </Grid>
-                </StackPanel>
+                <ItemsControl Margin="0,4" ItemsSource="{Binding ViewModel.Contributors}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="16,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="36" Height="36" Margin="0,0,14,0" CornerRadius="18">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="{Binding Avatar}" Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource SettingsRowTitle}"
+                                    Text="{Binding Login}" />
+                                <ui:HyperlinkButton
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    Content="GitHub"
+                                    NavigateUri="{Binding ProfileUrl}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Border>
 
         </StackPanel>

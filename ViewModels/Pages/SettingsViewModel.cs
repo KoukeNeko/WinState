@@ -1,5 +1,11 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using WinState.Models;
 using WinState.Services;
 using Wpf.Ui.Abstractions.Controls;
@@ -47,6 +53,9 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private int _networkRefreshMs = RefreshSettings.Default;
 
+        // Project contributors, fetched from the GitHub API with avatars cached on disk.
+        public ObservableCollection<ContributorViewModel> Contributors { get; } = new();
+
         public SettingsViewModel(IUserSettingsService userSettingsService)
         {
             _userSettingsService = userSettingsService;
@@ -62,6 +71,7 @@ namespace WinState.ViewModels.Pages
             LoadTrayIconSettings();
             LoadProcessListSettings();
             LoadRefreshSettings();
+            _ = LoadContributorsAsync();
 
             _isInitialized = true;
         }
@@ -178,6 +188,106 @@ namespace WinState.ViewModels.Pages
                 ?? String.Empty;
         }
 
+        // ---- Contributors (GitHub API + offline avatar cache) -------------------------------
+
+        private const string ContributorsRepo = "KoukeNeko/WinState";
+
+        private static readonly HttpClient _http = CreateHttpClient();
+
+        private static HttpClient CreateHttpClient()
+        {
+            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            // GitHub's API rejects requests without a User-Agent.
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("WinState-app");
+            return http;
+        }
+
+        private static string ContributorsCacheDir => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "WinState", "contributors");
+
+        // Pulls the contributor list from GitHub (caching it so offline launches still work),
+        // then fills Contributors with cached-or-downloaded avatars.
+        private async Task LoadContributorsAsync()
+        {
+            string dir = ContributorsCacheDir;
+            string jsonPath = Path.Combine(dir, "contributors.json");
+            try { Directory.CreateDirectory(dir); } catch { }
+
+            List<ContributorDto>? list = null;
+
+            try
+            {
+                string json = await _http.GetStringAsync(
+                    $"https://api.github.com/repos/{ContributorsRepo}/contributors?per_page=100");
+                list = JsonSerializer.Deserialize<List<ContributorDto>>(json);
+                if (list is { Count: > 0 })
+                    try { File.WriteAllText(jsonPath, json); } catch { }
+            }
+            catch
+            {
+                // Offline or rate-limited: fall back to the last cached list.
+            }
+
+            if (list is null && File.Exists(jsonPath))
+            {
+                try { list = JsonSerializer.Deserialize<List<ContributorDto>>(File.ReadAllText(jsonPath)); }
+                catch { }
+            }
+
+            if (list is null)
+                return;
+
+            Contributors.Clear();
+            foreach (var c in list.Where(c => c.Login.Length > 0 && c.Type == "User"))
+            {
+                var vm = new ContributorViewModel { Login = c.Login, ProfileUrl = c.HtmlUrl };
+                Contributors.Add(vm);
+                vm.Avatar = await GetAvatarAsync(c.Login, c.AvatarUrl, dir);
+            }
+        }
+
+        // Returns a cached avatar, downloading and caching it on first use. Null if it has never
+        // been cached and we are offline.
+        private static async Task<ImageSource?> GetAvatarAsync(string login, string avatarUrl, string dir)
+        {
+            string file = Path.Combine(dir, login + ".png");
+
+            if (!File.Exists(file) && avatarUrl.Length > 0)
+            {
+                try
+                {
+                    string url = avatarUrl + (avatarUrl.Contains('?') ? "&" : "?") + "s=144";
+                    byte[] bytes = await _http.GetByteArrayAsync(url);
+                    await File.WriteAllBytesAsync(file, bytes);
+                }
+                catch { return null; }
+            }
+
+            if (!File.Exists(file))
+                return null;
+
+            try
+            {
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad; // load fully so the file isn't kept open
+                bmp.UriSource = new Uri(file);
+                bmp.EndInit();
+                bmp.Freeze();
+                return bmp;
+            }
+            catch { return null; }
+        }
+
+        private class ContributorDto
+        {
+            [JsonPropertyName("login")] public string Login { get; set; } = string.Empty;
+            [JsonPropertyName("avatar_url")] public string AvatarUrl { get; set; } = string.Empty;
+            [JsonPropertyName("html_url")] public string HtmlUrl { get; set; } = string.Empty;
+            [JsonPropertyName("type")] public string Type { get; set; } = string.Empty;
+        }
+
         [RelayCommand]
         private void OnChangeTheme(string parameter)
         {
@@ -284,5 +394,17 @@ namespace WinState.ViewModels.Pages
         /// True for percentage-based icons whose warning thresholds are meaningful.
         /// </summary>
         public bool IsPercentageIcon => Id is "CPU" or "GPU" or "RAM" or "DISK";
+    }
+
+    /// <summary>
+    /// One project contributor shown in the settings page.
+    /// </summary>
+    public partial class ContributorViewModel : ObservableObject
+    {
+        public string Login { get; set; } = string.Empty;
+        public string ProfileUrl { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        private ImageSource? _avatar;
     }
 }
