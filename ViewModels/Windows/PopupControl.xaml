@@ -136,22 +136,13 @@
     </UserControl.Resources>
 
     <Grid>
-        <!-- Shadow Layer - uses a separate Border with BlurEffect for proper rounded corner shadows -->
-        <Border Background="#000000"
-                CornerRadius="12"
-                Margin="10"
-                Opacity="0.4">
-            <Border.Effect>
-                <BlurEffect Radius="15"/>
-            </Border.Effect>
-        </Border>
-        
-        <!-- Main Content Border -->
-        <Border Background="#1E1E1E"
-                CornerRadius="12"
-                BorderBrush="#333333"
-                BorderThickness="1"
-                Margin="10">
+        <!-- Main content card. Fully transparent so the window's frosted acrylic blur shows
+             through; the dark tint/readability is provided by the blur's tint colour, and the
+             rounded corners + shadow come from the DWM window itself (see TrayPopupHostWindow). -->
+        <Border Background="Transparent"
+                CornerRadius="8"
+                BorderBrush="#22FFFFFF"
+                BorderThickness="1">
 
             <Grid Margin="20">
             <Grid.RowDefinitions>

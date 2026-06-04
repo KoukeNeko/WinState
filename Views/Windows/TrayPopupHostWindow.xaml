@@ -7,7 +7,6 @@
         mc:Ignorable="d"
         Title="WinState Tray Popup"
         WindowStyle="None"
-        AllowsTransparency="True"
         Background="Transparent"
         ShowInTaskbar="False"
         Topmost="True"
