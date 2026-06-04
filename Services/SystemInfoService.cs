@@ -327,8 +327,15 @@ namespace WinState.Services
                 return;
             }
 
-            string maxInterface = "";
-            long maxTraffic = 0;
+            // Choose the primary interface by *default-route ownership* — the adapter that actually
+            // reaches the internet — instead of whichever happens to be busiest right now. Traffic
+            // is only a tie-breaker among gateway-owning adapters, so a busy virtual switch / VPN
+            // with no default gateway can no longer hijack the selection. If nothing advertises a
+            // gateway we fall back to the busiest adapter so something is still shown.
+            NetworkInterface? gatewayPick = null;
+            long gatewayPickTraffic = -1;
+            NetworkInterface? trafficPick = null;
+            long trafficPickTraffic = -1;
 
             foreach (NetworkInterface adapter in nics)
             {
@@ -346,42 +353,86 @@ namespace WinState.Services
                 previousSent[adapter.Description] = stats.BytesSent;
                 previousReceived[adapter.Description] = stats.BytesReceived;
 
-                if (totalTraffic > maxTraffic)
+                if (totalTraffic > trafficPickTraffic)
                 {
-                    maxTraffic = totalTraffic;
-                    maxInterface = adapter.Description;
-                    
-                    // Update Details for the active interface
-                    InterfaceDescription = adapter.Name + " (" + adapter.Description + ")";
-                    MacAddress = adapter.GetPhysicalAddress().ToString();
-                    if (MacAddress.Length > 0)
-                    {
-                        MacAddress = string.Join(":", Enumerable.Range(0, MacAddress.Length / 2).Select(i => MacAddress.Substring(i * 2, 2)));
-                    }
+                    trafficPickTraffic = totalTraffic;
+                    trafficPick = adapter;
+                }
 
-                    var ipProps = adapter.GetIPProperties();
-                    var ips = ipProps.UnicastAddresses
-                        .Where(ip => ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork || ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
-                        .Select(ip => ip.Address.ToString());
-                    LocalIpAddress = string.Join(Environment.NewLine, ips);
-                    if (string.IsNullOrEmpty(LocalIpAddress)) LocalIpAddress = "N/A";
-                    
-                    // Try to get SSID if WiFi (This is tricky without Managed Wifi API, so we might just use Description or Name)
-                    NetworkName = adapter.Name; 
+                if (HasDefaultGateway(adapter) && totalTraffic > gatewayPickTraffic)
+                {
+                    gatewayPickTraffic = totalTraffic;
+                    gatewayPick = adapter;
                 }
 
                 Debug.WriteLine(adapter.Description);
                 Debug.WriteLine("=================================");
                 Debug.WriteLine("  Interface type: {0}", adapter.NetworkInterfaceType);
                 Debug.WriteLine("  Physical Address: {0}", adapter.GetPhysicalAddress());
+                Debug.WriteLine("  Has gateway: {0}", HasDefaultGateway(adapter));
                 Debug.WriteLine("  Upload Speed: " + SpeedHumanReadable(uploadSpeed));
                 Debug.WriteLine("  Download Speed: " + SpeedHumanReadable(downloadSpeed));
                 Debug.WriteLine("  Operational status: {0}\n", adapter.OperationalStatus);
             }
 
-            PrimaryExternalInterface = maxInterface;
+            NetworkInterface? primary = gatewayPick ?? trafficPick;
+            if (primary == null)
+            {
+                PrimaryExternalInterface = "";
+                return;
+            }
+
+            PrimaryExternalInterface = primary.Description;
+            UpdateInterfaceDetails(primary);
+
             Debug.WriteLine("Primary External Interface: " + PrimaryExternalInterface);
             Debug.WriteLine("-------------------------------------");
+        }
+
+        // True when the adapter advertises a real default gateway, i.e. it owns a default route off
+        // the local segment. Internal-only virtual switches and host-only adapters have none, so
+        // this is what separates an internet-facing NIC from a merely busy local one.
+        private static bool HasDefaultGateway(NetworkInterface adapter)
+        {
+            try
+            {
+                foreach (var gw in adapter.GetIPProperties().GatewayAddresses)
+                {
+                    var addr = gw?.Address;
+                    if (addr == null)
+                        continue;
+                    // Skip the 0.0.0.0 / :: placeholders some adapters report.
+                    if (addr.Equals(System.Net.IPAddress.Any) || addr.Equals(System.Net.IPAddress.IPv6Any))
+                        continue;
+                    return true;
+                }
+            }
+            catch
+            {
+                // Treat an adapter we cannot query as having no gateway.
+            }
+            return false;
+        }
+
+        // Mirrors the selected adapter's identity/addressing onto the public detail properties shown
+        // in the network popup.
+        private void UpdateInterfaceDetails(NetworkInterface adapter)
+        {
+            InterfaceDescription = adapter.Name + " (" + adapter.Description + ")";
+            MacAddress = adapter.GetPhysicalAddress().ToString();
+            if (MacAddress.Length > 0)
+            {
+                MacAddress = string.Join(":", Enumerable.Range(0, MacAddress.Length / 2).Select(i => MacAddress.Substring(i * 2, 2)));
+            }
+
+            var ipProps = adapter.GetIPProperties();
+            var ips = ipProps.UnicastAddresses
+                .Where(ip => ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork || ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                .Select(ip => ip.Address.ToString());
+            LocalIpAddress = string.Join(Environment.NewLine, ips);
+            if (string.IsNullOrEmpty(LocalIpAddress)) LocalIpAddress = "N/A";
+
+            NetworkName = adapter.Name;
         }
 
         private static string SpeedHumanReadable(long bytes)
