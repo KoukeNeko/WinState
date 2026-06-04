@@ -88,21 +88,21 @@ namespace WinState.Helpers
         [DllImport("Shcore.dll")]
         private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
-        private static FieldInfo windowField = typeof(NotifyIcon).GetField("_window", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        private static FieldInfo? windowField = typeof(NotifyIcon).GetField("_window", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private static IntPtr GetHandle(NotifyIcon icon)
         {
             if (windowField == null) throw new InvalidOperationException("[Useful error message]");
-            NativeWindow window = windowField.GetValue(icon) as NativeWindow;
+            NativeWindow? window = windowField.GetValue(icon) as NativeWindow;
 
             if (window == null) throw new InvalidOperationException("[Useful error message]");  // should not happen?
             return window.Handle;
         }
 
-        private static FieldInfo idField = typeof(NotifyIcon).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        private static FieldInfo? idField = typeof(NotifyIcon).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private static uint GetId(NotifyIcon icon)
         {
             if (idField == null) throw new InvalidOperationException("[Useful error message]");
-            return (uint)idField.GetValue(icon);
+            return (uint)idField.GetValue(icon)!;
         }
     }
 }

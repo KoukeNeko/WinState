@@ -50,10 +50,6 @@ namespace WinState.Services
         private ISensor? _cpuTemperatureSensor;
         private ISensor? _cpuVoltageSensor;
 
-        // 新增：網路感測器 (利用 LibreHardwareMonitor)
-        private ISensor? _networkUploadSensor;
-        private ISensor? _networkDownloadSensor;
-
         public class GpuInfo
         {
             public string Name { get; set; } = "";

@@ -17,7 +17,7 @@ namespace WinState.Services
     {
         private readonly IServiceProvider _serviceProvider;
 
-        private INavigationWindow _navigationWindow;
+        private INavigationWindow? _navigationWindow;
 
         public ApplicationHostService(IServiceProvider serviceProvider)
         {
@@ -49,21 +49,20 @@ namespace WinState.Services
         {
             if (!Application.Current.Windows.OfType<MainWindow>().Any())
             {
-                _navigationWindow = (
-                    _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow
-                )!;
+                _navigationWindow = _serviceProvider.GetService(typeof(INavigationWindow)) as INavigationWindow;
 
-                (_navigationWindow as MainWindow).Visibility = Visibility.Hidden;
+                if (_navigationWindow is Window window)
+                    window.Visibility = Visibility.Hidden;
                 //_navigationWindow!.ShowWindow();
                 //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 
             var notifyIconManager = _serviceProvider.GetService(typeof(INotifyIconService)) as INotifyIconService;
 
-
-            if (!notifyIconManager!.IsRegistered)
+            if (notifyIconManager != null && !notifyIconManager.IsRegistered)
             {
-                notifyIconManager!.SetParentWindow(_navigationWindow as Window);
+                if (_navigationWindow is Window parentWindow)
+                    notifyIconManager.SetParentWindow(parentWindow);
                 notifyIconManager.Register();
             }
             await Task.CompletedTask;
