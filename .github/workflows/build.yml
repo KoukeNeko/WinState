@@ -10,6 +10,11 @@ jobs:
   build:
     runs-on: windows-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +27,7 @@ jobs:
         run: >
           dotnet publish WinState.csproj
           -c Release
-          -r win-x64
+          -r ${{ matrix.rid }}
           --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
@@ -32,6 +37,6 @@ jobs:
       - name: Upload exe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WinState-win-x64
+          name: WinState-${{ matrix.rid }}
           path: publish/WinState.exe
           if-no-files-found: error
