@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Wpf.Ui;
-using WinState.Views.Pages;
 using WinState.Views.Windows;
 using Wpf.Ui.Abstractions;
 using System.Diagnostics;
@@ -54,7 +53,6 @@ namespace WinState.Services
                 if (_navigationWindow is Window window)
                     window.Visibility = Visibility.Hidden;
                 //_navigationWindow!.ShowWindow();
-                //_navigationWindow.Navigate(typeof(Views.Pages.DashboardPage));
             }
 
             var notifyIconManager = _serviceProvider.GetService(typeof(INotifyIconService)) as INotifyIconService;

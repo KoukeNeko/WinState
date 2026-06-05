@@ -46,8 +46,4 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 
-   <ItemGroup>
-     <Folder Include="ViewModels\Popup\" />
-   </ItemGroup>
-
 </Project>

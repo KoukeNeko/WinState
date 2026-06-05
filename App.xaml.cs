@@ -50,11 +50,6 @@ namespace WinState
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
 
-                services.AddSingleton<DashboardPage>();
-                services.AddSingleton<DashboardViewModel>();
-                services.AddSingleton<DataPage>();
-                services.AddSingleton<DataViewModel>();
-
                 // The main window is a single settings page backed by one shared SettingsViewModel.
                 services.AddSingleton<SettingsViewModel>();
                 services.AddSingleton<SettingsPage>();
