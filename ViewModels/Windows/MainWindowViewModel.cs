@@ -260,19 +260,60 @@ namespace WinState.ViewModels.Windows
             _userSettingsService = userSettingsService;
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
-            
+
             // Initialize RAM history
             for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);
-            
+
             // Initialize Network history
-            for (int i = 0; i < 60; i++) 
+            for (int i = 0; i < 60; i++)
             {
                 _netUploadHistory.Enqueue(0);
                 _netDownloadHistory.Enqueue(0);
             }
 
+            // Pre-populate the popup's ItemsControls so the first measurement after the popup is
+            // shown already reflects the final layout. Without this, Cores / Disks / Gpus / the
+            // four Top*Processes lists are still empty when the popup measures itself; the
+            // position logic anchors against that short height and then the first data tick fills
+            // the collections, growing the popup below the working area. INPC on every item type
+            // means we can mutate values in place when data arrives without touching counts.
+            PrepopulateUiCollections();
+
             // Initialize tray icons to prevent binding errors
             UpdateTrayIcons();
+        }
+
+        private void PrepopulateUiCollections()
+        {
+            // CpuCoresHistory is filled in SystemInfoService.InitializeCpuCounters with one entry
+            // per Environment.ProcessorCount, so matching that count up front lets UpdateCores
+            // skip its Clear()+Add() branch on the first tick.
+            for (int i = 0; i < Environment.ProcessorCount; i++)
+            {
+                Cores.Add(new CoreUsageViewModel { CoreIndex = i });
+            }
+
+            // SystemInfoService.Gpus is populated in its constructor (InitializeHardwareAndSensors),
+            // so it is already final by the time we run.
+            for (int i = 0; i < _systemInfoService.Gpus.Count; i++)
+            {
+                Gpus.Add(new GpuItemViewModel());
+            }
+
+            // Mirror SystemInfoService.UpdateDiskData's drive filter (only ready drives) so the
+            // counts agree once UpdateDiskData actually populates _cachedDiskInfo.
+            foreach (var drive in System.IO.DriveInfo.GetDrives())
+            {
+                if (drive.IsReady) Disks.Add(new DiskInfoViewModel());
+            }
+
+            // The Top*Processes in-place update grows / shrinks to the configured count anyway;
+            // pre-filling means the count is right from the very first measurement.
+            var processSettings = _userSettingsService.GetProcessListSettings();
+            for (int i = 0; i < processSettings.Cpu; i++) TopProcesses.Add(new ProcessViewModel());
+            for (int i = 0; i < processSettings.Memory; i++) TopMemoryProcesses.Add(new MemoryProcessViewModel());
+            for (int i = 0; i < processSettings.Network; i++) TopNetworkProcesses.Add(new NetworkProcessViewModel());
+            for (int i = 0; i < processSettings.Disk; i++) TopDiskProcesses.Add(new DiskProcessViewModel());
         }
 
         [RelayCommand]
@@ -855,14 +896,15 @@ namespace WinState.ViewModels.Windows
         {
             // 1. Update Disk List
             var diskInfos = _systemInfoService.GetDiskInfo();
-            
-            if (Disks.Count != diskInfos.Count)
+
+            // In-place resize. Skip shrinking when diskInfos has not been populated yet (first
+            // tick before UpdateDiskData runs) so the placeholders that PrepopulateUiCollections
+            // added at construction time survive — wiping them would let the popup measure with
+            // zero disk rows and re-grow once data arrives, undoing the pre-populate fix.
+            while (Disks.Count < diskInfos.Count) Disks.Add(new DiskInfoViewModel());
+            if (diskInfos.Count > 0)
             {
-                Disks.Clear();
-                foreach (var info in diskInfos)
-                {
-                    Disks.Add(new DiskInfoViewModel());
-                }
+                while (Disks.Count > diskInfos.Count) Disks.RemoveAt(Disks.Count - 1);
             }
 
             for (int i = 0; i < diskInfos.Count; i++)
