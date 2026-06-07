@@ -1,0 +1,4 @@
+[submodule "Vendor/LibreHardwareMonitor-PawnIO"]
+	path = Vendor/LibreHardwareMonitor-PawnIO
+	url = https://github.com/namazso/LibreHardwareMonitor.git
+	branch = pawnio-squashed

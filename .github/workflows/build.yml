@@ -31,6 +31,9 @@ jobs:
           # workflow pushes back to the repo, and a leaked token in a later step would be able
           # to mint commits.
           persist-credentials: false
+          # Pull the LibreHardwareMonitor PawnIO fork pinned under Vendor/. WinState's
+          # ProjectReference points at it; without the submodule the restore would fail.
+          submodules: recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4

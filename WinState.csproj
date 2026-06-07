@@ -9,6 +9,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      The vendored LibreHardwareMonitor PawnIO fork lives under Vendor/ but the SDK's default
+      Compile/Page/Resource globs would otherwise pull every .cs / .xaml / .resx in that
+      sibling tree into WinState's compilation. Exclude the whole vendor folder; the
+      LibreHardwareMonitorLib csproj is referenced as a ProjectReference and builds in isolation.
+    -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,13 +24,26 @@
 
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
-    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
+    <!-- ServiceController for probing the PawnIO driver service state. -->
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.9" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.28" />
-    <PackageReference Include="System.Management" Version="9.0.1" />
+    <!-- Bumped to 9.0.9 to match the transitive minimum from the LibreHardwareMonitor PawnIO fork. -->
+    <PackageReference Include="System.Management" Version="9.0.9" />
     <PackageReference Include="WPF-UI" Version="4.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="WPF-UI.Tray" Version="4.0.0" />
+  </ItemGroup>
+
+  <!--
+    LibreHardwareMonitorLib comes from namazso's PawnIO fork instead of the upstream NuGet so
+    we do not load WinRing0 (on Microsoft's vulnerable-driver blocklist and increasingly flagged
+    by Defender / EDR as BYOVD). The fork keeps the same API surface and ships its PawnIO
+    bytecode modules as embedded resources; the only end-user delta is a one-time PawnIO driver
+    install (see SettingsPage's hardware driver section).
+  -->
+  <ItemGroup>
+    <ProjectReference Include="Vendor\LibreHardwareMonitor-PawnIO\LibreHardwareMonitorLib\LibreHardwareMonitorLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -101,16 +101,21 @@ CI builds **self-contained, single-file** executables for every push — no .NET
    - `WinState-win-x64` — Intel / AMD 64-bit
    - `WinState-win-arm64` — ARM64
 3. Unzip and run `WinState.exe` (accept the UAC prompt).
+4. **First launch:** WinState will prompt for the **PawnIO driver** if it is not already installed. Settings → 硬體驅動程式 has an *Install via WinGet* button (`winget install -e --id namazso.PawnIO`) or you can grab the installer from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
 
 > Artifacts need a GitHub login and expire after 90 days — building from source is the most reliable route.
+
+> **Why PawnIO?** Microsoft's [vulnerable-driver blocklist](https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules) now includes WinRing0, which is what stock LibreHardwareMonitor uses to read CPU MSRs. WinState ships namazso's [PawnIO fork](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed) instead — same API, signed driver, no Defender warning.
 
 ### 🔨 Build from source
 
 ```bash
-git clone https://github.com/KoukeNeko/WinState.git
+git clone --recursive https://github.com/KoukeNeko/WinState.git
 cd WinState
 dotnet run -c Release
 ```
+
+The `--recursive` pulls the vendored LibreHardwareMonitor PawnIO fork under `Vendor/`. If you forgot it, run `git submodule update --init --recursive`.
 
 Produce the same single-file exe as CI:
 
@@ -124,7 +129,7 @@ dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:Pu
 
 - **.NET 8 / WPF** (`net8.0-windows`)
 - **[WPF-UI](https://github.com/lepoco/wpfui)** 4.0 — Fluent controls, Mica / Acrylic
-- **[LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)** 0.9.4 — CPU / GPU / disk sensors & SMART
+- **[LibreHardwareMonitorLib (PawnIO fork)](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed)** — CPU / GPU / disk sensors & SMART, talking to the signed PawnIO driver instead of WinRing0
 - **Microsoft.Diagnostics.Tracing.TraceEvent** — per-process disk & network via ETW
 - **[Hardcodet.NotifyIcon.Wpf](https://github.com/hardcodet/wpf-notifyicon)** — tray icons
 - **CommunityToolkit.Mvvm** + **Microsoft.Extensions.Hosting** — MVVM and DI host
@@ -192,16 +197,21 @@ CI 每次 push 都會建置 **self-contained 單檔** 執行檔，目標機器�
    - `WinState-win-x64` — Intel / AMD 64 位元
    - `WinState-win-arm64` — ARM64
 3. 解壓後執行 `WinState.exe`（同意 UAC 提權）。
+4. **第一次啟動：** 若尚未安裝 **PawnIO 驅動程式**，WinState 會在設定頁的「硬體驅動程式」區塊提示安裝 — 按 *Install via WinGet*（`winget install -e --id namazso.PawnIO`）或到 [pawnio.eu](https://pawnio.eu/) 下載。沒裝的話 GPU / RAM / 磁碟 / 網路一切照常，只是 CPU 溫度、電壓、Package Power 與主機板感測器會空白。
 
 > Artifact 需登入 GitHub 才能下載、且 90 天後過期 — 從原始碼建置最穩。
+
+> **為何用 PawnIO？** 微軟的 [vulnerable driver blocklist](https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules) 已收錄 WinRing0，而那正是原版 LibreHardwareMonitor 讀 CPU MSR 用的驅動。WinState 改用 namazso 的 [PawnIO fork](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed) — 介面相同、簽章驅動、不會被 Defender 提示。
 
 ### 🔨 從原始碼建置
 
 ```bash
-git clone https://github.com/KoukeNeko/WinState.git
+git clone --recursive https://github.com/KoukeNeko/WinState.git
 cd WinState
 dotnet run -c Release
 ```
+
+`--recursive` 會把 PawnIO 版的 LibreHardwareMonitor 拉進 `Vendor/`。若忘記，補一句 `git submodule update --init --recursive`。
 
 產生與 CI 相同的單檔 exe：
 
@@ -215,7 +225,7 @@ dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:Pu
 
 - **.NET 8 / WPF**（`net8.0-windows`）
 - **[WPF-UI](https://github.com/lepoco/wpfui)** 4.0 — Fluent 控制項、Mica / Acrylic
-- **[LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)** 0.9.4 — CPU / GPU / 磁碟感測與 SMART
+- **[LibreHardwareMonitorLib（PawnIO fork）](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed)** — CPU / GPU / 磁碟感測與 SMART，透過簽章版 PawnIO 驅動讀取硬體
 - **Microsoft.Diagnostics.Tracing.TraceEvent** — 透過 ETW 取得 per-process 磁碟與網路
 - **[Hardcodet.NotifyIcon.Wpf](https://github.com/hardcodet/wpf-notifyicon)** — 系統匣圖示
 - **CommunityToolkit.Mvvm** + **Microsoft.Extensions.Hosting** — MVVM 與 DI host

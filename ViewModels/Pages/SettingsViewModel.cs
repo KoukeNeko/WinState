@@ -39,6 +39,11 @@ namespace WinState.ViewModels.Pages
         // Guards against the toggle write firing while we re-sync it to the real task state.
         private bool _syncingStartup = false;
 
+        // PawnIO driver presence — surfaced on the settings page so the user knows whether the
+        // CPU / motherboard sensors will populate. Refreshed each time the page is shown.
+        [ObservableProperty]
+        private string _pawnIODriverStatusText = string.Empty;
+
         // Per-category process-list counts.
         [ObservableProperty]
         private int _cpuProcessCount = ProcessListSettings.Default;
@@ -85,8 +90,38 @@ namespace WinState.ViewModels.Pages
             // handler treats it as a load, not a user toggle.
             StartWithWindows = StartupManager.IsEnabled();
 
+            RefreshPawnIODriverState();
+
             _isInitialized = true;
         }
+
+        private void RefreshPawnIODriverState()
+        {
+            PawnIODriverStatusText = PawnIODriverService.GetState() switch
+            {
+                PawnIODriverState.Running => "Installed and running",
+                PawnIODriverState.Stopped => "Installed but stopped — restart the machine to start the driver.",
+                PawnIODriverState.NotInstalled => "Not installed — CPU temperature / voltage / power and motherboard sensors will be empty until you install it.",
+                _ => "Driver state unknown."
+            };
+        }
+
+        [RelayCommand]
+        private void InstallPawnIODriver()
+        {
+            if (!PawnIODriverService.TryStartWingetInstall())
+            {
+                // Winget missing or refused; fall back to the official site so the user can
+                // download the installer manually.
+                PawnIODriverService.OpenOfficialDownloadPage();
+            }
+        }
+
+        [RelayCommand]
+        private void OpenPawnIOWebsite() => PawnIODriverService.OpenOfficialDownloadPage();
+
+        [RelayCommand]
+        private void RefreshPawnIOStatus() => RefreshPawnIODriverState();
 
         partial void OnStartWithWindowsChanged(bool value)
         {

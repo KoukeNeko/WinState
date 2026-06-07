@@ -96,6 +96,59 @@
                 </Grid>
             </Border>
 
+            <!--  ===== 硬體驅動程式 =====  -->
+            <TextBlock
+                Margin="2,16,0,18"
+                Style="{StaticResource SettingsTitle}"
+                Text="硬體驅動程式" />
+
+            <TextBlock
+                Style="{StaticResource SettingsGroupLabel}"
+                Text="WinState 透過 PawnIO（簽章版 ring-0 驅動，取代 Microsoft 已列入 vulnerable driver blocklist 的 WinRing0）讀取 CPU 溫度、電壓、Package Power 與主機板感測器。沒有安裝時上述項目會空白；GPU / RAM / Disk / Network / CPU 使用率不受影響。" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <Grid Margin="16,13">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:SymbolIcon
+                        Grid.Column="0"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        FontSize="20"
+                        Symbol="Shield24" />
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="PawnIO driver" />
+                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="{Binding ViewModel.PawnIODriverStatusText}" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <ui:Button
+                            Margin="0,0,8,0"
+                            Appearance="Primary"
+                            Command="{Binding ViewModel.InstallPawnIODriverCommand}"
+                            Content="Install via WinGet" />
+                        <ui:Button
+                            Margin="0,0,8,0"
+                            Appearance="Secondary"
+                            Command="{Binding ViewModel.OpenPawnIOWebsiteCommand}"
+                            Content="pawnio.eu" />
+                        <ui:Button
+                            Appearance="Secondary"
+                            Command="{Binding ViewModel.RefreshPawnIOStatusCommand}"
+                            Icon="{ui:SymbolIcon ArrowClockwise24}"
+                            ToolTip="Re-check driver status" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!--  ===== 系統匣圖示 =====  -->
             <TextBlock
                 Margin="2,16,0,18"
