@@ -1055,22 +1055,15 @@ namespace WinState.ViewModels.Windows
             using (var title = new Drawing.Font("Arial", titleFontSize, Drawing.FontStyle.Bold, Drawing.GraphicsUnit.Pixel))
             using (var subtitle = new Drawing.Font("Arial", subtitleFontSize, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Pixel))
             {
-                Drawing.Brush brush = new Drawing.SolidBrush(Drawing.Color.White);
+                // System.Drawing.Brushes returns process-wide singletons, so reusing them avoids
+                // the per-rebuild GDI HBRUSH allocation (and finalizer-only cleanup) of `new SolidBrush(...)`.
+                Drawing.Brush brush = Drawing.Brushes.White;
                 if ((text1 == "CPU" || text1 == "GPU" || text1 == "RAM" || text1 == "DISK")
                     && double.TryParse(text2, out double value))
                 {
-                    if (value >= thresholds.Critical)
-                    {
-                        brush = new Drawing.SolidBrush(Drawing.Color.OrangeRed);
-                    }
-                    else if (value >= thresholds.High)
-                    {
-                        brush = new Drawing.SolidBrush(Drawing.Color.Orange);
-                    }
-                    else if (value >= thresholds.Warn)
-                    {
-                        brush = new Drawing.SolidBrush(Drawing.Color.Yellow);
-                    }
+                    if (value >= thresholds.Critical) brush = Drawing.Brushes.OrangeRed;
+                    else if (value >= thresholds.High) brush = Drawing.Brushes.Orange;
+                    else if (value >= thresholds.Warn) brush = Drawing.Brushes.Yellow;
                 }
 
                 using (var stringFormat = new Drawing.StringFormat())
@@ -1106,9 +1099,10 @@ namespace WinState.ViewModels.Windows
 
             long threshold = 1024; 
             
-            Drawing.Brush upBrush = upload > threshold ? new Drawing.SolidBrush(Drawing.Color.Red) : new Drawing.SolidBrush(Drawing.Color.Gray);
-            Drawing.Brush downBrush = download > threshold ? new Drawing.SolidBrush(Drawing.Color.Cyan) : new Drawing.SolidBrush(Drawing.Color.Gray);
-            Drawing.Brush labelBrush = new Drawing.SolidBrush(Drawing.Color.White);
+            // Shared singletons (see CreateTextIcon).
+            Drawing.Brush upBrush = upload > threshold ? Drawing.Brushes.Red : Drawing.Brushes.Gray;
+            Drawing.Brush downBrush = download > threshold ? Drawing.Brushes.Cyan : Drawing.Brushes.Gray;
+            Drawing.Brush labelBrush = Drawing.Brushes.White;
 
             float labelFontSize = iconHeight * 0.30f;
             float arrowFontSize = iconHeight * 0.40f;

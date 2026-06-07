@@ -971,9 +971,13 @@ namespace WinState.Services
 
         private void UpdateProcessCpuUsage()
         {
+            // Process.GetProcesses() returns Process objects that open kernel handles lazily as
+            // their properties are read. Without Dispose, those handles only close on finalization,
+            // adding handle and GC pressure each tick. Capture and dispose in finally.
+            Process[]? currentProcesses = null;
             try
             {
-                var currentProcesses = Process.GetProcesses();
+                currentProcesses = Process.GetProcesses();
                 var newProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
                 // Use temp list to hold process reference and calculated usage
                 var tempProcessInfos = new List<(Process Process, string Name, int Id, double CpuUsage)>();
@@ -1046,6 +1050,16 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating process CPU usage: {ex.Message}");
+            }
+            finally
+            {
+                if (currentProcesses != null)
+                {
+                    foreach (var p in currentProcesses)
+                    {
+                        try { p.Dispose(); } catch { }
+                    }
+                }
             }
         }
 
@@ -1503,9 +1517,11 @@ namespace WinState.Services
 
         private void UpdateTopMemoryProcesses()
         {
+            // See UpdateProcessCpuUsage for why we dispose the Process array.
+            Process[]? processes = null;
             try
             {
-                var processes = Process.GetProcesses();
+                processes = Process.GetProcesses();
                 // Use a temporary list to hold process reference and data needed for sorting
                 var tempProcesses = new List<(Process Process, string Name, int Id, long MemoryUsage)>();
 
@@ -1541,6 +1557,16 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating top memory processes: {ex.Message}");
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var p in processes)
+                    {
+                        try { p.Dispose(); } catch { }
+                    }
+                }
             }
         }
 
@@ -1666,6 +1692,8 @@ namespace WinState.Services
 
         private void UpdateTopNetworkProcesses(double elapsedSec)
         {
+            // See UpdateProcessCpuUsage for why we dispose the Process array.
+            Process[]? processes = null;
             try
             {
                 double seconds = Math.Max(elapsedSec, 0.001);
@@ -1675,14 +1703,15 @@ namespace WinState.Services
                 _processNetworkUsage.Clear();
 
                 var tempNetProcesses = new List<(Process Process, string Name, int Id, long UploadSpeed, long DownloadSpeed)>();
-                
-                // We need to map Process IDs to Names. 
+
+                // We need to map Process IDs to Names.
                 // Doing Process.GetProcessById for every ID every second might be heavy if there are many.
                 // But usually active network processes are few.
-                
+
                 // Include every process (those with no traffic contribute 0) so the list fills to
                 // the configured count, Task-Manager style, instead of leaving blank rows.
-                foreach (var p in Process.GetProcesses())
+                processes = Process.GetProcesses();
+                foreach (var p in processes)
                 {
                     try
                     {
@@ -1717,6 +1746,16 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating network processes: {ex.Message}");
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var p in processes)
+                    {
+                        try { p.Dispose(); } catch { }
+                    }
+                }
             }
         }
 
@@ -1866,6 +1905,8 @@ namespace WinState.Services
 
         private void UpdateTopDiskProcesses(double elapsedSec)
         {
+            // See UpdateProcessCpuUsage for why we dispose the Process array.
+            Process[]? processes = null;
             try
             {
                 // ETW accumulates raw bytes between calls; divide by elapsed time for bytes/sec.
@@ -1885,7 +1926,8 @@ namespace WinState.Services
 
                 // Include every process (those with no I/O contribute 0) so the list fills to the
                 // configured count, Task-Manager style, instead of leaving blank rows.
-                foreach (var p in Process.GetProcesses())
+                processes = Process.GetProcesses();
+                foreach (var p in processes)
                 {
                     try
                     {
@@ -1924,6 +1966,16 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating disk processes: {ex.Message}");
+            }
+            finally
+            {
+                if (processes != null)
+                {
+                    foreach (var p in processes)
+                    {
+                        try { p.Dispose(); } catch { }
+                    }
+                }
             }
         }
 
