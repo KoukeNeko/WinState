@@ -853,6 +853,51 @@ namespace WinState.Services
         [System.Runtime.InteropServices.DllImport("psapi.dll")]
         private static extern bool EmptyWorkingSet(IntPtr hProcess);
 
+        // K32GetProcessMemoryInfo with PROCESS_MEMORY_COUNTERS_EX2 fills the PrivateWorkingSetSize
+        // field that Task Manager's "Memory" column shows. EX2 has been the documented form since
+        // Windows 11 23H2; older systems return FALSE and we fall back to WorkingSet64.
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool K32GetProcessMemoryInfo(IntPtr hProcess, ref PROCESS_MEMORY_COUNTERS_EX2 ppsmemCounters, uint cb);
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct PROCESS_MEMORY_COUNTERS_EX2
+        {
+            public uint cb;
+            public uint PageFaultCount;
+            public UIntPtr PeakWorkingSetSize;
+            public UIntPtr WorkingSetSize;
+            public UIntPtr QuotaPeakPagedPoolUsage;
+            public UIntPtr QuotaPagedPoolUsage;
+            public UIntPtr QuotaPeakNonPagedPoolUsage;
+            public UIntPtr QuotaNonPagedPoolUsage;
+            public UIntPtr PagefileUsage;
+            public UIntPtr PeakPagefileUsage;
+            public UIntPtr PrivateUsage;
+            public UIntPtr PrivateWorkingSetSize;
+            public ulong SharedCommitUsage;
+        }
+
+        // Returns the process's private working set (matches Task Manager's "Memory" column).
+        // Falls back to Process.WorkingSet64 (total working set, includes shared pages) when the
+        // process is inaccessible or the OS is older than Windows 11 23H2.
+        private static long GetPrivateWorkingSet(Process process)
+        {
+            try
+            {
+                var counters = new PROCESS_MEMORY_COUNTERS_EX2
+                {
+                    cb = (uint)System.Runtime.InteropServices.Marshal.SizeOf<PROCESS_MEMORY_COUNTERS_EX2>()
+                };
+                if (K32GetProcessMemoryInfo(process.Handle, ref counters, counters.cb))
+                {
+                    return (long)counters.PrivateWorkingSetSize.ToUInt64();
+                }
+            }
+            catch { }
+            try { return process.WorkingSet64; } catch { return 0; }
+        }
+
         private int _trimming;
 
         // Reclaims memory when the app drops fully into the tray: a one-shot compacting collection
@@ -1655,7 +1700,10 @@ namespace WinState.Services
                     {
                         if (p.Id == 0 || p.Id == 4) continue;
                         
-                        tempProcesses.Add((p, p.ProcessName, p.Id, p.WorkingSet64));
+                        // Private working set (Task Manager's "Memory" column), not total
+                        // working set — the latter double-counts shared DLL pages and inflates
+                        // every process's number against what users expect from Task Manager.
+                        tempProcesses.Add((p, p.ProcessName, p.Id, GetPrivateWorkingSet(p)));
                     }
                     catch { }
                 }
