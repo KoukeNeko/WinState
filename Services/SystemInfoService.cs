@@ -98,7 +98,6 @@ namespace WinState.Services
 
         // RAM Counters
         private PerformanceCounter? _ramAvailableCounter;
-        private PerformanceCounter? _ramCompressedCounter;
         private PerformanceCounter? _ramWiredCounter; // Non-paged pool
         private PerformanceCounter? _ramCacheCounter;
         private PerformanceCounter? _ramStandbyCounter;
@@ -301,9 +300,10 @@ namespace WinState.Services
                 _ramCommitLimitCounter = new PerformanceCounter("Memory", "Commit Limit");
                 
                 // These might not be available on all OS versions
-                try { _ramCompressedCounter = new PerformanceCounter("Memory", "Compressed Bytes In Use"); } catch { }
                 try { _ramStandbyCounter = new PerformanceCounter("Memory", "Standby Cache Normal Priority Bytes"); } catch { }
                 try { _ramModifiedCounter = new PerformanceCounter("Memory", "Modified Page List Bytes"); } catch { }
+                // Compressed memory has no \Memory\* perf counter on Windows; it is read from the
+                // "Memory Compression" minimal process's working set in GetCompressedMemoryBytes.
                 
                 RamTotal = (long)new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory;
             }
@@ -1652,14 +1652,7 @@ namespace WinState.Services
                     RamModified = 0;
                 }
 
-                if (_ramCompressedCounter != null)
-                {
-                    RamCompressed = (long)_ramCompressedCounter.NextValue();
-                }
-                else
-                {
-                    RamCompressed = 0;
-                }
+                RamCompressed = GetCompressedMemoryBytes();
 
                 if (_ramCommittedCounter != null)
                 {
@@ -1683,6 +1676,53 @@ namespace WinState.Services
             {
                 Debug.WriteLine($"Error updating RAM data: {ex.Message}");
             }
+        }
+
+        // Compressed memory on Windows is held in the working set of a minimal kernel process
+        // named "Memory Compression". There is no \Memory\* perf counter that surfaces the size
+        // directly. The PID stays put for the session, so cache it instead of re-scanning the
+        // whole process list every memory tick.
+        private int _memoryCompressionPid;
+
+        private long GetCompressedMemoryBytes()
+        {
+            // Fast path: reuse the cached PID once we have found it.
+            if (_memoryCompressionPid > 0)
+            {
+                try
+                {
+                    using var cached = Process.GetProcessById(_memoryCompressionPid);
+                    return cached.WorkingSet64;
+                }
+                catch
+                {
+                    // Stale (extremely rare for a kernel process, but be defensive); fall through
+                    // to the rescan path.
+                    _memoryCompressionPid = 0;
+                }
+            }
+
+            try
+            {
+                Process[] matches = Process.GetProcessesByName("Memory Compression");
+                try
+                {
+                    if (matches.Length > 0)
+                    {
+                        _memoryCompressionPid = matches[0].Id;
+                        return matches[0].WorkingSet64;
+                    }
+                }
+                finally
+                {
+                    foreach (var m in matches)
+                    {
+                        try { m.Dispose(); } catch { }
+                    }
+                }
+            }
+            catch { }
+            return 0;
         }
 
         private void UpdateTopMemoryProcesses()
