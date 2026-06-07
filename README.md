@@ -83,6 +83,8 @@ Icons are text-rendered and re-rasterized for the **taskbar monitor's DPI**, so 
 | Group | What you can change |
 |-------|---------------------|
 | **Appearance** | Light / Dark theme |
+| **General** | Launch WinState automatically at logon (registers a Scheduled Task that runs elevated) |
+| **Hardware driver** | One-click install of the PawnIO driver via WinGet, or a link to pawnio.eu, plus a live status indicator |
 | **Tray icons** | Which icons show, their order, and per-icon warning thresholds |
 | **Process list** | How many top processes each flyout lists (1–50) |
 | **Refresh rate** | Per-category polling interval in ms (250–10000) |
@@ -101,7 +103,7 @@ CI builds **self-contained, single-file** executables for every push — no .NET
    - `WinState-win-x64` — Intel / AMD 64-bit
    - `WinState-win-arm64` — ARM64
 3. Unzip and run `WinState.exe` (accept the UAC prompt).
-4. **First launch:** WinState will prompt for the **PawnIO driver** if it is not already installed. Settings → 硬體驅動程式 has an *Install via WinGet* button (`winget install -e --id namazso.PawnIO`) or you can grab the installer from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
+4. **First launch:** WinState will prompt for the **PawnIO driver** if it is not already installed. Settings → *Hardware driver* has an *Install via WinGet* button (`winget install -e --id namazso.PawnIO`) or you can grab the installer from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
 
 > Artifacts need a GitHub login and expire after 90 days — building from source is the most reliable route.
 
@@ -179,6 +181,8 @@ WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看�
 | 群組 | 可調整 |
 |------|--------|
 | **外觀** | 亮色 / 暗色主題 |
+| **一般** | 登入 Windows 時自動啟動（背後是一個以系統管理員執行的 Scheduled Task） |
+| **硬體驅動程式** | 一鍵透過 WinGet 安裝 PawnIO 驅動，或開官網連結，並即時顯示驅動狀態 |
 | **系統匣圖示** | 顯示哪些圖示、排序、各圖示變色門檻 |
 | **程序清單** | 每個彈出視窗列出的程序數量（1–50） |
 | **更新頻率** | 各類別輪詢間隔，毫秒（250–10000） |
