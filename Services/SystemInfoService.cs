@@ -255,8 +255,6 @@ namespace WinState.Services
             // 預先準備好網路 PerformanceCounter
             InitializeNetworkCounters();
 
-            //ShowNetworkInterfaces();
-
             InitializePreviousValues();
             InitializeCpuCounters();
             InitializeRamCounters();
@@ -666,27 +664,6 @@ namespace WinState.Services
                 }
             }
 
-            // Debug: Dump all sensors to a file
-            try
-            {
-                var debugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug_sensors.txt");
-                using (var writer = new StreamWriter(debugPath))
-                {
-                    foreach (var hw in _computer.Hardware)
-                    {
-                        writer.WriteLine($"Hardware: {hw.Name} ({hw.HardwareType})");
-                        foreach (var s in hw.Sensors)
-                        {
-                            writer.WriteLine($"  Sensor: {s.Name} [{s.SensorType}] = {s.Value}");
-                        }
-                        writer.WriteLine();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to write debug file: {ex.Message}");
-            }
         }
 
         /// 判斷指定網卡描述是否為一般使用的網卡，
@@ -755,50 +732,6 @@ namespace WinState.Services
 
             return _cachedNetworkInterface;
         }
-
-        public static void ShowNetworkInterfaces()
-        {
-            IPGlobalProperties computerProperties = IPGlobalProperties.GetIPGlobalProperties();
-            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
-
-
-            Debug.WriteLine("Interface information for {0}.{1}     ",
-                    computerProperties.HostName, computerProperties.DomainName);
-            if (nics == null || nics.Length < 1)
-            {
-                Debug.WriteLine("  No network interfaces found.");
-                return;
-            }
-
-            Debug.WriteLine("  Number of interfaces .................... : {0}", nics.Length);
-            foreach (NetworkInterface adapter in nics)
-            {
-
-                IPInterfaceStatistics ips = adapter.GetIPStatistics();
-
-                Debug.WriteLine("");
-                Debug.WriteLine(adapter.Description);
-                Debug.WriteLine(String.Empty.PadLeft(adapter.Description.Length, '='));
-                Debug.WriteLine("  Interface type .......................... : {0}", adapter.NetworkInterfaceType);
-                Debug.WriteLine("  Physical Address ........................ : {0}", adapter.GetPhysicalAddress());
-                Debug.WriteLine("  Interface BytesSent .......................... : " + SpeedHumanReadable(ips.BytesSent));
-                Debug.WriteLine("  Interface BytesReceived .......................... : " + SpeedHumanReadable(ips.BytesReceived));
-                Debug.WriteLine("  Operational status ...................... : {0}", adapter.OperationalStatus);
-
-                //ShowIPAddresses(properties);
-
-                // The following information is not useful for loopback adapters.
-                if (adapter.NetworkInterfaceType == NetworkInterfaceType.Loopback)
-                {
-                    continue;
-                }
-                //ShowInterfaceStatistics(adapter);
-
-                Debug.WriteLine("");
-            }
-        }
-
-
 
         /// <summary>
         /// 利用傳入的 PerformanceCounterCategory 查詢所有網卡（以 PerformanceCounter 的 instance name），
@@ -1381,14 +1314,6 @@ namespace WinState.Services
                 if (gpu.PcieRxSensor != null) gpu.PcieRx = gpu.PcieRxSensor.Value.GetValueOrDefault();
                 if (gpu.PcieTxSensor != null) gpu.PcieTx = gpu.PcieTxSensor.Value.GetValueOrDefault();
             }
-        }
-
-        private double GetRamUsage()
-        {
-            // 原始程式碼邏輯維持：用 PerformanceCounter("Memory", "Available MBytes") + 總實體記憶體
-            var availableMemory = new PerformanceCounter("Memory", "Available MBytes").NextValue();
-            var totalMemory = new Microsoft.VisualBasic.Devices.ComputerInfo().TotalPhysicalMemory / (1024 * 1024);
-            return 100 - (availableMemory / totalMemory * 100);
         }
 
         private double GetDiskUsage()

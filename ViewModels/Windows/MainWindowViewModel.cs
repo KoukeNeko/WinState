@@ -229,8 +229,20 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty]
         private double _ramPressure;
 
+        // Frozen so they can be reused across ticks without re-allocation or cross-thread issues.
+        private static readonly Brush PressureGreenBrush = CreateFrozen(46, 204, 113);
+        private static readonly Brush PressureYellowBrush = CreateFrozen(241, 196, 15);
+        private static readonly Brush PressureRedBrush = CreateFrozen(231, 76, 60);
+
+        private static Brush CreateFrozen(byte r, byte g, byte b)
+        {
+            var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+            brush.Freeze();
+            return brush;
+        }
+
         [ObservableProperty]
-        private Brush _ramPressureBrush = Brushes.Green;
+        private Brush _ramPressureBrush = PressureGreenBrush;
 
         private Queue<double> _ramHistory = new Queue<double>();
 
@@ -765,9 +777,9 @@ namespace WinState.ViewModels.Windows
             }
 
             // Update Pressure Color
-            if (RamPressure < 60) RamPressureBrush = new SolidColorBrush(Color.FromRgb(46, 204, 113)); // Green
-            else if (RamPressure < 85) RamPressureBrush = new SolidColorBrush(Color.FromRgb(241, 196, 15)); // Yellow
-            else RamPressureBrush = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
+            if (RamPressure < 60) RamPressureBrush = PressureGreenBrush;
+            else if (RamPressure < 85) RamPressureBrush = PressureYellowBrush;
+            else RamPressureBrush = PressureRedBrush;
 
 
             var processes = _systemInfoService.GetTopMemoryProcesses();
