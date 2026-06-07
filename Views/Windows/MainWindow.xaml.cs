@@ -245,22 +245,37 @@ namespace WinState.Views.Windows
                 _systemInfoService.RemoveUiInterest();
         }
 
-        private Dictionary<string, TrayPopupHostWindow> _trayHostWindows = new Dictionary<string, TrayPopupHostWindow>();
+        // A single popup is shared across all tray-icon categories. Previously each category got
+        // its own cached TrayPopupHostWindow, and PopupControl's XAML loads every section
+        // (CPU / GPU / RAM / NET / DISK / POWER) at once with only the relevant one visible. With
+        // six tray icons, that meant six full visual trees pinned in memory, which inflated the
+        // process's working set by 100+ MB. Only one popup is ever visible at a time (the others
+        // hide on deactivate), so sharing one instance is behaviour-equivalent and cuts the cached
+        // visual-tree count to one.
+        private TrayPopupHostWindow? _trayHostWindow;
 
         private void OnTrayIconClick(object sender, RoutedEventArgs e)
         {
             var taskbarIcon = sender as Hardcodet.Wpf.TaskbarNotification.TaskbarIcon;
             string category = taskbarIcon?.Tag as string ?? "ALL";
 
-            if (!_trayHostWindows.TryGetValue(category, out var trayHostWindow))
+            if (_trayHostWindow == null)
             {
-                trayHostWindow = new TrayPopupHostWindow();
-                trayHostWindow.DataContext = ViewModel;
-                trayHostWindow.PopupContent.Category = category;
+                _trayHostWindow = new TrayPopupHostWindow();
+                _trayHostWindow.DataContext = ViewModel;
                 // A visible popup counts as UI interest too, so live data flows while it is open.
-                trayHostWindow.IsVisibleChanged += OnUiSurfaceVisibilityChanged;
-                _trayHostWindows[category] = trayHostWindow;
+                _trayHostWindow.IsVisibleChanged += OnUiSurfaceVisibilityChanged;
             }
+
+            var trayHostWindow = _trayHostWindow;
+            // Hide before reflowing so a click that switches an already-visible popup from one
+            // category to another does not flash at the old position / with the old section.
+            // Using Opacity (not Visibility / Hide) keeps the IsVisibleChanged ref count steady so
+            // we do not bounce StopEtw / TrimMemory.
+            trayHostWindow.Opacity = 0;
+            // Re-target the section that is shown each click; the DataTriggers in PopupControl.xaml
+            // react to this and swap the visible section without rebuilding the visual tree.
+            trayHostWindow.PopupContent.Category = category;
 
             // Get cursor position (Physical)
             var cursorPosition = System.Windows.Forms.Cursor.Position;
