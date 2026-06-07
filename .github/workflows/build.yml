@@ -1,0 +1,62 @@
+name: build
+
+on:
+  push:
+    branches: [dev, alpha, master]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+# Least-privilege GITHUB_TOKEN for the whole workflow. We only need to read source
+# and upload artifacts; no PRs, issues, deployments or anything else.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Do not leave a usable GITHUB_TOKEN in the runner's git config: nothing in this
+          # workflow pushes back to the repo, and a leaked token in a later step would be able
+          # to mint commits.
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Refresh contributors snapshot
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/fetch-contributors.ps1
+
+      - name: Publish self-contained single-file exe
+        run: >
+          dotnet publish WinState.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish
+
+      - name: Upload exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinState-${{ matrix.rid }}
+          path: publish/WinState.exe
+          if-no-files-found: error

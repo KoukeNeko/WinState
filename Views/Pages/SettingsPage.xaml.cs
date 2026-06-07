@@ -1,10 +1,9 @@
-﻿using WinState.ViewModels.Pages;
-using Wpf.Ui.Abstractions.Controls;
-using Wpf.Ui.Controls;
+using System.Windows.Controls;
+using WinState.ViewModels.Pages;
 
 namespace WinState.Views.Pages
 {
-    public partial class SettingsPage : INavigableView<SettingsViewModel>
+    public partial class SettingsPage : UserControl
     {
         public SettingsViewModel ViewModel { get; }
 
@@ -14,6 +13,10 @@ namespace WinState.Views.Pages
             DataContext = this;
 
             InitializeComponent();
+
+            // The page is hosted directly (no navigation), so trigger the same one-time load the
+            // navigation lifecycle used to perform.
+            _ = ViewModel.OnNavigatedToAsync();
         }
     }
 }

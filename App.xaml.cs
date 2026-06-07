@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.IO;
-using System.Reflection;
 using System.Windows.Threading;
 using WinState.Services;
 using WinState.ViewModels.Pages;
@@ -27,10 +25,14 @@ namespace WinState
         // https://docs.microsoft.com/dotnet/core/extensions/logging
         private static readonly IHost _host = Host
             .CreateDefaultBuilder()
-            .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)); })
+            .ConfigureAppConfiguration(c => { c.SetBasePath(AppContext.BaseDirectory); })
             .ConfigureServices((context, services) =>
             {
                 services.AddHostedService<ApplicationHostService>();
+
+                // Services
+                services.AddSingleton<SystemInfoService>();
+                services.AddSingleton<IUserSettingsService, UserSettingsService>();
 
                 // Page resolver service
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
@@ -48,12 +50,9 @@ namespace WinState
                 services.AddSingleton<INavigationWindow, MainWindow>();
                 services.AddSingleton<MainWindowViewModel>();
 
-                services.AddSingleton<DashboardPage>();
-                services.AddSingleton<DashboardViewModel>();
-                services.AddSingleton<DataPage>();
-                services.AddSingleton<DataViewModel>();
-                services.AddSingleton<SettingsPage>();
+                // The main window is a single settings page backed by one shared SettingsViewModel.
                 services.AddSingleton<SettingsViewModel>();
+                services.AddSingleton<SettingsPage>();
 
                 services.AddSingleton<INotifyIconService, CustomNotifyIconService>();
 
@@ -64,7 +63,7 @@ namespace WinState
         /// </summary>
         /// <typeparam name="T">Type of the service to get.</typeparam>
         /// <returns>Instance of the service or <see langword="null"/>.</returns>
-        public static T GetService<T>()
+        public static T? GetService<T>()
             where T : class
         {
             return _host.Services.GetService(typeof(T)) as T;

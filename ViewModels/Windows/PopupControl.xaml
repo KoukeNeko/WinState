@@ -1,0 +1,1195 @@
+<UserControl x:Class="WinState.ViewModels.Windows.PopupControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:WinState.ViewModels.Windows"
+             mc:Ignorable="d"
+             x:Name="Root"
+             Width="320">
+
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+        </Style>
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#AAAAAA"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="ValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="UnitStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#888888"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+            <Setter Property="Margin" Value="2,0,0,4"/>
+        </Style>
+
+        <!-- Separator between sections: only meaningful in the ALL mode where multiple sections
+             stack vertically. Lazy section hosts (below) leave nothing rendered when their target
+             category does not match, so separators between collapsed sections are already
+             invisible in single-category mode. -->
+        <Style x:Key="SeparatorStyle" TargetType="Rectangle">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Fill" Value="#333333"/>
+            <Setter Property="Margin" Value="0,15"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ProgressBar">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid x:Name="TemplateRoot">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                            <Border x:Name="PART_Track"/>
+                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" CornerRadius="2"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <local:RamDashConverter x:Key="RamDashConverter"/>
+
+        <CollectionViewSource x:Key="SensorsViewSource" Source="{Binding DetailedSensors}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="Category"/>
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+
+        <!--
+            Lazy section hosting.
+
+            Previously every category section (CPU / RAM / NET / DISK / GPU / POWER) was
+            instantiated up front and merely toggled with Visibility=Collapsed. WPF still
+            allocated the full visual tree for every section in every popup instance, so the
+            popup's working set climbed well past 100 MB even when only one section was being
+            shown at a time. Each section now lives in a DataTemplate and is hosted by a
+            ContentControl whose Style swaps in the template only when Category matches that
+            section (or is "ALL"). Inactive sections fall back to EmptySectionTemplate, which
+            renders nothing, so WPF tears the inactive subtree out of the visual tree and lets
+            the GC reclaim it.
+        -->
+
+        <DataTemplate x:Key="EmptySectionTemplate"/>
+
+        <!-- ============================================================ CPU ============ -->
+        <DataTemplate x:Key="CpuSectionTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock Text="CPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                <!-- Graph -->
+                <Border Grid.Row="1" Height="100" Margin="0,10,0,10" Background="#1E1E1E" CornerRadius="4" ClipToBounds="True">
+                    <Canvas>
+                        <!-- Grid Lines -->
+                        <Line X1="0" Y1="25" X2="280" Y2="25" Stroke="#333333" StrokeThickness="1" StrokeDashArray="2 2"/>
+                        <Line X1="0" Y1="50" X2="280" Y2="50" Stroke="#333333" StrokeThickness="1" StrokeDashArray="2 2"/>
+                        <Line X1="0" Y1="75" X2="280" Y2="75" Stroke="#333333" StrokeThickness="1" StrokeDashArray="2 2"/>
+
+                        <!-- User Usage (Blue) -->
+                        <Polyline Points="{Binding CpuUserHistoryPoints}" Stroke="#3399FF" StrokeThickness="2" />
+
+                        <!-- Kernel Usage (Red) -->
+                        <Polyline Points="{Binding CpuKernelHistoryPoints}" Stroke="#FF3333" StrokeThickness="2" />
+                    </Canvas>
+                </Border>
+
+                <!-- Legend -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,15">
+                    <Rectangle Width="10" Height="10" Fill="#3399FF" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
+                    <TextBlock Text="User" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+
+                    <Rectangle Width="10" Height="10" Fill="#FF3333" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
+                    <TextBlock Text="System" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+
+                    <TextBlock Text="{Binding CpuUsage, StringFormat={}Total: {0:0}%}" Foreground="White" FontSize="12" FontWeight="Bold" Margin="20,0,0,0"/>
+                </StackPanel>
+
+                <!-- Cores Grid -->
+                <StackPanel Grid.Row="3" Margin="0,10,0,15">
+                    <TextBlock Text="CORES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <ItemsControl ItemsSource="{Binding Cores}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="3" Background="#252525" CornerRadius="4" Height="50" ToolTip="{Binding CurrentUsage, StringFormat={}{0:0}%}">
+                                    <Viewbox Stretch="Fill">
+                                        <Grid Width="295" Height="100">
+                                            <!-- System (Kernel) + User = Total (Red) -->
+                                            <Polygon Points="{Binding TotalHistoryPoints}"
+                                                     Fill="#40FF3333"
+                                                     Stroke="#FF3333"
+                                                     StrokeThickness="2" />
+
+                                            <!-- User (Blue) -->
+                                            <Polygon Points="{Binding UserHistoryPoints}"
+                                                     Fill="#403399FF"
+                                                     Stroke="#3399FF"
+                                                     StrokeThickness="2" />
+                                        </Grid>
+                                    </Viewbox>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- CPU Info -->
+                <StackPanel Grid.Row="4" Margin="0,0,0,15">
+                    <TextBlock Text="INFO" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{Binding CpuName}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                    <UniformGrid Columns="2">
+                        <TextBlock Text="{Binding CpuClock, StringFormat='Clock: {0:F0} MHz'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding CpuTemperature, StringFormat='Temp: {0:F1} °C'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding CpuVoltage, StringFormat='Volt: {0:F3} V'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding Uptime, StringFormat='Uptime: {0:dd\.hh\:mm\:ss}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding ProcessCount, StringFormat='Processes: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding ThreadCount, StringFormat='Threads: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Text="{Binding HandleCount, StringFormat='Handles: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                    </UniformGrid>
+                </StackPanel>
+
+                <!-- Process List -->
+                <Grid Grid.Row="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Icon -->
+                                    <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                        <Border Background="#333" CornerRadius="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text=">" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                        </Border>
+                                        <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Grid>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding CpuUsage, StringFormat={}{0:0.0}%}" Foreground="White" FontSize="12" FontWeight="Bold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Name}" Value="">
+                                                        <Setter Property="Visibility" Value="Hidden"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="CpuSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="CPU">
+                    <Setter Property="ContentTemplate" Value="{StaticResource CpuSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource CpuSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============================================================ RAM ============ -->
+        <DataTemplate x:Key="RamSectionTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock Text="RAM" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                <!-- Bars -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                    <!-- Memory Pressure -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Pressure" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding RamPressure, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="{Binding RamPressureBrush}" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding RamPressure, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                    </Grid>
+
+                    <!-- Memory Usage -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Usage" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding RamUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                    </Grid>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                <!-- Graph -->
+                <Border Grid.Row="3" Height="80" Background="#252525" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
+                    <Canvas>
+                         <!-- Filled Area -->
+                        <Polygon Points="{Binding RamHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
+                        <!-- Line on top -->
+                        <Polyline Points="{Binding RamHistoryPoints}" Stroke="#3399FF" StrokeThickness="2"/>
+                    </Canvas>
+                </Border>
+
+                <!-- Details & Processes -->
+                <Grid Grid.Row="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Details -->
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+
+                        <!-- Total -->
+                        <TextBlock Grid.Row="1" Text="Total:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RamTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Used -->
+                        <TextBlock Grid.Row="2" Text="Used:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RamUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- App -->
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#3399FF" Margin="0,0,5,0"/>
+                            <TextBlock Text="App:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RamAppString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Wired (Non-Paged Pool) -->
+                        <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFA500" Margin="0,0,5,0"/>
+                            <TextBlock Text="Wired:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RamWiredString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Paged Pool -->
+                        <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF9933" Margin="0,0,5,0"/>
+                            <TextBlock Text="Paged Pool:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RamPagedPoolString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Compressed -->
+                        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF3333" Margin="0,0,5,0"/>
+                            <TextBlock Text="Compressed:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RamCompressedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Cache -->
+                        <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#33CCFF" Margin="0,0,5,0"/>
+                            <TextBlock Text="Cache:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding RamCacheString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Standby -->
+                        <StackPanel Grid.Row="8" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#99CCFF" Margin="0,0,5,0"/>
+                            <TextBlock Text="Standby:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding RamStandbyString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Modified -->
+                        <StackPanel Grid.Row="9" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FF6699" Margin="0,0,5,0"/>
+                            <TextBlock Text="Modified:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding RamModifiedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Available -->
+                        <StackPanel Grid.Row="10" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#99FF99" Margin="0,0,5,0"/>
+                            <TextBlock Text="Available:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RamAvailableString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                         <!-- Free -->
+                        <StackPanel Grid.Row="11" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#CCCCCC" Margin="0,0,5,0"/>
+                            <TextBlock Text="Free:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding RamFreeString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Committed -->
+                        <StackPanel Grid.Row="12" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFCC00" Margin="0,0,5,0"/>
+                            <TextBlock Text="Committed:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding RamCommittedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Commit Limit -->
+                        <StackPanel Grid.Row="13" Orientation="Horizontal" Margin="0,2">
+                            <Rectangle Width="8" Height="8" Fill="#FFE680" Margin="0,0,5,0"/>
+                            <TextBlock Text="Commit Limit:" Foreground="#888"/>
+                        </StackPanel>
+                        <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding RamCommitLimitString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Top Processes -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Icon -->
+                                        <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                            <Border Background="#333" CornerRadius="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="M" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                            </Border>
+                                            <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Grid>
+
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding FormattedMemoryUsage}" Foreground="White" FontSize="12" FontWeight="Bold"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="RamSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="RAM">
+                    <Setter Property="ContentTemplate" Value="{StaticResource RamSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource RamSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============================================================ NET ============ -->
+        <DataTemplate x:Key="NetSectionTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Chart Icon (Placeholder) -->
+                    <Border Width="24" Height="24" Background="#333" CornerRadius="4" Visibility="Collapsed">
+                        <TextBlock Text="📊" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#888"/>
+                    </Border>
+
+                    <TextBlock Grid.Column="1" Text="NETWORK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+
+                    <!-- Settings Icon (Placeholder) -->
+                    <Border Grid.Column="2" Width="24" Height="24" Background="Transparent" CornerRadius="4" Visibility="Collapsed">
+                        <TextBlock Text="⚙" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#888"/>
+                    </Border>
+                </Grid>
+
+                <!-- Big Stats -->
+                <Grid Grid.Row="1" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Upload -->
+                    <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding NetworkUploadValueString}" FontSize="24" FontWeight="Normal" Foreground="White"/>
+                            <TextBlock Text="{Binding NetworkUploadUnitString}" FontSize="14" Foreground="#888" VerticalAlignment="Bottom" Margin="2,0,0,5"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Rectangle Width="10" Height="10" Fill="#FF3333" RadiusX="3" RadiusY="3" Margin="0,0,5,0"/>
+                            <TextBlock Text="Upload" Foreground="#888" FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Download -->
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding NetworkDownloadValueString}" FontSize="24" FontWeight="Normal" Foreground="White"/>
+                            <TextBlock Text="{Binding NetworkDownloadUnitString}" FontSize="14" Foreground="#888" VerticalAlignment="Bottom" Margin="2,0,0,5"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Rectangle Width="10" Height="10" Fill="#3399FF" RadiusX="3" RadiusY="3" Margin="0,0,5,0"/>
+                            <TextBlock Text="Download" Foreground="#888" FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                <!-- Graph -->
+                <Border Grid.Row="3" Height="80" Background="#1E1E1E" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
+                    <Grid>
+                        <!-- Max Labels -->
+                        <TextBlock Text="{Binding NetworkMaxUploadString}" Foreground="#888" FontSize="10" Margin="5,2,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                        <TextBlock Text="{Binding NetworkMaxDownloadString}" Foreground="#888" FontSize="10" Margin="5,0,0,2" VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
+
+                        <Canvas>
+                            <!-- Upload (Red, Top Half) -->
+                            <Polygon Points="{Binding NetworkUploadHistoryPoints}" Fill="#FF3333" Opacity="0.6"/>
+                            <Polyline Points="{Binding NetworkUploadHistoryPoints}" Stroke="#FF3333" StrokeThickness="1"/>
+
+                            <!-- Download (Blue, Bottom Half) -->
+                            <Polygon Points="{Binding NetworkDownloadHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
+                            <Polyline Points="{Binding NetworkDownloadHistoryPoints}" Stroke="#3399FF" StrokeThickness="1"/>
+
+                            <!-- Center Line -->
+                            <Line X1="0" Y1="40" X2="280" Y2="40" Stroke="#333" StrokeThickness="1"/>
+                        </Canvas>
+                    </Grid>
+                </Border>
+
+                <!-- Details -->
+                <Grid Grid.Row="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,10"/>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Public IP -->
+                        <TextBlock Grid.Row="0" Text="Public IP:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PublicIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
+
+                        <!-- Local IP -->
+                        <TextBlock Grid.Row="1" Text="Local IP:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LocalIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right" TextWrapping="Wrap"/>
+
+                        <!-- Interface -->
+                        <TextBlock Grid.Row="2" Text="Interface:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding InterfaceDescription}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                        <!-- Network -->
+                        <TextBlock Grid.Row="3" Text="Network:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding NetworkName}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
+
+                        <!-- Physical Address -->
+                        <TextBlock Grid.Row="4" Text="Physical address:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MacAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
+                    </Grid>
+
+                    <!-- Top Processes -->
+                    <Grid Grid.Row="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopNetworkProcesses}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Icon -->
+                                        <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                            <Border Background="#333" CornerRadius="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Name}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="N" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                            </Border>
+                                            <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Grid>
+
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Upload}" Foreground="#FF3333" FontSize="10" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Download}" Foreground="#3399FF" FontSize="10" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="NetSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="NET">
+                    <Setter Property="ContentTemplate" Value="{StaticResource NetSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource NetSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============================================================ DISK =========== -->
+        <DataTemplate x:Key="DiskSectionTemplate">
+            <Grid>
+                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Text="DISK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+                </Grid>
+
+                <!-- Disk List -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Disks}" Margin="0,0,0,15">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,5">
+                                <!-- Name and Free Space -->
+                                <Grid Margin="0,0,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding DriveName}" Foreground="White" FontWeight="Bold" FontSize="12" Margin="0,0,5,0"/>
+                                        <TextBlock Text="{Binding Name}" Foreground="#AAAAAA" FontSize="12"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding DiskFreeSpaceString}" Foreground="#AAAAAA" FontSize="12"/>
+                                </Grid>
+
+                                <!-- Progress Bar -->
+                                <Grid Height="4" Margin="0,0,0,5">
+                                    <ProgressBar Value="{Binding UsedPercentage, Mode=OneWay}" Maximum="100" Background="#333333" Foreground="#AAAAAA" BorderThickness="0"/>
+                                </Grid>
+
+                                <!-- SMART Info -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <!-- Temp -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TemperatureString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="Temp:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding TemperatureString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Health -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HealthString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="Health:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding HealthString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Hours -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding PowerOnHoursString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="Hours:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding PowerOnHoursString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Reads -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,10,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TotalReadsString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="R:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding TotalReadsString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+
+                                    <!-- Writes -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TotalWritesString}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock Text="W:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{Binding TotalWritesString}" Foreground="White" FontSize="10"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Per-Disk Graph -->
+                                <Border Height="40" Background="#1E1E1E" CornerRadius="4" ClipToBounds="True">
+                                    <Grid>
+                                        <!-- Max Labels -->
+                                        <TextBlock Text="{Binding PeakReadString}" Foreground="#888" FontSize="9" Margin="2,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding PeakWriteString}" Foreground="#888" FontSize="9" Margin="2,0,0,0" VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
+
+                                        <!-- Current Speed Labels (Right aligned) -->
+                                        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Orientation="Horizontal" Margin="0,0,2,0">
+                                            <TextBlock Text="R:" Foreground="#3399FF" FontSize="9" Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding ReadSpeedString}" Foreground="#3399FF" FontSize="9"/>
+                                        </StackPanel>
+                                        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Orientation="Horizontal" Margin="0,0,2,0">
+                                            <TextBlock Text="W:" Foreground="#FF3333" FontSize="9" Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding WriteSpeedString}" Foreground="#FF3333" FontSize="9"/>
+                                        </StackPanel>
+
+                                        <Canvas>
+                                            <!-- Read (Blue, Top Half) -->
+                                            <Polygon Points="{Binding ReadHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
+                                            <Polyline Points="{Binding ReadHistoryPoints}" Stroke="#3399FF" StrokeThickness="1"/>
+
+                                            <!-- Write (Red, Bottom Half) -->
+                                            <Polygon Points="{Binding WriteHistoryPoints}" Fill="#FF3333" Opacity="0.6"/>
+                                            <Polyline Points="{Binding WriteHistoryPoints}" Stroke="#FF3333" StrokeThickness="1"/>
+
+                                            <!-- Center Line -->
+                                            <Line X1="0" Y1="20" X2="280" Y2="20" Stroke="#333" StrokeThickness="1"/>
+                                        </Canvas>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Separator -->
+                                <Rectangle Height="1" Fill="#333333" Margin="0,15,0,5"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Global Graph (Removed as per request to have per-disk graphs) -->
+                <Grid Grid.Row="2" Height="0" Visibility="Collapsed"/>
+
+                <!-- Top Processes -->
+                <Grid Grid.Row="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding TopDiskProcesses}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Icon -->
+                                    <Grid Width="16" Height="16" Margin="0,0,8,0">
+                                        <Border Background="#333" CornerRadius="2">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Icon}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Name}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Name}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="D" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/>
+                                        </Border>
+                                        <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                    </Grid>
+
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#DDDDDD" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Read}" Foreground="#3399FF" FontSize="10" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Write}" Foreground="#FF3333" FontSize="10" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="DiskSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="DISK">
+                    <Setter Property="ContentTemplate" Value="{StaticResource DiskSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource DiskSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============================================================ GPU ============ -->
+        <DataTemplate x:Key="GpuSectionTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="GPU" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Gpus}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,15">
+                                <StackPanel.Resources>
+                                    <!-- Pin the detail rows to a fixed size. They set no FontSize of
+                                         their own, so without this they fall back to the (larger)
+                                         system message-font size. Elements that set FontSize
+                                         explicitly (name, bars, DETAILS header) are unaffected. -->
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontFamily" Value="Segoe UI"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                    </Style>
+                                </StackPanel.Resources>
+                                <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+
+                                <!-- Bars -->
+                                <StackPanel Margin="0,0,0,10">
+                                    <!-- Processor Usage -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Processor" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <ProgressBar Grid.Column="1" Value="{Binding Usage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Usage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                                    </Grid>
+
+                                    <!-- Memory Usage -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Video Memory" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <ProgressBar Grid.Column="1" Value="{Binding MemoryUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#FF3333" VerticalAlignment="Center" Margin="5,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding MemoryUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Details -->
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+
+                                    <!-- Core Clock -->
+                                    <TextBlock Grid.Row="1" Text="Core Clock:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Clock, StringFormat={}{0:0} MHz}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Memory Clock -->
+                                    <TextBlock Grid.Row="2" Text="Memory Clock:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MemoryClock, StringFormat={}{0:0} MHz}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Temperature -->
+                                    <TextBlock Grid.Row="3" Text="Temperature:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Temperature, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Hot Spot -->
+                                    <TextBlock Grid.Row="4" Text="Hot Spot:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HotSpot, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Power Draw -->
+                                    <TextBlock Grid.Row="5" Text="Power Draw:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Power, StringFormat={}{0:0.0} W}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Fan Speed -->
+                                    <TextBlock Grid.Row="6" Text="Fan Speed:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FanRpm, StringFormat={}{0:0} RPM}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Memory Controller -->
+                                    <TextBlock Grid.Row="7" Text="Mem Controller:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding MemoryControllerLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Video Engine -->
+                                    <TextBlock Grid.Row="8" Text="Video Engine:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding VideoEngineLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Memory Used -->
+                                    <TextBlock Grid.Row="9" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding MemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- Memory Total -->
+                                    <TextBlock Grid.Row="10" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding MemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- PCIe Rx -->
+                                    <TextBlock Grid.Row="11" Text="PCIe Rx:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding PcieRxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+
+                                    <!-- PCIe Tx -->
+                                    <TextBlock Grid.Row="12" Text="PCIe Tx:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding PcieTxString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="GpuSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="GPU">
+                    <Setter Property="ContentTemplate" Value="{StaticResource GpuSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource GpuSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ============================================================ POWER ========== -->
+        <DataTemplate x:Key="PowerSectionTemplate">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="SENSORS" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="900">
+                    <ItemsControl ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
+                        <ItemsControl.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.ContainerStyle>
+                                    <Style TargetType="{x:Type GroupItem}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type GroupItem}">
+                                                    <StackPanel>
+                                                        <ContentPresenter />
+                                                        <ItemsPresenter Margin="0"/>
+                                                    </StackPanel>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </GroupStyle.ContainerStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12" TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ItemsControl.GroupStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding Value}" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                        <TextBlock Text="{Binding Unit}" Foreground="#888888" FontSize="10" Margin="2,2,0,0" VerticalAlignment="Bottom"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="PowerSectionHostStyle" TargetType="ContentControl">
+            <Setter Property="ContentTemplate" Value="{StaticResource EmptySectionTemplate}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="POWER">
+                    <Setter Property="ContentTemplate" Value="{StaticResource PowerSectionTemplate}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Category, ElementName=Root}" Value="ALL">
+                    <Setter Property="ContentTemplate" Value="{StaticResource PowerSectionTemplate}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Main content card. Fully transparent so the window's frosted acrylic blur shows
+             through; the dark tint/readability is provided by the blur's tint colour, and the
+             rounded corners + shadow come from the DWM window itself (see TrayPopupHostWindow). -->
+        <Border Background="Transparent"
+                CornerRadius="8"
+                BorderBrush="#22FFFFFF"
+                BorderThickness="1">
+
+            <Grid Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- CPU -->
+                    <RowDefinition Height="Auto"/> <!-- Separator -->
+                    <RowDefinition Height="Auto"/> <!-- Memory -->
+                    <RowDefinition Height="Auto"/> <!-- Separator -->
+                    <RowDefinition Height="Auto"/> <!-- Network -->
+                    <RowDefinition Height="Auto"/> <!-- Separator -->
+                    <RowDefinition Height="Auto"/> <!-- Disk -->
+                    <RowDefinition Height="Auto"/> <!-- Separator -->
+                    <RowDefinition Height="Auto"/> <!-- GPU -->
+                    <RowDefinition Height="Auto"/> <!-- Power -->
+                </Grid.RowDefinitions>
+
+                <ContentControl Grid.Row="0" Content="{Binding}" Style="{StaticResource CpuSectionHostStyle}"/>
+                <Rectangle    Grid.Row="1" Style="{StaticResource SeparatorStyle}"/>
+                <ContentControl Grid.Row="2" Content="{Binding}" Style="{StaticResource RamSectionHostStyle}"/>
+                <Rectangle    Grid.Row="3" Style="{StaticResource SeparatorStyle}"/>
+                <ContentControl Grid.Row="4" Content="{Binding}" Style="{StaticResource NetSectionHostStyle}"/>
+                <Rectangle    Grid.Row="5" Style="{StaticResource SeparatorStyle}"/>
+                <ContentControl Grid.Row="6" Content="{Binding}" Style="{StaticResource DiskSectionHostStyle}"/>
+                <Rectangle    Grid.Row="7" Style="{StaticResource SeparatorStyle}"/>
+                <ContentControl Grid.Row="8" Content="{Binding}" Style="{StaticResource GpuSectionHostStyle}"/>
+                <ContentControl Grid.Row="9" Content="{Binding}" Style="{StaticResource PowerSectionHostStyle}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
