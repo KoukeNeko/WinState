@@ -887,6 +887,11 @@ namespace WinState.Services
         private PerformanceCounter? _cpuUserCounter;
         private PerformanceCounter? _cpuPrivilegedCounter;
 
+        // Aggregate thread / handle totals. Reading Process(_Total) is two perf-counter calls and
+        // replaces ~2 * NumProcesses thread/handle queries (each property hits a kernel syscall).
+        private PerformanceCounter? _processThreadCountCounter;
+        private PerformanceCounter? _processHandleCountCounter;
+
         public double CpuUserUsage { get; private set; }
         public double CpuKernelUsage { get; private set; }
         
@@ -919,36 +924,85 @@ namespace WinState.Services
 
         private Dictionary<int, (TimeSpan TotalProcessorTime, DateTime Time)> _previousProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
         private List<ProcessInfo> _cachedTopProcesses = new List<ProcessInfo>();
-        private Dictionary<string, Drawing.Icon?> _processIconCache = new Dictionary<string, Drawing.Icon?>();
+
+        // LRU-bounded process-icon cache keyed by process name. Without a bound, a long-running
+        // session would accumulate one HICON for every unique process name ever seen (each icon
+        // counts toward the per-process GDI handle limit). The cache stores null misses too so a
+        // protected/elevated process is not re-probed on every tick.
+        private const int IconCacheLimit = 256;
+        private readonly LinkedList<string> _iconCacheOrder = new();
+        private readonly Dictionary<string, (LinkedListNode<string> Node, Drawing.Icon? Icon)> _iconCacheLookup = new();
 
         public List<ProcessInfo> GetTopProcesses(int count = 5)
         {
             return _cachedTopProcesses; // Return the cached list calculated in UpdateDataAsync
         }
 
+        private bool TryGetCachedIcon(string name, out Drawing.Icon? icon)
+        {
+            if (_iconCacheLookup.TryGetValue(name, out var entry))
+            {
+                // Touch the entry so it is treated as most-recently-used.
+                _iconCacheOrder.Remove(entry.Node);
+                _iconCacheOrder.AddLast(entry.Node);
+                icon = entry.Icon;
+                return true;
+            }
+            icon = null;
+            return false;
+        }
+
+        private void CacheIcon(string name, Drawing.Icon? icon)
+        {
+            if (_iconCacheLookup.TryGetValue(name, out var existing))
+            {
+                _iconCacheOrder.Remove(existing.Node);
+                _iconCacheLookup.Remove(name);
+                if (!ReferenceEquals(existing.Icon, icon))
+                {
+                    try { existing.Icon?.Dispose(); } catch { }
+                }
+            }
+
+            var node = _iconCacheOrder.AddLast(name);
+            _iconCacheLookup[name] = (node, icon);
+
+            while (_iconCacheLookup.Count > IconCacheLimit)
+            {
+                var oldestNode = _iconCacheOrder.First;
+                if (oldestNode == null) break;
+                var oldestName = oldestNode.Value;
+                _iconCacheOrder.RemoveFirst();
+                if (_iconCacheLookup.TryGetValue(oldestName, out var oldestEntry))
+                {
+                    _iconCacheLookup.Remove(oldestName);
+                    // BitmapSources built from this HICON on the ViewModel side are independent
+                    // (CreateBitmapSourceFromHIcon copies the pixels), so disposing the HICON here
+                    // does not invalidate already-rendered icons.
+                    try { oldestEntry.Icon?.Dispose(); } catch { }
+                }
+            }
+        }
+
         private Drawing.Icon? GetProcessIcon(Process process)
         {
+            string name = process.ProcessName;
             try
             {
-                // Try cache first by process name (assuming same name = same icon usually)
-                if (_processIconCache.TryGetValue(process.ProcessName, out var cachedIcon))
-                {
+                if (TryGetCachedIcon(name, out var cachedIcon))
                     return cachedIcon;
-                }
 
-                // Try to extract icon
                 // We need the file path.
                 string? path = null;
-                try 
-                { 
-                    // This often throws Win32Exception for system/elevated processes
-                    path = process.MainModule?.FileName; 
-                } 
-                catch 
+                try
                 {
-                    // Ignore access denied
+                    // This often throws Win32Exception for system/elevated processes
+                    path = process.MainModule?.FileName;
+                }
+                catch
+                {
                     // Cache failure to avoid repeated exceptions
-                    _processIconCache[process.ProcessName] = null;
+                    CacheIcon(name, null);
                     return null;
                 }
 
@@ -957,27 +1011,24 @@ namespace WinState.Services
                     var icon = Drawing.Icon.ExtractAssociatedIcon(path);
                     if (icon != null)
                     {
-                        _processIconCache[process.ProcessName] = icon;
+                        CacheIcon(name, icon);
                         return icon;
                     }
                 }
             }
             catch { }
-            
+
             // Cache failure
-            try { _processIconCache[process.ProcessName] = null; } catch { }
+            try { CacheIcon(name, null); } catch { }
             return null;
         }
 
         private void UpdateProcessCpuUsage()
         {
-            // Process.GetProcesses() returns Process objects that open kernel handles lazily as
-            // their properties are read. Without Dispose, those handles only close on finalization,
-            // adding handle and GC pressure each tick. Capture and dispose in finally.
-            Process[]? currentProcesses = null;
             try
             {
-                currentProcesses = Process.GetProcesses();
+                // Shared per-tick snapshot; OnTimerTickAsync's finally disposes the handles.
+                var currentProcesses = GetTickProcessSnapshot();
                 var newProcessTimes = new Dictionary<int, (TimeSpan, DateTime)>();
                 // Use temp list to hold process reference and calculated usage
                 var tempProcessInfos = new List<(Process Process, string Name, int Id, double CpuUsage)>();
@@ -1036,31 +1087,45 @@ namespace WinState.Services
                 
                 // Update System Counts
                 ProcessCount = currentProcesses.Length;
-                
-                int totalThreads = 0;
-                int totalHandles = 0;
-                foreach (var p in currentProcesses)
+
+                // Prefer the aggregate perf counters: two perf-counter reads vs. ~2*N syscalls.
+                // Fall back to a per-process loop only if init failed (rare on a healthy box).
+                if (_processThreadCountCounter != null && _processHandleCountCounter != null)
                 {
-                    try { totalThreads += p.Threads.Count; } catch { }
-                    try { totalHandles += p.HandleCount; } catch { }
+                    try
+                    {
+                        ThreadCount = (int)_processThreadCountCounter.NextValue();
+                        HandleCount = (int)_processHandleCountCounter.NextValue();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error reading process aggregate counters: {ex.Message}");
+                        AggregateThreadHandleCountsFromProcesses(currentProcesses);
+                    }
                 }
-                ThreadCount = totalThreads;
-                HandleCount = totalHandles;
+                else
+                {
+                    AggregateThreadHandleCountsFromProcesses(currentProcesses);
+                }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating process CPU usage: {ex.Message}");
             }
-            finally
+        }
+
+        // Fallback path used only when Process(_Total) perf counters are unavailable.
+        private void AggregateThreadHandleCountsFromProcesses(Process[] processes)
+        {
+            int totalThreads = 0;
+            int totalHandles = 0;
+            foreach (var p in processes)
             {
-                if (currentProcesses != null)
-                {
-                    foreach (var p in currentProcesses)
-                    {
-                        try { p.Dispose(); } catch { }
-                    }
-                }
+                try { totalThreads += p.Threads.Count; } catch { }
+                try { totalHandles += p.HandleCount; } catch { }
             }
+            ThreadCount = totalThreads;
+            HandleCount = totalHandles;
         }
 
         private void InitializeCpuCounters()
@@ -1098,6 +1163,23 @@ namespace WinState.Services
             {
                 Debug.WriteLine($"Error initializing CPU counters: {ex.Message}");
             }
+
+            // Aggregate thread / handle totals via Process(_Total). Separate try so a failure here
+            // does not knock out the rest of the CPU counters; the per-process fallback in
+            // UpdateProcessCpuUsage handles a null counter.
+            try
+            {
+                _processThreadCountCounter = new PerformanceCounter("Process", "Thread Count", "_Total");
+                _processHandleCountCounter = new PerformanceCounter("Process", "Handle Count", "_Total");
+                _processThreadCountCounter.NextValue();
+                _processHandleCountCounter.NextValue();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error initializing process aggregate counters: {ex.Message}");
+                _processThreadCountCounter = null;
+                _processHandleCountCounter = null;
+            }
         }
 
         private Task OnTimerTickAsync()
@@ -1108,6 +1190,10 @@ namespace WinState.Services
 
             try
             {
+                // Reset per-tick hardware refresh tracking so each IHardware is polled at most
+                // once per tick (see RefreshHardware).
+                _hardwareUpdatedThisTick.Clear();
+
                 var refresh = _userSettingsService.GetRefreshSettings();
 
                 // While hidden in the tray, poll no faster than HiddenRefreshMs regardless of the
@@ -1170,10 +1256,49 @@ namespace WinState.Services
             }
             finally
             {
+                // Dispose the shared per-tick Process snapshot once all categories have finished
+                // reading it. Capturing once instead of once per category drops up to 3 redundant
+                // Process.GetProcesses() calls per tick (a ~250-element array plus its lazy
+                // SafeProcessHandle handles).
+                DisposeTickProcessSnapshot();
                 Interlocked.Exchange(ref _isUpdating, 0);
             }
 
             return Task.CompletedTask;
+        }
+
+        // Tracks which LibreHardwareMonitor IHardware instances have already been refreshed in
+        // the current tick. UpdateDetailedSensors refreshes every hardware once; if the GPU/Disk
+        // update paths run in the same tick they would otherwise re-poll the same hardware. The
+        // set is cleared at the start of each tick.
+        private readonly HashSet<IHardware> _hardwareUpdatedThisTick = new();
+
+        private void RefreshHardware(IHardware? hardware)
+        {
+            if (hardware == null) return;
+            if (_hardwareUpdatedThisTick.Add(hardware))
+                hardware.Update();
+        }
+
+        // Lazily taken on the first Update*Processes call in a tick and disposed in the
+        // OnTimerTickAsync finally. The four Update*Processes methods must only run inside a tick
+        // (they currently do), so there is no other lifecycle to consider.
+        private Process[]? _tickProcessSnapshot;
+
+        private Process[] GetTickProcessSnapshot()
+        {
+            return _tickProcessSnapshot ??= Process.GetProcesses();
+        }
+
+        private void DisposeTickProcessSnapshot()
+        {
+            var snapshot = _tickProcessSnapshot;
+            if (snapshot == null) return;
+            _tickProcessSnapshot = null;
+            foreach (var p in snapshot)
+            {
+                try { p.Dispose(); } catch { }
+            }
         }
 
         private void UpdateCpu()
@@ -1187,7 +1312,7 @@ namespace WinState.Services
             if (uiActive)
                 UpdateDetailedSensors();
             else
-                _cpuHardware?.Update();
+                RefreshHardware(_cpuHardware);
 
             // Get CPU usage
             CpuUsage = GetCpuUsage();
@@ -1291,7 +1416,7 @@ namespace WinState.Services
         {
             foreach (var hardware in _gpuHardwares)
             {
-                hardware.Update();
+                RefreshHardware(hardware);
             }
 
             foreach (var gpu in Gpus)
@@ -1335,10 +1460,10 @@ namespace WinState.Services
             // 這裡的邏輯原本只取最後一次迴圈的值，現在維持原邏輯，但可視需求改為多硬碟「平均值」「最大值」或「加總」等。
             double diskUsage = 0.0;
 
-            // 一次 Update 所有 disk 硬體
+            // 一次 Update 所有 disk 硬體（per-tick guard, see RefreshHardware）
             foreach (var diskHardware in _diskHardwares)
             {
-                diskHardware.Update();
+                RefreshHardware(diskHardware);
             }
 
             // 讀取所有快取的 Load Sensor
@@ -1517,11 +1642,10 @@ namespace WinState.Services
 
         private void UpdateTopMemoryProcesses()
         {
-            // See UpdateProcessCpuUsage for why we dispose the Process array.
-            Process[]? processes = null;
             try
             {
-                processes = Process.GetProcesses();
+                // Shared per-tick snapshot; OnTimerTickAsync's finally disposes the handles.
+                var processes = GetTickProcessSnapshot();
                 // Use a temporary list to hold process reference and data needed for sorting
                 var tempProcesses = new List<(Process Process, string Name, int Id, long MemoryUsage)>();
 
@@ -1557,16 +1681,6 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating top memory processes: {ex.Message}");
-            }
-            finally
-            {
-                if (processes != null)
-                {
-                    foreach (var p in processes)
-                    {
-                        try { p.Dispose(); } catch { }
-                    }
-                }
             }
         }
 
@@ -1692,8 +1806,6 @@ namespace WinState.Services
 
         private void UpdateTopNetworkProcesses(double elapsedSec)
         {
-            // See UpdateProcessCpuUsage for why we dispose the Process array.
-            Process[]? processes = null;
             try
             {
                 double seconds = Math.Max(elapsedSec, 0.001);
@@ -1704,14 +1816,10 @@ namespace WinState.Services
 
                 var tempNetProcesses = new List<(Process Process, string Name, int Id, long UploadSpeed, long DownloadSpeed)>();
 
-                // We need to map Process IDs to Names.
-                // Doing Process.GetProcessById for every ID every second might be heavy if there are many.
-                // But usually active network processes are few.
-
                 // Include every process (those with no traffic contribute 0) so the list fills to
                 // the configured count, Task-Manager style, instead of leaving blank rows.
-                processes = Process.GetProcesses();
-                foreach (var p in processes)
+                // Shared per-tick snapshot; OnTimerTickAsync's finally disposes the handles.
+                foreach (var p in GetTickProcessSnapshot())
                 {
                     try
                     {
@@ -1746,16 +1854,6 @@ namespace WinState.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error updating network processes: {ex.Message}");
-            }
-            finally
-            {
-                if (processes != null)
-                {
-                    foreach (var p in processes)
-                    {
-                        try { p.Dispose(); } catch { }
-                    }
-                }
             }
         }
 
@@ -1830,7 +1928,7 @@ namespace WinState.Services
                             var hardware = _diskHardwares.FirstOrDefault(h => h.Name.Equals(model, StringComparison.OrdinalIgnoreCase) || model.Contains(h.Name) || h.Name.Contains(model));
                             if (hardware != null)
                             {
-                                hardware.Update();
+                                RefreshHardware(hardware);
                                 // SMART health is reported differently per drive: SATA SSDs expose a
                                 // direct "Remaining Life"/"Life Left" %, while NVMe drives expose
                                 // "Percentage Used" (so health = 100 - used). "Available Spare" is a
@@ -1905,8 +2003,6 @@ namespace WinState.Services
 
         private void UpdateTopDiskProcesses(double elapsedSec)
         {
-            // See UpdateProcessCpuUsage for why we dispose the Process array.
-            Process[]? processes = null;
             try
             {
                 // ETW accumulates raw bytes between calls; divide by elapsed time for bytes/sec.
@@ -1926,8 +2022,8 @@ namespace WinState.Services
 
                 // Include every process (those with no I/O contribute 0) so the list fills to the
                 // configured count, Task-Manager style, instead of leaving blank rows.
-                processes = Process.GetProcesses();
-                foreach (var p in processes)
+                // Shared per-tick snapshot; OnTimerTickAsync's finally disposes the handles.
+                foreach (var p in GetTickProcessSnapshot())
                 {
                     try
                     {
@@ -1967,16 +2063,6 @@ namespace WinState.Services
             {
                 Debug.WriteLine($"Error updating disk processes: {ex.Message}");
             }
-            finally
-            {
-                if (processes != null)
-                {
-                    foreach (var p in processes)
-                    {
-                        try { p.Dispose(); } catch { }
-                    }
-                }
-            }
         }
 
         public List<DiskProcessInfo> GetTopDiskProcesses()
@@ -1984,72 +2070,59 @@ namespace WinState.Services
             return _cachedTopDiskProcesses;
         }
 
+        // SensorItem instances are pooled by ISensor so each tick reuses the same object and only
+        // fires INPC events for the fields that actually changed (Value/RawValue almost always;
+        // Name/Unit/Category/SensorType/Min/Max only on first appearance).
+        private readonly Dictionary<ISensor, SensorItem> _sensorItemPool = new();
+
         private void UpdateDetailedSensors()
         {
-            // Update all hardware to ensure we have latest values
+            // Update all hardware to ensure we have latest values (per-tick guard, see RefreshHardware)
             foreach (var hardware in _computer.Hardware)
             {
-                hardware.Update();
+                RefreshHardware(hardware);
             }
 
-            var newList = new List<SensorItem>();
+            var newList = new List<SensorItem>(_allDetailedSensors.Count);
             foreach (var sensor in _allDetailedSensors)
             {
-                string unit = "";
-                string valueStr = "";
-                string category = sensor.Hardware.Name;
-                
-                if (sensor.Value.HasValue)
+                if (!sensor.Value.HasValue) continue;
+
+                double val = sensor.Value.Value;
+                string unit;
+                string valueStr;
+                switch (sensor.SensorType)
                 {
-                    double val = sensor.Value.Value;
-                    switch (sensor.SensorType)
-                    {
-                        case SensorType.Temperature:
-                            unit = "°C";
-                            valueStr = $"{val:F1}";
-                            break;
-                        case SensorType.Fan:
-                            unit = "RPM";
-                            valueStr = $"{val:F0}";
-                            break;
-                        case SensorType.Voltage:
-                            unit = "V";
-                            valueStr = $"{val:F3}";
-                            break;
-                        case SensorType.Power:
-                            unit = "W";
-                            valueStr = $"{val:F1}";
-                            break;
-                        case SensorType.Current:
-                            unit = "A";
-                            valueStr = $"{val:F2}";
-                            break;
-                        case SensorType.Energy:
-                            unit = "mWh";
-                            valueStr = $"{val:F0}";
-                            break;
-                        case SensorType.Level:
-                            unit = "%";
-                            valueStr = $"{val:F0}";
-                            break;
-                        case SensorType.Load:
-                            unit = "%";
-                            valueStr = $"{val:F1}";
-                            break;
-                    }
-                    
-                    newList.Add(new SensorItem
-                    {
-                        Name = sensor.Name,
-                        Value = valueStr,
-                        Unit = unit,
-                        Category = category,
-                        SensorType = sensor.SensorType.ToString(),
-                        RawValue = val,
-                        Min = sensor.Min ?? 0,
-                        Max = sensor.Max ?? 0
-                    });
+                    case SensorType.Temperature: unit = "°C"; valueStr = $"{val:F1}"; break;
+                    case SensorType.Fan: unit = "RPM"; valueStr = $"{val:F0}"; break;
+                    case SensorType.Voltage: unit = "V"; valueStr = $"{val:F3}"; break;
+                    case SensorType.Power: unit = "W"; valueStr = $"{val:F1}"; break;
+                    case SensorType.Current: unit = "A"; valueStr = $"{val:F2}"; break;
+                    case SensorType.Energy: unit = "mWh"; valueStr = $"{val:F0}"; break;
+                    case SensorType.Level: unit = "%"; valueStr = $"{val:F0}"; break;
+                    case SensorType.Load: unit = "%"; valueStr = $"{val:F1}"; break;
+                    default: unit = ""; valueStr = ""; break;
                 }
+
+                if (!_sensorItemPool.TryGetValue(sensor, out var item))
+                {
+                    item = new SensorItem();
+                    _sensorItemPool[sensor] = item;
+                }
+
+                // INPC: only fields whose value actually changed will raise PropertyChanged on the
+                // item (CommunityToolkit's [ObservableProperty] setter already does an equality
+                // check before raising), so a steady-state sensor causes no UI churn.
+                item.Name = sensor.Name;
+                item.Value = valueStr;
+                item.Unit = unit;
+                item.Category = sensor.Hardware.Name;
+                item.SensorType = sensor.SensorType.ToString();
+                item.RawValue = val;
+                item.Min = sensor.Min ?? 0;
+                item.Max = sensor.Max ?? 0;
+
+                newList.Add(item);
             }
             DetailedSensors = newList;
         }

@@ -19,11 +19,15 @@ using WinState.Views.Pages;
 
 namespace WinState.ViewModels.Windows
 {
-    public class ProcessViewModel
+    // INPC-enabled so the popup's process lists can mutate items in place each tick instead of
+    // clearing and re-allocating the whole ObservableCollection. The previous Clear()+Add()
+    // pattern produced a Reset followed by N Add events per tick, forcing the ItemsControl to
+    // rebuild its visual tree every time.
+    public partial class ProcessViewModel : ObservableObject
     {
-        public string Name { get; set; } = "";
-        public double CpuUsage { get; set; }
-        public ImageSource? Icon { get; set; }
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private double _cpuUsage;
+        [ObservableProperty] private ImageSource? _icon;
     }
 
     public class CoreUsageViewModel : INotifyPropertyChanged
@@ -78,27 +82,27 @@ namespace WinState.ViewModels.Windows
         }
     }
 
-    public class MemoryProcessViewModel
+    public partial class MemoryProcessViewModel : ObservableObject
     {
-        public string Name { get; set; } = "";
-        public string FormattedMemoryUsage { get; set; } = "";
-        public ImageSource? Icon { get; set; }
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private string _formattedMemoryUsage = "";
+        [ObservableProperty] private ImageSource? _icon;
     }
 
-    public class NetworkProcessViewModel
+    public partial class NetworkProcessViewModel : ObservableObject
     {
-        public string Name { get; set; } = "";
-        public string Upload { get; set; } = "";
-        public string Download { get; set; } = "";
-        public ImageSource? Icon { get; set; }
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private string _upload = "";
+        [ObservableProperty] private string _download = "";
+        [ObservableProperty] private ImageSource? _icon;
     }
 
-    public class DiskProcessViewModel
+    public partial class DiskProcessViewModel : ObservableObject
     {
-        public string Name { get; set; } = "";
-        public string Read { get; set; } = "";
-        public string Write { get; set; } = "";
-        public ImageSource? Icon { get; set; }
+        [ObservableProperty] private string _name = "";
+        [ObservableProperty] private string _read = "";
+        [ObservableProperty] private string _write = "";
+        [ObservableProperty] private ImageSource? _icon;
     }
 
     public partial class MainWindowViewModel : ObservableObject
@@ -473,33 +477,29 @@ namespace WinState.ViewModels.Windows
             NetworkUploadHistoryPoints = upPoints;
             NetworkDownloadHistoryPoints = downPoints;
 
-            // Update Top Network Processes
+            // Update Top Network Processes (in place — see ProcessViewModel comment for why)
             var netProcesses = _systemInfoService.GetTopNetworkProcesses();
-            TopNetworkProcesses.Clear();
-            foreach (var p in netProcesses)
+            int netTarget = _userSettingsService.GetProcessListSettings().Network;
+            while (TopNetworkProcesses.Count < netTarget) TopNetworkProcesses.Add(new NetworkProcessViewModel());
+            while (TopNetworkProcesses.Count > netTarget) TopNetworkProcesses.RemoveAt(TopNetworkProcesses.Count - 1);
+            for (int i = 0; i < netTarget; i++)
             {
-                ImageSource? iconSrc = null;
-                if (p.Icon != null)
+                var vm = TopNetworkProcesses[i];
+                if (i < netProcesses.Count)
                 {
-                    try
-                    {
-                        iconSrc = ToImageSource(p.Icon, false);
-                    }
-                    catch { }
+                    var p = netProcesses[i];
+                    vm.Name = p.Name;
+                    vm.Upload = p.FormattedUpload;
+                    vm.Download = p.FormattedDownload;
+                    vm.Icon = GetCachedProcessImage(p.Name, p.Icon);
                 }
-
-                TopNetworkProcesses.Add(new NetworkProcessViewModel
+                else
                 {
-                    Name = p.Name,
-                    Upload = p.FormattedUpload,
-                    Download = p.FormattedDownload,
-                    Icon = iconSrc
-                });
-            }
-
-            while (TopNetworkProcesses.Count < _userSettingsService.GetProcessListSettings().Network)
-            {
-                TopNetworkProcesses.Add(new NetworkProcessViewModel { Name = "", Upload = "", Download = "", Icon = null });
+                    vm.Name = "";
+                    vm.Upload = "";
+                    vm.Download = "";
+                    vm.Icon = null;
+                }
             }
         }
 
@@ -645,6 +645,32 @@ namespace WinState.ViewModels.Windows
             }
         }
 
+        // Modern Windows EXE icons can be 256x256 (≈256 KB as a BGRA32 BitmapSource). The popup
+        // refreshes four process lists several times a second, and previously each refresh built a
+        // fresh BitmapSource per row, so dozens of MB churned through the GC each second and the
+        // popup's working set could spike well past 200 MB before gen-2 caught up.
+        //
+        // Key by ProcessName because the underlying Drawing.Icon is also cached by name in
+        // SystemInfoService — once a name maps to an HICON, that HICON is stable for the rest of
+        // the session, so the BitmapSource built from it is reusable too. Frozen so it stays
+        // immutable / thread-safe across all the dispatcher-thread reads from the lists.
+        private readonly Dictionary<string, ImageSource?> _processImageCache = new();
+
+        private ImageSource? GetCachedProcessImage(string processName, Drawing.Icon? icon)
+        {
+            if (_processImageCache.TryGetValue(processName, out var cached))
+                return cached;
+
+            ImageSource? image = null;
+            if (icon != null)
+            {
+                try { image = ToImageSource(icon, false); }
+                catch { image = null; }
+            }
+            _processImageCache[processName] = image;
+            return image;
+        }
+
         [ObservableProperty]
         private PointCollection _cpuUserHistoryPoints = new PointCollection();
 
@@ -695,32 +721,27 @@ namespace WinState.ViewModels.Windows
             newKernelPoints.Freeze();
             CpuKernelHistoryPoints = newKernelPoints;
 
-            // Update Top Processes
+            // Update Top Processes (in place — see ProcessViewModel comment for why)
             var processes = _systemInfoService.GetTopProcesses();
-            TopProcesses.Clear();
-            foreach (var p in processes)
+            int cpuTarget = _userSettingsService.GetProcessListSettings().Cpu;
+            while (TopProcesses.Count < cpuTarget) TopProcesses.Add(new ProcessViewModel());
+            while (TopProcesses.Count > cpuTarget) TopProcesses.RemoveAt(TopProcesses.Count - 1);
+            for (int i = 0; i < cpuTarget; i++)
             {
-                ImageSource? iconSrc = null;
-                if (p.Icon != null)
+                var vm = TopProcesses[i];
+                if (i < processes.Count)
                 {
-                    try
-                    {
-                        iconSrc = ToImageSource(p.Icon, false);
-                    }
-                    catch { }
+                    var p = processes[i];
+                    vm.Name = p.Name;
+                    vm.CpuUsage = p.CpuUsage;
+                    vm.Icon = GetCachedProcessImage(p.Name, p.Icon);
                 }
-
-                TopProcesses.Add(new ProcessViewModel
+                else
                 {
-                    Name = p.Name,
-                    CpuUsage = p.CpuUsage,
-                    Icon = iconSrc
-                });
-            }
-
-            while (TopProcesses.Count < _userSettingsService.GetProcessListSettings().Cpu)
-            {
-                TopProcesses.Add(new ProcessViewModel { Name = "", CpuUsage = 0, Icon = null });
+                    vm.Name = "";
+                    vm.CpuUsage = 0;
+                    vm.Icon = null;
+                }
             }
         }
 
@@ -782,31 +803,27 @@ namespace WinState.ViewModels.Windows
             else RamPressureBrush = PressureRedBrush;
 
 
-            var processes = _systemInfoService.GetTopMemoryProcesses();
-            TopMemoryProcesses.Clear();
-            foreach (var p in processes)
+            // Update Top Memory Processes (in place — see ProcessViewModel comment for why)
+            var memProcesses = _systemInfoService.GetTopMemoryProcesses();
+            int memTarget = _userSettingsService.GetProcessListSettings().Memory;
+            while (TopMemoryProcesses.Count < memTarget) TopMemoryProcesses.Add(new MemoryProcessViewModel());
+            while (TopMemoryProcesses.Count > memTarget) TopMemoryProcesses.RemoveAt(TopMemoryProcesses.Count - 1);
+            for (int i = 0; i < memTarget; i++)
             {
-                ImageSource? iconSrc = null;
-                if (p.Icon != null)
+                var vm = TopMemoryProcesses[i];
+                if (i < memProcesses.Count)
                 {
-                    try
-                    {
-                        iconSrc = ToImageSource(p.Icon, false);
-                    }
-                    catch { }
+                    var p = memProcesses[i];
+                    vm.Name = p.Name;
+                    vm.FormattedMemoryUsage = p.FormattedMemoryUsage;
+                    vm.Icon = GetCachedProcessImage(p.Name, p.Icon);
                 }
-
-                TopMemoryProcesses.Add(new MemoryProcessViewModel
+                else
                 {
-                    Name = p.Name,
-                    FormattedMemoryUsage = p.FormattedMemoryUsage,
-                    Icon = iconSrc
-                });
-            }
-
-            while (TopMemoryProcesses.Count < _userSettingsService.GetProcessListSettings().Memory)
-            {
-                TopMemoryProcesses.Add(new MemoryProcessViewModel { Name = "", FormattedMemoryUsage = "", Icon = null });
+                    vm.Name = "";
+                    vm.FormattedMemoryUsage = "";
+                    vm.Icon = null;
+                }
             }
         }
 
@@ -947,29 +964,29 @@ namespace WinState.ViewModels.Windows
             DiskReadHistoryPoints = readPoints;
             DiskWriteHistoryPoints = writePoints;
 
-            // 3. Update Top Disk Processes
+            // 3. Update Top Disk Processes (in place — see ProcessViewModel comment for why)
             var diskProcesses = _systemInfoService.GetTopDiskProcesses();
-            TopDiskProcesses.Clear();
-            foreach (var p in diskProcesses)
+            int diskTarget = _userSettingsService.GetProcessListSettings().Disk;
+            while (TopDiskProcesses.Count < diskTarget) TopDiskProcesses.Add(new DiskProcessViewModel());
+            while (TopDiskProcesses.Count > diskTarget) TopDiskProcesses.RemoveAt(TopDiskProcesses.Count - 1);
+            for (int i = 0; i < diskTarget; i++)
             {
-                ImageSource? iconSrc = null;
-                if (p.Icon != null)
+                var vm = TopDiskProcesses[i];
+                if (i < diskProcesses.Count)
                 {
-                    try { iconSrc = ToImageSource(p.Icon, false); } catch { }
+                    var p = diskProcesses[i];
+                    vm.Name = p.Name;
+                    vm.Read = p.FormattedRead;
+                    vm.Write = p.FormattedWrite;
+                    vm.Icon = GetCachedProcessImage(p.Name, p.Icon);
                 }
-
-                TopDiskProcesses.Add(new DiskProcessViewModel
+                else
                 {
-                    Name = p.Name,
-                    Read = p.FormattedRead,
-                    Write = p.FormattedWrite,
-                    Icon = iconSrc
-                });
-            }
-            
-            while (TopDiskProcesses.Count < _userSettingsService.GetProcessListSettings().Disk)
-            {
-                TopDiskProcesses.Add(new DiskProcessViewModel { Name = "", Read = "", Write = "", Icon = null });
+                    vm.Name = "";
+                    vm.Read = "";
+                    vm.Write = "";
+                    vm.Icon = null;
+                }
             }
         }
 
