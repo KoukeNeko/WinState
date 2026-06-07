@@ -53,6 +53,21 @@ namespace WinState.Services
             };
         }
 
+        // Serialises every read-modify-write across the public Save* methods. Without it, two
+        // concurrent saves (e.g. a settings UI handler firing while a tray-icon reorder is mid-
+        // save) can both Load then Write and the second one silently clobbers the first.
+        private readonly object _settingsLock = new();
+
+        // Atomic write: serialise to a sibling .tmp file then rename over the target. A crash or
+        // power loss mid-write can leave the .tmp behind but never a half-written settings file
+        // (which would otherwise refuse to parse on the next launch).
+        private void WriteSettingsAtomically(string json)
+        {
+            var tempPath = _settingsFilePath + ".tmp";
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _settingsFilePath, overwrite: true);
+        }
+
         public TrayIconSettings GetTrayIconSettings()
         {
             if (_cachedTraySettings != null)
@@ -74,19 +89,22 @@ namespace WinState.Services
 
         public void SaveTrayIconSettings(TrayIconSettings settings)
         {
-            try
+            lock (_settingsLock)
             {
-                var wrapper = LoadSettingsWrapper();
-                wrapper.TrayIconSettings = settings;
+                try
+                {
+                    var wrapper = LoadSettingsWrapper();
+                    wrapper.TrayIconSettings = settings;
 
-                var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
-                File.WriteAllText(_settingsFilePath, json);
+                    var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                    WriteSettingsAtomically(json);
 
-                _cachedTraySettings = settings;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+                    _cachedTraySettings = settings;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save settings: {ex.Message}");
+                }
             }
         }
 
@@ -117,19 +135,22 @@ namespace WinState.Services
 
         public void SaveProcessListSettings(ProcessListSettings settings)
         {
-            try
+            lock (_settingsLock)
             {
-                var wrapper = LoadSettingsWrapper();
-                wrapper.ProcessListSettings = settings;
+                try
+                {
+                    var wrapper = LoadSettingsWrapper();
+                    wrapper.ProcessListSettings = settings;
 
-                var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
-                File.WriteAllText(_settingsFilePath, json);
+                    var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                    WriteSettingsAtomically(json);
 
-                _cachedProcessListSettings = settings;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to save process list settings: {ex.Message}");
+                    _cachedProcessListSettings = settings;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save process list settings: {ex.Message}");
+                }
             }
         }
 
@@ -161,19 +182,22 @@ namespace WinState.Services
             settings.Disk = RefreshSettings.Clamp(settings.Disk);
             settings.Network = RefreshSettings.Clamp(settings.Network);
 
-            try
+            lock (_settingsLock)
             {
-                var wrapper = LoadSettingsWrapper();
-                wrapper.RefreshSettings = settings;
+                try
+                {
+                    var wrapper = LoadSettingsWrapper();
+                    wrapper.RefreshSettings = settings;
 
-                var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
-                File.WriteAllText(_settingsFilePath, json);
+                    var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                    WriteSettingsAtomically(json);
 
-                _cachedRefreshSettings = settings;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Failed to save refresh settings: {ex.Message}");
+                    _cachedRefreshSettings = settings;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save refresh settings: {ex.Message}");
+                }
             }
         }
 

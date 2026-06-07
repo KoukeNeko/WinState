@@ -45,7 +45,9 @@ namespace WinState.Helpers
             if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
                 return false;
 
-            string userId = WindowsIdentity.GetCurrent().Name; // DOMAIN\User
+            // WindowsIdentity wraps a token handle; dispose so we do not leak it.
+            using var identity = WindowsIdentity.GetCurrent();
+            string userId = identity.Name; // DOMAIN\User
             string xml = BuildTaskXml(exePath, userId);
 
             string tempPath = Path.Combine(Path.GetTempPath(), $"winstate-startup-{Guid.NewGuid():N}.xml");
@@ -84,16 +86,24 @@ namespace WinState.Helpers
                 FileName = "schtasks.exe",
                 Arguments = arguments,
                 UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
+                CreateNoWindow = true
+                // No stdout/stderr redirect: nothing here drains them, so a full pipe buffer
+                // would deadlock schtasks indefinitely.
             };
 
             using var process = Process.Start(psi);
             if (process == null)
                 return -1;
 
-            process.WaitForExit();
+            // schtasks normally returns in well under a second. Cap the wait so a misbehaving
+            // shell or stuck task scheduler can never freeze the settings UI thread that called
+            // us; the settings handler treats any non-zero exit as failure anyway.
+            const int TimeoutMs = 10_000;
+            if (!process.WaitForExit(TimeoutMs))
+            {
+                try { process.Kill(entireProcessTree: true); } catch { }
+                return -1;
+            }
             return process.ExitCode;
         }
 

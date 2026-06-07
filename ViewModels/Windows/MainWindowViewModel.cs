@@ -40,14 +40,16 @@ namespace WinState.ViewModels.Windows
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public void Update(Queue<(double User, double Kernel)> history)
+        // Take the input as an array snapshot — the service-side Queue<T> is produced on the timer
+        // thread and we are reading from the dispatcher; iterating the live Queue here would race.
+        public void Update((double User, double Kernel)[] history)
         {
-            var last = history.LastOrDefault();
+            var last = history.Length > 0 ? history[^1] : default;
             CurrentUsage = last.User + last.Kernel;
-            
+
             var userPoints = new PointCollection();
             var totalPoints = new PointCollection();
-            
+
             // Start at bottom-left
             userPoints.Add(new System.Windows.Point(0, 100));
             totalPoints.Add(new System.Windows.Point(0, 100));
@@ -64,7 +66,7 @@ namespace WinState.ViewModels.Windows
                 totalPoints.Add(new System.Windows.Point(x * step, 100 - totalVal));
                 x++;
             }
-            
+
             // End at bottom-right
             // x is now history.Count
             userPoints.Add(new System.Windows.Point((x - 1) * step, 100));
@@ -250,8 +252,6 @@ namespace WinState.ViewModels.Windows
 
         private Queue<double> _ramHistory = new Queue<double>();
 
-        private const int MaxHistoryLength = 20;
-
         private readonly IUserSettingsService _userSettingsService;
 
         public MainWindowViewModel(SystemInfoService systemInfoService, IUserSettingsService userSettingsService)
@@ -300,11 +300,16 @@ namespace WinState.ViewModels.Windows
                 Gpus.Add(new GpuItemViewModel());
             }
 
-            // Mirror SystemInfoService.UpdateDiskData's drive filter (only ready drives) so the
-            // counts agree once UpdateDiskData actually populates _cachedDiskInfo.
+            // Filter on DriveType.Fixed BEFORE touching DriveInfo.IsReady. IsReady on optical
+            // drives without media or on sleeping network mounts can hang for seconds — bad on
+            // the UI thread. Matches SystemInfoService.InitializeDiskCounters' filter, which is
+            // what the per-drive read/write counters are keyed on anyway. A removable drive
+            // attached at startup may briefly cause a one-row layout shift when UpdateDiskData's
+            // first tick exposes it through the in-place resize in UpdateDiskDetails.
             foreach (var drive in System.IO.DriveInfo.GetDrives())
             {
-                if (drive.IsReady) Disks.Add(new DiskInfoViewModel());
+                if (drive.DriveType != System.IO.DriveType.Fixed) continue;
+                Disks.Add(new DiskInfoViewModel());
             }
 
             // The Top*Processes in-place update grows / shrinks to the configured count anyway;
@@ -546,22 +551,23 @@ namespace WinState.ViewModels.Windows
 
         private void UpdateCores()
         {
-            var coreHistories = _systemInfoService.CpuCoresHistory;
-            
-            // Initialize if empty
-            if (Cores.Count != coreHistories.Count)
+            // Pull the indices and per-core histories through the service's snapshot API; the live
+            // queues are written from the timer thread and would race a foreach here.
+            int[] coreIndices = _systemInfoService.GetCpuCoreIndices();
+
+            if (Cores.Count != coreIndices.Length)
             {
                 Cores.Clear();
-                foreach (var key in coreHistories.Keys.OrderBy(k => k))
+                foreach (var key in coreIndices)
                 {
                     Cores.Add(new CoreUsageViewModel { CoreIndex = key });
                 }
             }
 
-            // Update each core
             foreach (var coreVM in Cores)
             {
-                if (coreHistories.TryGetValue(coreVM.CoreIndex, out var history))
+                var history = _systemInfoService.GetCoreHistorySnapshot(coreVM.CoreIndex);
+                if (history.Length > 0)
                 {
                     coreVM.Update(history);
                 }
@@ -729,9 +735,9 @@ namespace WinState.ViewModels.Windows
             int historyLength = 60;
             double step = graphWidth / (historyLength - 1);
 
-            // Update User History Points
+            // Update User History Points (use snapshot — the live Queue is mutated on the timer thread)
             var newUserPoints = new PointCollection();
-            var userHistory = _systemInfoService.CpuUserHistory.ToArray();
+            var userHistory = _systemInfoService.GetCpuUserHistorySnapshot();
             for (int i = 0; i < userHistory.Length; i++)
             {
                 double x = i * step;
@@ -746,9 +752,9 @@ namespace WinState.ViewModels.Windows
             newUserPoints.Freeze();
             CpuUserHistoryPoints = newUserPoints;
 
-            // Update Kernel History Points
+            // Update Kernel History Points (use snapshot — the live Queue is mutated on the timer thread)
             var newKernelPoints = new PointCollection();
-            var kernelHistory = _systemInfoService.CpuKernelHistory.ToArray();
+            var kernelHistory = _systemInfoService.GetCpuKernelHistorySnapshot();
             for (int i = 0; i < kernelHistory.Length; i++)
             {
                 double x = i * step;
@@ -943,8 +949,9 @@ namespace WinState.ViewModels.Windows
             double currentRead = _systemInfoService.TotalDiskRead;
             double currentWrite = _systemInfoService.TotalDiskWrite;
 
-            DiskReadSpeedString = SpeedHumanReadable( (long)currentRead ) + "/s";
-            DiskWriteSpeedString = SpeedHumanReadable( (long)currentWrite ) + "/s";
+            // Disk throughput is conventionally Bytes/s (MB/s, KB/s), not bits/s.
+            DiskReadSpeedString = BytesToReadable((long)currentRead) + "/s";
+            DiskWriteSpeedString = BytesToReadable((long)currentWrite) + "/s";
 
             _diskReadHistory.Enqueue(currentRead);
             _diskWriteHistory.Enqueue(currentWrite);
@@ -961,8 +968,8 @@ namespace WinState.ViewModels.Windows
             else _maxDiskWriteSeen = _maxDiskWriteSeen * 0.95 + localMaxWrite * 0.05;
 
             // Update Peak Strings
-            DiskPeakReadString = SpeedHumanReadable((long)_maxDiskReadSeen);
-            DiskPeakWriteString = SpeedHumanReadable((long)_maxDiskWriteSeen);
+            DiskPeakReadString = BytesToReadable((long)_maxDiskReadSeen);
+            DiskPeakWriteString = BytesToReadable((long)_maxDiskWriteSeen);
 
             // Generate Graph Points
             double scaleRead = Math.Max(_maxDiskReadSeen, 1024);
@@ -1032,7 +1039,9 @@ namespace WinState.ViewModels.Windows
             }
         }
 
-        private static string BytesToReadable(long bytes)
+        // Public so DiskInfoViewModel (and any future cross-class consumer) can format byte counts
+        // without duplicating the suffix logic.
+        public static string BytesToReadable(long bytes)
         {
             string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
             int counter = 0;
@@ -1224,8 +1233,9 @@ namespace WinState.ViewModels.Windows
         public void UpdateGraph(double readBytes, double writeBytes)
         {
             // Update Speed Strings
-            ReadSpeedString = MainWindowViewModel.SpeedHumanReadable((long)readBytes) + "/s";
-            WriteSpeedString = MainWindowViewModel.SpeedHumanReadable((long)writeBytes) + "/s";
+            // Disk throughput is conventionally Bytes/s (MB/s, KB/s), not bits/s.
+            ReadSpeedString = MainWindowViewModel.BytesToReadable((long)readBytes) + "/s";
+            WriteSpeedString = MainWindowViewModel.BytesToReadable((long)writeBytes) + "/s";
 
             // Update History
             _readHistory.Enqueue(readBytes);
@@ -1243,8 +1253,8 @@ namespace WinState.ViewModels.Windows
             if (localMaxWrite > _maxWriteSeen) _maxWriteSeen = localMaxWrite;
             else _maxWriteSeen = _maxWriteSeen * 0.95 + localMaxWrite * 0.05;
 
-            PeakReadString = MainWindowViewModel.SpeedHumanReadable((long)_maxReadSeen);
-            PeakWriteString = MainWindowViewModel.SpeedHumanReadable((long)_maxWriteSeen);
+            PeakReadString = MainWindowViewModel.BytesToReadable((long)_maxReadSeen);
+            PeakWriteString = MainWindowViewModel.BytesToReadable((long)_maxWriteSeen);
 
             // Generate Points
             double scaleRead = Math.Max(_maxReadSeen, 1024);

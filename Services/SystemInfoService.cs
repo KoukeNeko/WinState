@@ -515,7 +515,7 @@ namespace WinState.Services
 
                         // Clear existing core sensors if any (though this is init)
                         _cpuCoreSensors.Clear();
-                        CpuCoresHistory.Clear();
+                        lock (_historyLock) { _cpuCoresHistory.Clear(); }
 
                         foreach (var sensor in hardware.Sensors)
                         {
@@ -950,11 +950,41 @@ namespace WinState.Services
         public int HandleCount { get; private set; }
         public TimeSpan Uptime { get; private set; }
 
-        public Queue<double> CpuUserHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
-        public Queue<double> CpuKernelHistory { get; private set; } = new Queue<double>(Enumerable.Repeat(0.0, 60));
-        
-        // Per-Core History: Key is Core Index (0, 1, 2...), Value is History Queue (User, Kernel)
-        public Dictionary<int, Queue<(double User, double Kernel)>> CpuCoresHistory { get; private set; } = new Dictionary<int, Queue<(double User, double Kernel)>>();
+        // CPU history queues are produced on the timer thread and consumed on the WPF dispatcher
+        // thread. Queue<T> is not thread-safe, so concurrent Enqueue/Dequeue and ToArray() / foreach
+        // would throw "Collection was modified" mid-enumeration. All access goes through the
+        // snapshot methods below, both writers and readers take this lock.
+        private readonly object _historyLock = new();
+        private readonly Queue<double> _cpuUserHistory = new Queue<double>(Enumerable.Repeat(0.0, 60));
+        private readonly Queue<double> _cpuKernelHistory = new Queue<double>(Enumerable.Repeat(0.0, 60));
+
+        // Per-Core History: Key is Core Index (0, 1, 2...), Value is History Queue (User, Kernel).
+        // Exposed read-only so callers cannot enumerate the inner Queue<T> directly; use
+        // GetCoreHistorySnapshot(index) for thread-safe reads.
+        private readonly Dictionary<int, Queue<(double User, double Kernel)>> _cpuCoresHistory = new();
+
+        public double[] GetCpuUserHistorySnapshot()
+        {
+            lock (_historyLock) { return _cpuUserHistory.ToArray(); }
+        }
+
+        public double[] GetCpuKernelHistorySnapshot()
+        {
+            lock (_historyLock) { return _cpuKernelHistory.ToArray(); }
+        }
+
+        public int[] GetCpuCoreIndices()
+        {
+            lock (_historyLock) { return _cpuCoresHistory.Keys.OrderBy(k => k).ToArray(); }
+        }
+
+        public (double User, double Kernel)[] GetCoreHistorySnapshot(int coreIndex)
+        {
+            lock (_historyLock)
+            {
+                return _cpuCoresHistory.TryGetValue(coreIndex, out var q) ? q.ToArray() : Array.Empty<(double, double)>();
+            }
+        }
         private List<PerformanceCounter> _cpuCoreUserCounters = new List<PerformanceCounter>();
         private List<PerformanceCounter> _cpuCorePrivilegedCounters = new List<PerformanceCounter>();
         private List<ISensor> _cpuCoreSensors = new List<ISensor>();
@@ -1186,7 +1216,7 @@ namespace WinState.Services
                 int coreCount = Environment.ProcessorCount;
                 _cpuCoreUserCounters.Clear();
                 _cpuCorePrivilegedCounters.Clear();
-                CpuCoresHistory.Clear();
+                lock (_historyLock) { _cpuCoresHistory.Clear(); }
 
                 for (int i = 0; i < coreCount; i++)
                 {
@@ -1194,14 +1224,14 @@ namespace WinState.Services
                     var privCounter = new PerformanceCounter("Processor", "% Privileged Time", i.ToString());
                     userCounter.NextValue();
                     privCounter.NextValue();
-                    
+
                     _cpuCoreUserCounters.Add(userCounter);
                     _cpuCorePrivilegedCounters.Add(privCounter);
-                    
+
                     // Pre-fill history with 0s
                     var queue = new Queue<(double, double)>();
-                    for(int j=0; j<60; j++) queue.Enqueue((0,0));
-                    CpuCoresHistory[i] = queue;
+                    for (int j = 0; j < 60; j++) queue.Enqueue((0, 0));
+                    lock (_historyLock) { _cpuCoresHistory[i] = queue; }
                 }
             }
             catch (Exception ex)
@@ -1373,12 +1403,15 @@ namespace WinState.Services
                 // Clamp to 100
                 if (CpuUsage > 100) CpuUsage = 100;
 
-                // Update History
-                if (CpuUserHistory.Count >= 60) CpuUserHistory.Dequeue();
-                CpuUserHistory.Enqueue(CpuUserUsage);
+                // Update History (synchronised with reader snapshots)
+                lock (_historyLock)
+                {
+                    if (_cpuUserHistory.Count >= 60) _cpuUserHistory.Dequeue();
+                    _cpuUserHistory.Enqueue(CpuUserUsage);
 
-                if (CpuKernelHistory.Count >= 60) CpuKernelHistory.Dequeue();
-                CpuKernelHistory.Enqueue(CpuKernelUsage);
+                    if (_cpuKernelHistory.Count >= 60) _cpuKernelHistory.Dequeue();
+                    _cpuKernelHistory.Enqueue(CpuKernelUsage);
+                }
             }
 
             // Get CPU power consumption
@@ -1399,17 +1432,20 @@ namespace WinState.Services
             // Update Process CPU Usage
             UpdateProcessCpuUsage();
 
-            // Update Per-Core Usage (from Counters)
-            for (int i = 0; i < _cpuCoreUserCounters.Count; i++)
+            // Update Per-Core Usage (from Counters). All queue mutations stay under the same lock
+            // that the snapshot readers use.
+            lock (_historyLock)
             {
-                float user = _cpuCoreUserCounters[i].NextValue();
-                float kernel = _cpuCorePrivilegedCounters[i].NextValue();
-
-                if (CpuCoresHistory.ContainsKey(i))
+                for (int i = 0; i < _cpuCoreUserCounters.Count; i++)
                 {
-                    var queue = CpuCoresHistory[i];
-                    if (queue.Count >= 60) queue.Dequeue();
-                    queue.Enqueue((user, kernel));
+                    float user = _cpuCoreUserCounters[i].NextValue();
+                    float kernel = _cpuCorePrivilegedCounters[i].NextValue();
+
+                    if (_cpuCoresHistory.TryGetValue(i, out var queue))
+                    {
+                        if (queue.Count >= 60) queue.Dequeue();
+                        queue.Enqueue((user, kernel));
+                    }
                 }
             }
         }

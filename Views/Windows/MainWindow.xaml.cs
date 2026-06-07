@@ -217,15 +217,12 @@ namespace WinState.Views.Windows
             Application.Current.Shutdown();
         }
 
-        INavigationView INavigationWindow.GetNavigation()
-        {
-            throw new NotImplementedException();
-        }
+        // Match the public GetNavigation / SetPageService no-ops above instead of throwing. The
+        // host occasionally resolves us via INavigationWindow, and throwing from these unused
+        // methods would crash any caller that just enumerates the interface.
+        INavigationView INavigationWindow.GetNavigation() => null!;
 
-        public void SetServiceProvider(IServiceProvider serviceProvider)
-        {
-            throw new NotImplementedException();
-        }
+        public void SetServiceProvider(IServiceProvider serviceProvider) { }
 
         private async void TitleBar_MinimizeClicked(object sender, RoutedEventArgs? e)
         {

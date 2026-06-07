@@ -23,7 +23,6 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
     <ui:FluentWindow.Resources>
-        <viewmodels:PopupControl x:Key="SharedPopup" x:Shared="False" />
         <ContextMenu x:Key="TrayContextMenu">
             <MenuItem Header="Settings" Command="{Binding ViewModel.OpenSettingsCommand}" />
             <Separator />

@@ -113,16 +113,19 @@ namespace WinState.ViewModels.Pages
         private void SaveProcessListSettings()
         {
             if (!_isInitialized) return;
+            // Clamp every field at save time, not just the one that changed: the OnXxxChanged
+            // handlers below skip the save when their own value is out of range, but a save
+            // triggered by *another* field would otherwise persist a stale invalid value here.
             _userSettingsService.SaveProcessListSettings(new ProcessListSettings
             {
-                Cpu = CpuProcessCount,
-                Memory = MemoryProcessCount,
-                Network = NetworkProcessCount,
-                Disk = DiskProcessCount
+                Cpu = ProcessListSettings.Clamp(CpuProcessCount),
+                Memory = ProcessListSettings.Clamp(MemoryProcessCount),
+                Network = ProcessListSettings.Clamp(NetworkProcessCount),
+                Disk = ProcessListSettings.Clamp(DiskProcessCount)
             });
         }
 
-        private static bool IsValidCount(int value) => value >= 1 && value <= 50;
+        private static bool IsValidCount(int value) => value >= ProcessListSettings.Min && value <= ProcessListSettings.Max;
 
         partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
         partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
@@ -192,20 +195,40 @@ namespace WinState.ViewModels.Pages
         {
             var settings = new TrayIconSettings
             {
-                Icons = TrayIcons.Select((vm, index) => new TrayIconEntry
+                Icons = TrayIcons.Select((vm, index) =>
                 {
-                    Id = vm.Id,
-                    DisplayName = vm.DisplayName,
-                    IsVisible = vm.IsVisible,
-                    Order = index,
-                    WarnThreshold = vm.WarnThreshold,
-                    HighThreshold = vm.HighThreshold,
-                    CriticalThreshold = vm.CriticalThreshold
+                    var (warn, high, critical) = NormaliseThresholds(vm.WarnThreshold, vm.HighThreshold, vm.CriticalThreshold);
+                    return new TrayIconEntry
+                    {
+                        Id = vm.Id,
+                        DisplayName = vm.DisplayName,
+                        IsVisible = vm.IsVisible,
+                        Order = index,
+                        WarnThreshold = warn,
+                        HighThreshold = high,
+                        CriticalThreshold = critical
+                    };
                 }).ToList()
             };
 
             _userSettingsService.SaveTrayIconSettings(settings);
         }
+
+        // Threshold edits arrive one at a time from independent NumberBox bindings, so a partial
+        // edit can leave the trio non-monotonic (e.g. Warn=85 after Critical was bumped to 90 then
+        // 80). Clamp each value to 0..100 and re-order so Warn <= High <= Critical before we
+        // persist; the CreateTextIcon colour mapping depends on that ordering.
+        private static (int warn, int high, int critical) NormaliseThresholds(int warn, int high, int critical)
+        {
+            warn = ClampPercent(warn);
+            high = ClampPercent(high);
+            critical = ClampPercent(critical);
+            if (high < warn) high = warn;
+            if (critical < high) critical = high;
+            return (warn, high, critical);
+        }
+
+        private static int ClampPercent(int value) => value < 0 ? 0 : value > 100 ? 100 : value;
 
         private string GetAssemblyVersion()
         {
@@ -234,7 +257,7 @@ namespace WinState.ViewModels.Pages
                 if (list is null)
                     return;
 
-                foreach (var c in list.Where(c => c.Login.Length > 0))
+                foreach (var c in list.Where(c => !string.IsNullOrEmpty(c.Login)))
                 {
                     Contributors.Add(new ContributorViewModel
                     {
@@ -252,7 +275,7 @@ namespace WinState.ViewModels.Pages
 
         private static ImageSource? LoadEmbeddedAvatar(string fileName)
         {
-            if (fileName.Length == 0)
+            if (string.IsNullOrEmpty(fileName))
                 return null;
             try
             {

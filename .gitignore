@@ -362,4 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-*.txt
+# Local sensor / debug dumps written next to the binary at runtime, never
+# something we want committed. Narrower than a blanket *.txt so README / LICENSE
+# fragments and any future text fixtures stay tracked.
+debug_sensors.txt

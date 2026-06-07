@@ -24,8 +24,11 @@ namespace WinState.Helpers
             notifyIcon.hWnd = GetHandle(icon);
             notifyIcon.uID = (int)GetId(icon);
 
-            int hresult = Shell_NotifyIconGetRect(ref notifyIcon, out rect);
-            //rect now has the position and size of icon
+            // Shell_NotifyIconGetRect returns S_OK (0) on success. If it fails (icon hidden in
+            // the overflow flyout, shell still booting, etc.) rect is unpopulated and using it
+            // would hand the caller garbage coordinates.
+            if (Shell_NotifyIconGetRect(ref notifyIcon, out rect) != 0)
+                return Rectangle.Empty;
 
             return new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
         }
@@ -88,20 +91,27 @@ namespace WinState.Helpers
         [DllImport("Shcore.dll")]
         private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
+        // We reflect into NotifyIcon's private fields because the framework does not expose its
+        // HWND or icon ID publicly, and Shell_NotifyIconGetRect needs both. The field names have
+        // been stable across .NET 6 / 7 / 8 / 9 but a future runtime could rename them, which is
+        // what these guards are meant to surface.
         private static FieldInfo? windowField = typeof(NotifyIcon).GetField("_window", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private static IntPtr GetHandle(NotifyIcon icon)
         {
-            if (windowField == null) throw new InvalidOperationException("[Useful error message]");
+            if (windowField == null)
+                throw new InvalidOperationException("NotifyIcon._window field not found via reflection — the WinForms runtime may have renamed it.");
             NativeWindow? window = windowField.GetValue(icon) as NativeWindow;
 
-            if (window == null) throw new InvalidOperationException("[Useful error message]");  // should not happen?
+            if (window == null)
+                throw new InvalidOperationException("NotifyIcon._window was null; the icon has not been Show()n yet, so it has no native window handle.");
             return window.Handle;
         }
 
         private static FieldInfo? idField = typeof(NotifyIcon).GetField("_id", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         private static uint GetId(NotifyIcon icon)
         {
-            if (idField == null) throw new InvalidOperationException("[Useful error message]");
+            if (idField == null)
+                throw new InvalidOperationException("NotifyIcon._id field not found via reflection — the WinForms runtime may have renamed it.");
             return (uint)idField.GetValue(icon)!;
         }
     }
