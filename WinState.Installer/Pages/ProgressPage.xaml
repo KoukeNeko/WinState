@@ -13,14 +13,15 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Defaults are localized; OnNavigatedTo refines the heading to install vs uninstall. -->
         <TextBlock Grid.Row="0"
                    x:Name="HeadingText"
-                   Text="Installing"
+                   Text="{x:Bind loc:L.Instance.ProgressInstalling, Mode=OneWay}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1" x:Name="CurrentStepText"
-                   Text="Starting..."
+                   Text="{x:Bind loc:L.Instance.ProgressStarting, Mode=OneWay}"
                    Opacity="0.8"/>
 
         <ProgressBar Grid.Row="2" x:Name="ProgressBar"
