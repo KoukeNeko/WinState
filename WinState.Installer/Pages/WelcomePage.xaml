@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="WinState.Installer.Pages.WelcomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:WinState.Installer">
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{x:Bind loc:L.Instance.WelcomeTitle, Mode=OneWay}"
+                   FontSize="28"
+                   FontWeight="SemiBold"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="{x:Bind loc:L.Instance.WelcomeBody, Mode=OneWay}"
+                   TextWrapping="Wrap"
+                   Opacity="0.8"/>
+
+        <StackPanel Grid.Row="2"
+                    Spacing="8"
+                    Margin="0,16,0,0">
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeWhatItDoes, Mode=OneWay}" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet1, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet2, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet3, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet4, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+        </StackPanel>
+    </Grid>
+</Page>

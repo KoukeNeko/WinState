@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="WinState.Installer.Pages.OptionsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:WinState.Installer">
+
+    <Grid RowSpacing="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{x:Bind loc:L.Instance.OptionsTitle, Mode=OneWay}"
+                   FontSize="28"
+                   FontWeight="SemiBold"/>
+
+        <!-- Install location -->
+        <StackPanel Grid.Row="1" Spacing="6">
+            <TextBlock Text="{x:Bind loc:L.Instance.OptionsInstallLocation, Mode=OneWay}" FontWeight="SemiBold"/>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="InstallPathBox" Grid.Column="0"/>
+                <Button x:Name="BrowseButton" Grid.Column="1" Content="{x:Bind loc:L.Instance.OptionsBrowse, Mode=OneWay}" Click="BrowseButton_Click"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Optional tasks -->
+        <StackPanel Grid.Row="2" Spacing="12">
+            <TextBlock Text="{x:Bind loc:L.Instance.OptionsOptionalTasks, Mode=OneWay}" FontWeight="SemiBold"/>
+
+            <CheckBox x:Name="PawnIOCheckbox" IsChecked="True">
+                <StackPanel>
+                    <TextBlock Text="{x:Bind loc:L.Instance.OptionsInstallPawnIO, Mode=OneWay}"/>
+                    <TextBlock Text="{x:Bind loc:L.Instance.OptionsInstallPawnIODesc, Mode=OneWay}"
+                               Opacity="0.7" TextWrapping="Wrap" FontSize="12"/>
+                </StackPanel>
+            </CheckBox>
+
+            <CheckBox x:Name="LaunchAtLogonCheckbox" IsChecked="True">
+                <StackPanel>
+                    <TextBlock Text="{x:Bind loc:L.Instance.OptionsLaunchAtLogon, Mode=OneWay}"/>
+                    <TextBlock Text="{x:Bind loc:L.Instance.OptionsLaunchAtLogonDesc, Mode=OneWay}"
+                               Opacity="0.7" TextWrapping="Wrap" FontSize="12"/>
+                </StackPanel>
+            </CheckBox>
+
+            <CheckBox x:Name="StartMenuShortcutCheckbox" IsChecked="True">
+                <StackPanel>
+                    <TextBlock Text="{x:Bind loc:L.Instance.OptionsStartMenu, Mode=OneWay}"/>
+                </StackPanel>
+            </CheckBox>
+        </StackPanel>
+    </Grid>
+</Page>

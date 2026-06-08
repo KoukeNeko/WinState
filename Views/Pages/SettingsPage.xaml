@@ -14,60 +14,93 @@
     <UserControl.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <helpers:SavedFieldToVisibilityConverter x:Key="SavedFieldToVis" />
     </UserControl.Resources>
 
     <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,24">
 
-            <!--  ===== 外觀 =====  -->
-            <TextBlock Style="{StaticResource SettingsTitle}" Text="外觀" />
+            <!--  ===== Appearance =====  -->
+            <TextBlock Style="{StaticResource SettingsTitle}" Text="{helpers:Loc Key=Settings_Appearance}" />
 
             <Border Style="{StaticResource SettingsGroup}">
-                <Grid Margin="16,13">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <Grid Margin="16,13">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <ui:SymbolIcon
-                        Grid.Column="0"
-                        Margin="0,0,14,0"
-                        VerticalAlignment="Center"
-                        FontSize="20"
-                        Symbol="PaintBrush24" />
+                        <ui:SymbolIcon
+                            Grid.Column="0"
+                            Margin="0,0,14,0"
+                            VerticalAlignment="Center"
+                            FontSize="20"
+                            Symbol="PaintBrush24" />
 
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="佈景主題" />
-                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="選擇應用程式的亮色或暗色外觀。" />
-                    </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Settings_Theme}" />
+                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="{helpers:Loc Key=Settings_ThemeCaption}" />
+                        </StackPanel>
 
-                    <StackPanel
-                        Grid.Column="2"
-                        VerticalAlignment="Center"
-                        Orientation="Horizontal">
-                        <RadioButton
-                            Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
-                            CommandParameter="theme_light"
-                            Content="Light"
-                            GroupName="themeSelect"
-                            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}" />
-                        <RadioButton
-                            Margin="16,0,0,0"
-                            Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
-                            CommandParameter="theme_dark"
-                            Content="Dark"
-                            GroupName="themeSelect"
-                            IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
-                    </StackPanel>
-                </Grid>
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <RadioButton
+                                Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
+                                CommandParameter="theme_light"
+                                Content="{helpers:Loc Key=Settings_ThemeLight}"
+                                GroupName="themeSelect"
+                                IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Light, Mode=OneWay}" />
+                            <RadioButton
+                                Margin="16,0,0,0"
+                                Command="{Binding ViewModel.ChangeThemeCommand, Mode=OneWay}"
+                                CommandParameter="theme_dark"
+                                Content="{helpers:Loc Key=Settings_ThemeDark}"
+                                GroupName="themeSelect"
+                                IsChecked="{Binding ViewModel.CurrentTheme, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Dark, Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Style="{StaticResource SettingsDivider}" />
+
+                    <Grid Margin="16,13">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ui:SymbolIcon
+                            Grid.Column="0"
+                            Margin="0,0,14,0"
+                            VerticalAlignment="Center"
+                            FontSize="20"
+                            Symbol="LocalLanguage24" />
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Settings_Language}" />
+                            <TextBlock Style="{StaticResource SettingsRowCaption}" Text="{helpers:Loc Key=Settings_LanguageCaption}" />
+                        </StackPanel>
+
+                        <ComboBox
+                            Grid.Column="2"
+                            Width="180"
+                            VerticalAlignment="Center"
+                            DisplayMemberPath="Display"
+                            ItemsSource="{Binding ViewModel.Languages}"
+                            SelectedItem="{Binding ViewModel.SelectedLanguage, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
             </Border>
 
             <!--  ===== 一般 =====  -->
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="一般" />
+                Text="{helpers:Loc Key=Settings_General}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <Grid Margin="16,13">
@@ -85,8 +118,8 @@
                         Symbol="Power24" />
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="開機時自動啟動" />
-                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="登入 Windows 時，自動以系統管理員權限啟動 WinState。" />
+                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Settings_StartAtLogon}" />
+                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="{helpers:Loc Key=Settings_StartAtLogonCaption}" />
                     </StackPanel>
 
                     <ui:ToggleSwitch
@@ -96,15 +129,68 @@
                 </Grid>
             </Border>
 
+            <!--  ===== 硬體驅動程式 =====  -->
+            <TextBlock
+                Margin="2,16,0,18"
+                Style="{StaticResource SettingsTitle}"
+                Text="{helpers:Loc Key=Settings_HardwareDriver}" />
+
+            <TextBlock
+                Style="{StaticResource SettingsGroupLabel}"
+                Text="{helpers:Loc Key=Settings_HardwareDriverDesc}" />
+
+            <Border Style="{StaticResource SettingsGroup}">
+                <Grid Margin="16,13">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:SymbolIcon
+                        Grid.Column="0"
+                        Margin="0,0,14,0"
+                        VerticalAlignment="Center"
+                        FontSize="20"
+                        Symbol="Shield24" />
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SettingsRowTitle}" Text="PawnIO driver" />
+                        <TextBlock Style="{StaticResource SettingsRowCaption}" Text="{Binding ViewModel.PawnIODriverStatusText}" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <ui:Button
+                            Margin="0,0,8,0"
+                            Appearance="Primary"
+                            Command="{Binding ViewModel.InstallPawnIODriverCommand}"
+                            Content="{helpers:Loc Key=Settings_InstallViaWinGet}" />
+                        <ui:Button
+                            Margin="0,0,8,0"
+                            Appearance="Secondary"
+                            Command="{Binding ViewModel.OpenPawnIOWebsiteCommand}"
+                            Content="pawnio.eu" />
+                        <ui:Button
+                            Appearance="Secondary"
+                            Command="{Binding ViewModel.RefreshPawnIOStatusCommand}"
+                            Icon="{ui:SymbolIcon ArrowClockwise24}"
+                            ToolTip="{helpers:Loc Key=Settings_RecheckDriver}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!--  ===== 系統匣圖示 =====  -->
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="系統匣圖示" />
+                Text="{helpers:Loc Key=Settings_TrayIcons}" />
 
             <TextBlock
                 Style="{StaticResource SettingsGroupLabel}"
-                Text="勾選要顯示的項目並調整順序；百分比圖示可設定變色門檻（黃 / 橘 / 紅）。" />
+                Text="{helpers:Loc Key=Settings_TrayIconsDesc}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <ItemsControl Margin="8,8" ItemsSource="{Binding ViewModel.TrayIcons}">
@@ -145,7 +231,7 @@
                                             Command="{Binding DataContext.ViewModel.MoveIconUpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Icon="{ui:SymbolIcon ChevronUp24}"
-                                            ToolTip="上移" />
+                                            ToolTip="{helpers:Loc Key=Common_MoveUp}" />
 
                                         <ui:Button
                                             Grid.Column="3"
@@ -155,7 +241,7 @@
                                             Command="{Binding DataContext.ViewModel.MoveIconDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             Icon="{ui:SymbolIcon ChevronDown24}"
-                                            ToolTip="下移" />
+                                            ToolTip="{helpers:Loc Key=Common_MoveDown}" />
                                     </Grid>
 
                                     <!--  Warning thresholds (percentage icons only)  -->
@@ -167,7 +253,7 @@
                                             Width="40"
                                             VerticalAlignment="Center"
                                             Foreground="Goldenrod"
-                                            Text="黃 %" />
+                                            Text="{helpers:Loc Key=Settings_WarnPct}" />
                                         <ui:NumberBox
                                             Width="130"
                                             Margin="0,0,12,0"
@@ -179,7 +265,7 @@
                                             Width="40"
                                             VerticalAlignment="Center"
                                             Foreground="Orange"
-                                            Text="橘 %" />
+                                            Text="{helpers:Loc Key=Settings_HighPct}" />
                                         <ui:NumberBox
                                             Width="130"
                                             Margin="0,0,12,0"
@@ -191,7 +277,7 @@
                                             Width="40"
                                             VerticalAlignment="Center"
                                             Foreground="OrangeRed"
-                                            Text="紅 %" />
+                                            Text="{helpers:Loc Key=Settings_CriticalPct}" />
                                         <ui:NumberBox
                                             Width="130"
                                             Maximum="100"
@@ -210,26 +296,26 @@
                 <ui:Button
                     Appearance="Secondary"
                     Command="{Binding ViewModel.ResetIconOrderCommand}"
-                    Content="還原預設"
+                    Content="{helpers:Loc Key=Settings_RestoreDefaults}"
                     Icon="{ui:SymbolIcon ArrowReset24}" />
             </StackPanel>
 
             <ui:InfoBar
                 Margin="0,12,0,0"
                 IsOpen="{Binding ViewModel.HasUnsavedChanges}"
-                Message="圖示順序與顯示的變更會在重新啟動應用程式後生效（門檻變更即時套用）。"
+                Message="{helpers:Loc Key=Settings_RestartMessage}"
                 Severity="Informational"
-                Title="需要重新啟動" />
+                Title="{helpers:Loc Key=Settings_RestartNeeded}" />
 
             <!--  ===== 程序清單 =====  -->
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="程序清單" />
+                Text="{helpers:Loc Key=Settings_ProcessList}" />
 
             <TextBlock
                 Style="{StaticResource SettingsGroupLabel}"
-                Text="每個分頁的程序清單顯示的項目數量（1–50）。" />
+                Text="{helpers:Loc Key=Settings_ProcessListDesc}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <StackPanel>
@@ -242,7 +328,8 @@
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Board24" />
                         <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="CPU" />
-                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.CpuProcessCount, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=ProcCpu}" />
+                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.CpuProcessCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -254,8 +341,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="DeveloperBoard24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="記憶體" />
-                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.MemoryProcessCount, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Memory}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=ProcMem}" />
+                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.MemoryProcessCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -267,8 +355,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="NetworkCheck24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="網路" />
-                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.NetworkProcessCount, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Network}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=ProcNet}" />
+                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.NetworkProcessCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -280,8 +369,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Storage24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="磁碟" />
-                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.DiskProcessCount, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Disk}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=ProcDisk}" />
+                        <ui:NumberBox Grid.Column="2" Width="140" Maximum="50" Minimum="1" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.DiskProcessCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                 </StackPanel>
             </Border>
@@ -290,11 +380,11 @@
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="更新頻率" />
+                Text="{helpers:Loc Key=Settings_RefreshRate}" />
 
             <TextBlock
                 Style="{StaticResource SettingsGroupLabel}"
-                Text="每個類別資料的重新整理間隔，單位毫秒（250–10000）。隱藏在系統匣時會自動放慢以節省資源。" />
+                Text="{helpers:Loc Key=Settings_RefreshRateDesc}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <StackPanel>
@@ -306,7 +396,8 @@
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Board24" />
                         <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="CPU" />
-                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.CpuRefreshMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=RefCpu}" />
+                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.CpuRefreshMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -318,7 +409,8 @@
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Video24" />
                         <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="GPU" />
-                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.GpuRefreshMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=RefGpu}" />
+                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.GpuRefreshMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -329,8 +421,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="DeveloperBoard24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="記憶體" />
-                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.MemoryRefreshMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Memory}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=RefMem}" />
+                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.MemoryRefreshMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -341,8 +434,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="Storage24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="磁碟" />
-                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.DiskRefreshMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Disk}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=RefDisk}" />
+                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.DiskRefreshMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                     <Border Style="{StaticResource SettingsDivider}" />
 
@@ -353,8 +447,9 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Grid.Column="0" Margin="0,0,14,0" VerticalAlignment="Center" FontSize="20" Symbol="NetworkCheck24" />
-                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="網路" />
-                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.NetworkRefreshMs, Mode=TwoWay}" />
+                        <TextBlock Grid.Column="1" Style="{StaticResource SettingsRowTitle}" Text="{helpers:Loc Key=Cat_Network}" />
+                        <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Foreground="#2ECC71" Text="{helpers:Loc Key=Common_Saved}" Visibility="{Binding ViewModel.RecentlySavedField, Converter={StaticResource SavedFieldToVis}, ConverterParameter=RefNet}" />
+                        <ui:NumberBox Grid.Column="2" Width="150" Maximum="10000" Minimum="250" SmallChange="250" SpinButtonPlacementMode="Inline" Value="{Binding ViewModel.NetworkRefreshMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     </Grid>
                 </StackPanel>
             </Border>
@@ -363,7 +458,7 @@
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="關於" />
+                Text="{helpers:Loc Key=Settings_About}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <Grid Margin="16,16">
@@ -378,7 +473,7 @@
                         Height="56"
                         Margin="0,0,16,0"
                         VerticalAlignment="Center"
-                        Source="pack://application:,,,/Assets/wpfui-icon-256.png" />
+                        Source="pack://application:,,,/Assets/WinState-icon-512.png" />
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock
@@ -387,7 +482,7 @@
                             Text="WinState" />
                         <TextBlock
                             Style="{StaticResource SettingsRowCaption}"
-                            Text="輕量系統監控工具" />
+                            Text="{helpers:Loc Key=Settings_AboutTagline}" />
                         <TextBlock
                             Margin="0,6,0,0"
                             Style="{StaticResource SettingsRowCaption}"
@@ -400,11 +495,11 @@
             <TextBlock
                 Margin="2,16,0,18"
                 Style="{StaticResource SettingsTitle}"
-                Text="貢獻者" />
+                Text="{helpers:Loc Key=Settings_Contributors}" />
 
             <TextBlock
                 Style="{StaticResource SettingsGroupLabel}"
-                Text="感謝所有為 WinState 付出的人。" />
+                Text="{helpers:Loc Key=Settings_ContributorsThanks}" />
 
             <Border Style="{StaticResource SettingsGroup}">
                 <ItemsControl Margin="0,4" ItemsSource="{Binding ViewModel.Contributors}">

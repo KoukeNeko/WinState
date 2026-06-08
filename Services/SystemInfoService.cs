@@ -259,6 +259,16 @@ namespace WinState.Services
             InitializeRamCounters();
             InitializeDiskCounters();
 
+            // Seed DetailedSensors with one SensorItem per discovered sensor BEFORE the popup
+            // ever opens. InitializeHardwareAndSensors already calls hardware.Update() once so
+            // sensor.Value is populated; running the same update path again binds those values
+            // into the pooled SensorItems and the public DetailedSensors list. Without this seed
+            // the SENSORS section's ItemsControl measures itself empty on first show, the
+            // positioning logic anchors against that short height, and the first data tick then
+            // expands the popup below the working area — same failure mode the CPU section had
+            // before PrepopulateUiCollections.
+            try { UpdateDetailedSensors(); } catch { /* defensive — never block startup on this */ }
+
             // ETW per-process network/disk monitoring is started lazily, only while a UI surface
             // is visible (see AddUiInterest). Its system-wide kernel trace is the largest cost,
             // so it stays off while the app sits hidden in the tray.

@@ -25,6 +25,13 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
 
+        // Language picker. Items are (code, display) pairs; selecting one applies it live via
+        // LocalizationService and persists the code ("Auto" / "en" / "zh-Hant").
+        public ObservableCollection<LanguageOption> Languages { get; } = new();
+
+        [ObservableProperty]
+        private LanguageOption? _selectedLanguage;
+
         [ObservableProperty]
         private ObservableCollection<TrayIconEntryViewModel> _trayIcons = new();
 
@@ -38,6 +45,11 @@ namespace WinState.ViewModels.Pages
 
         // Guards against the toggle write firing while we re-sync it to the real task state.
         private bool _syncingStartup = false;
+
+        // PawnIO driver presence — surfaced on the settings page so the user knows whether the
+        // CPU / motherboard sensors will populate. Refreshed each time the page is shown.
+        [ObservableProperty]
+        private string _pawnIODriverStatusText = string.Empty;
 
         // Per-category process-list counts.
         [ObservableProperty]
@@ -76,6 +88,7 @@ namespace WinState.ViewModels.Pages
             CurrentTheme = ApplicationThemeManager.GetAppTheme();
             AppVersion = $"WinState - {GetAssemblyVersion()}";
 
+            LoadLanguageSetting();
             LoadTrayIconSettings();
             LoadProcessListSettings();
             LoadRefreshSettings();
@@ -85,8 +98,38 @@ namespace WinState.ViewModels.Pages
             // handler treats it as a load, not a user toggle.
             StartWithWindows = StartupManager.IsEnabled();
 
+            RefreshPawnIODriverState();
+
             _isInitialized = true;
         }
+
+        private void RefreshPawnIODriverState()
+        {
+            PawnIODriverStatusText = LocalizationService.Instance.Get(PawnIODriverService.GetState() switch
+            {
+                PawnIODriverState.Running => "Settings_DriverRunning",
+                PawnIODriverState.Stopped => "Settings_DriverStopped",
+                PawnIODriverState.NotInstalled => "Settings_DriverNotInstalled",
+                _ => "Settings_DriverUnknown"
+            });
+        }
+
+        [RelayCommand]
+        private void InstallPawnIODriver()
+        {
+            if (!PawnIODriverService.TryStartWingetInstall())
+            {
+                // Winget missing or refused; fall back to the official site so the user can
+                // download the installer manually.
+                PawnIODriverService.OpenOfficialDownloadPage();
+            }
+        }
+
+        [RelayCommand]
+        private void OpenPawnIOWebsite() => PawnIODriverService.OpenOfficialDownloadPage();
+
+        [RelayCommand]
+        private void RefreshPawnIOStatus() => RefreshPawnIODriverState();
 
         partial void OnStartWithWindowsChanged(bool value)
         {
@@ -99,6 +142,36 @@ namespace WinState.ViewModels.Pages
                 StartWithWindows = StartupManager.IsEnabled();
                 _syncingStartup = false;
             }
+        }
+
+        private void LoadLanguageSetting()
+        {
+            Languages.Clear();
+            foreach (var (code, displayKey) in LocalizationService.SupportedLanguages)
+            {
+                // "Auto" shows a localized label that itself follows the language; the concrete
+                // languages show their own endonym ("English", "繁體中文") so they're recognisable
+                // regardless of the current UI language.
+                string display = code == "Auto" ? LocalizationService.Instance.Get(displayKey) : displayKey;
+                Languages.Add(new LanguageOption(code, display));
+            }
+
+            string saved = _userSettingsService.GetLanguage();
+            SelectedLanguage = Languages.FirstOrDefault(l => l.Code == saved) ?? Languages[0];
+        }
+
+        partial void OnSelectedLanguageChanged(LanguageOption? value)
+        {
+            if (!_isInitialized || value is null) return;
+            LocalizationService.Instance.ApplyLanguage(value.Code);
+            _userSettingsService.SaveLanguage(value.Code);
+
+            // The "Auto" label is itself localized, so refresh it after a switch.
+            var autoItem = Languages.FirstOrDefault(l => l.Code == "Auto");
+            if (autoItem != null) autoItem.Display = LocalizationService.Instance.Get("Settings_LanguageAuto");
+
+            // The driver status string is localized too, so re-derive it in the new language.
+            RefreshPawnIODriverState();
         }
 
         private void LoadProcessListSettings()
@@ -127,10 +200,10 @@ namespace WinState.ViewModels.Pages
 
         private static bool IsValidCount(int value) => value >= ProcessListSettings.Min && value <= ProcessListSettings.Max;
 
-        partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnNetworkProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnDiskProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+        partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcCpu"); } }
+        partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcMem"); } }
+        partial void OnNetworkProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcNet"); } }
+        partial void OnDiskProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcDisk"); } }
 
         private void LoadRefreshSettings()
         {
@@ -157,11 +230,44 @@ namespace WinState.ViewModels.Pages
 
         private static bool IsValidInterval(int value) => value >= RefreshSettings.Min && value <= RefreshSettings.Max;
 
-        partial void OnCpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnGpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnMemoryRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnDiskRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnNetworkRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnCpuRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefCpu"); } }
+        partial void OnGpuRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefGpu"); } }
+        partial void OnMemoryRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefMem"); } }
+        partial void OnDiskRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefDisk"); } }
+        partial void OnNetworkRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefNet"); } }
+
+        // ---- "Saved" indicator -------------------------------------------------------------------
+        // The view shows a green check next to whichever field id equals RecentlySavedField. We set
+        // it on each successful save and clear it after a short delay so the indicator fades on its
+        // own. The DispatcherTimer fires on the UI thread, so touching the bound property is safe.
+
+        [ObservableProperty]
+        private string _recentlySavedField = string.Empty;
+
+        private System.Windows.Threading.DispatcherTimer? _savedTimer;
+
+        private void FlashSaved(string fieldId)
+        {
+            RecentlySavedField = fieldId;
+
+            _savedTimer ??= CreateSavedTimer();
+            _savedTimer.Stop();
+            _savedTimer.Start();
+        }
+
+        private System.Windows.Threading.DispatcherTimer CreateSavedTimer()
+        {
+            var t = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1.6)
+            };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                RecentlySavedField = string.Empty;
+            };
+            return t;
+        }
 
         private void LoadTrayIconSettings()
         {
@@ -415,5 +521,21 @@ namespace WinState.ViewModels.Pages
 
         [ObservableProperty]
         private ImageSource? _avatar;
+    }
+
+    /// <summary>One entry in the language picker. Display is observable so the "Auto" label can be
+    /// refreshed after a language switch.</summary>
+    public partial class LanguageOption : ObservableObject
+    {
+        public string Code { get; }
+
+        [ObservableProperty]
+        private string _display;
+
+        public LanguageOption(string code, string display)
+        {
+            Code = code;
+            _display = display;
+        }
     }
 }

@@ -25,17 +25,20 @@ jobs:
         rid: [win-x64, win-arm64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Do not leave a usable GITHUB_TOKEN in the runner's git config: nothing in this
           # workflow pushes back to the repo, and a leaked token in a later step would be able
           # to mint commits.
           persist-credentials: false
+          # Pull the LibreHardwareMonitor PawnIO fork pinned under Vendor/. WinState's
+          # ProjectReference points at it; without the submodule the restore would fail.
+          submodules: recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Refresh contributors snapshot
         shell: pwsh
@@ -55,8 +58,55 @@ jobs:
           -o publish
 
       - name: Upload exe artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: WinState-${{ matrix.rid }}
           path: publish/WinState.exe
+          if-no-files-found: error
+
+      # ---- Installer (WinUI 3 wizard wrapping the single-file exe above) -----------------------
+
+      - name: Stage payload for installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path WinState.Installer/payload | Out-Null
+          Copy-Item -Force publish/WinState.exe WinState.Installer/payload/WinState.exe
+
+      - name: Publish installer
+        run: >
+          dotnet publish WinState.Installer/WinState.Installer.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o installer-publish
+
+      # ---- Single-file bootstrapper (wraps the installer folder in one .exe) ------------------
+      # GitHub Actions artifacts always wrap their contents in a .zip on download, so:
+      #   - upload the installer folder → zip contains 350+ files (looks like a mess)
+      #   - upload one bootstrapper .exe → zip contains a single .exe (what the user expects)
+      # Pay the bootstrapper's ~200 MB self-extracting overhead so the unzip experience is
+      # "one exe, double-click it".
+
+      - name: Zip installer into bootstrapper payload
+        shell: pwsh
+        run: |
+          if (Test-Path WinState.Bootstrapper/payload.zip) { Remove-Item -Force WinState.Bootstrapper/payload.zip }
+          Compress-Archive -Path installer-publish/* -DestinationPath WinState.Bootstrapper/payload.zip -CompressionLevel Optimal
+
+      - name: Publish bootstrapper (single-file setup exe)
+        run: >
+          dotnet publish WinState.Bootstrapper/WinState.Bootstrapper.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o setup-publish
+
+      - name: Rename setup exe with RID suffix
+        shell: pwsh
+        run: |
+          Move-Item -Force setup-publish/WinState-Setup.exe setup-publish/WinState-Setup-${{ matrix.rid }}.exe
+
+      - name: Upload single-file setup exe
+        uses: actions/upload-artifact@v5
+        with:
+          name: WinState-Setup-${{ matrix.rid }}
+          path: setup-publish/WinState-Setup-${{ matrix.rid }}.exe
           if-no-files-found: error

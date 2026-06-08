@@ -2,13 +2,28 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ApplicationManifest>ViewModels\Windows\app.manifest</ApplicationManifest>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      Sibling projects (the vendored LHM PawnIO fork, the WinUI 3 installer wizard) live in
+      sub-folders under the repo root, and the WPF SDK's default Compile/Page/Resource globs
+      would otherwise pull every .cs / .xaml from those trees into WinState's compilation.
+      Both build in isolation (LHM via ProjectReference, the installer as its own .exe), so
+      excluding their folders here keeps the two compilations cleanly separated.
+    -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**;WinState.Bootstrapper\**</DefaultItemExcludes>
+    <!--
+      NU1701 is a NuGet restore warning from the vendored fork's RAMSPDToolkit-NDD package
+      (restored against .NET Framework for a netstandard2.0 target). It propagates into WinState's
+      restore graph, so it has to be silenced at this level — NoWarn on the ProjectReference only
+      covers the fork's own compile, not WinState's restore.
+    -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,23 +32,57 @@
 
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
-    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
+    <!-- ServiceController for probing the PawnIO driver service state. -->
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.9" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.28" />
-    <PackageReference Include="System.Management" Version="9.0.1" />
+    <!-- Bumped to 9.0.9 to match the transitive minimum from the LibreHardwareMonitor PawnIO fork. -->
+    <PackageReference Include="System.Management" Version="9.0.9" />
     <PackageReference Include="WPF-UI" Version="4.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="WPF-UI.Tray" Version="4.0.0" />
   </ItemGroup>
 
+  <!--
+    LibreHardwareMonitorLib comes from namazso's PawnIO fork instead of the upstream NuGet so
+    we do not load WinRing0 (on Microsoft's vulnerable-driver blocklist and increasingly flagged
+    by Defender / EDR as BYOVD). The fork keeps the same API surface and ships its PawnIO
+    bytecode modules as embedded resources; the only end-user delta is a one-time PawnIO driver
+    install (see SettingsPage's hardware driver section).
+  -->
+  <ItemGroup>
+    <!--
+      Suppress the vendored fork's own warnings (platform-compat CA1416, unused events / vars,
+      obsolete UnmanagedType.AsAny) by passing NoWarn down as a global property to its build. We
+      do NOT edit the submodule's files for this — that would dirty the pinned submodule and
+      fight upstream syncs. AdditionalProperties flows into the referenced project's compilation
+      only, so our own code keeps all its warnings.
+    -->
+    <ProjectReference Include="Vendor\LibreHardwareMonitor-PawnIO\LibreHardwareMonitorLib\LibreHardwareMonitorLib.csproj">
+      <!--
+        Silence the vendored fork's own build noise without editing the pinned submodule:
+        - NoWarn (semicolons escaped %3B so they don't split the property list): the compile
+          warnings CA1416 / unused event / unused var / obsolete, plus NU1701 from its
+          RAMSPDToolkit-NDD .NET Framework package.
+        - SuppressTfmSupportBuildWarnings: the "doesn't support net6.0" notices the fork's
+          multi-targeting (net472;netstandard2.0;net6.0;net8.0) triggers from System.* packages.
+        - GeneratePackageOnBuild=false: we consume the assembly via ProjectReference, never the
+          nupkg, so don't pack on every build.
+      -->
+      <AdditionalProperties>NoWarn=CA1416%3BCS0067%3BCS0168%3BCS0219%3BCS0618%3BNU1701;SuppressTfmSupportBuildWarnings=true;GeneratePackageOnBuild=false</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+
   <ItemGroup>
     <None Remove="Assets\wpfui-icon-256.png" />
     <None Remove="Assets\wpfui-icon-1024.png" />
+    <None Remove="Assets\WinState-icon-512.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\wpfui-icon-256.png" />
     <Resource Include="Assets\wpfui-icon-1024.png" />
+    <Resource Include="Assets\WinState-icon-512.png" />
   </ItemGroup>
 
   <!-- Contributors snapshot (refreshed by scripts/fetch-contributors.ps1 before publish). -->

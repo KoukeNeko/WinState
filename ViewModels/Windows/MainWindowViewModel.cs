@@ -110,7 +110,7 @@ namespace WinState.ViewModels.Windows
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WinState 設定";
+        private string _applicationTitle = WinState.Services.LocalizationService.Instance.Get("Tray_SettingsTitle");
 
         private readonly SystemInfoService _systemInfoService;
         public ObservableCollection<CoreUsageViewModel> Cores { get; private set; } = new ObservableCollection<CoreUsageViewModel>();
@@ -260,6 +260,10 @@ namespace WinState.ViewModels.Windows
             _userSettingsService = userSettingsService;
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
+
+            // The window title is localized; refresh it live when the language changes.
+            WinState.Services.LocalizationService.Instance.PropertyChanged += (_, _) =>
+                ApplicationTitle = WinState.Services.LocalizationService.Instance.Get("Tray_SettingsTitle");
 
             // Initialize RAM history
             for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);

@@ -366,3 +366,15 @@ FodyWeavers.xsd
 # something we want committed. Narrower than a blanket *.txt so README / LICENSE
 # fragments and any future text fixtures stay tracked.
 debug_sensors.txt
+
+# Installer payload is the published WinState single-file exe, staged into the
+# installer project by scripts/build-installer.ps1 (and CI). It is a build
+# artifact, not source.
+WinState.Installer/payload/
+
+# Bootstrapper payload is the zipped installer-publish folder, embedded into the
+# bootstrapper at publish time. Same story as the installer payload above.
+WinState.Bootstrapper/payload.zip
+
+# Local install artifacts produced by scripts/build-installer.ps1.
+artifacts/
