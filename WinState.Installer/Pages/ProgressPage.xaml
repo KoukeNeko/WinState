@@ -13,15 +13,14 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Heading is set by OnNavigatedTo based on install vs uninstall mode, so no default
-             text here (a hardcoded "Installing" would briefly flash in the uninstaller). -->
+        <!-- Heading + status are fully managed in code (RefreshTexts) so they reflect the current
+             phase AND re-render on a language switch without an x:Bind clobbering them. -->
         <TextBlock Grid.Row="0"
                    x:Name="HeadingText"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1" x:Name="CurrentStepText"
-                   Text="{x:Bind loc:L.Instance.ProgressStarting, Mode=OneWay}"
                    Opacity="0.8"/>
 
         <ProgressBar Grid.Row="2" x:Name="ProgressBar"
