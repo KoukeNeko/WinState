@@ -33,6 +33,11 @@ public sealed partial class MainWindow : Window
 
     private int _currentIndex;
 
+    // True once the Progress page's install/uninstall task has finished, so Next becomes available
+    // there. Tracked separately from the button state because a language switch re-runs
+    // UpdateButtons, which must not re-disable Next after completion.
+    private bool _progressFinished;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -128,13 +133,13 @@ public sealed partial class MainWindow : Window
             ? Visibility.Collapsed
             : Visibility.Visible;
 
-        // While the Progress page is mid-install we DO NOT want the user clicking Next to skip
-        // to the success screen before file copy / registry / scheduled task finish. The page
-        // re-enables the button (and auto-advances via GoNextProgrammatic) once the install
-        // task finishes.
+        // On the Progress page, Next is disabled while the install/uninstall runs and only
+        // becomes available once OnProgressFinished flips _progressFinished. Keying off that flag
+        // (not a bare false) means a language switch mid-page doesn't re-disable an already-
+        // available Next.
         if (PageOrder[_currentIndex] == typeof(ProgressPage))
         {
-            NextButton.IsEnabled = false;
+            NextButton.IsEnabled = _progressFinished;
         }
         else
         {
@@ -149,6 +154,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     public void OnProgressFinished()
     {
+        _progressFinished = true;
         NextButton.IsEnabled = true;
     }
 
@@ -163,6 +169,7 @@ public sealed partial class MainWindow : Window
             return;
         }
         _currentIndex++;
+        _progressFinished = false; // new page; the Progress completion flag does not carry over
         NavigationFrame.Navigate(PageOrder[_currentIndex]);
         UpdateButtons();
     }
@@ -171,6 +178,7 @@ public sealed partial class MainWindow : Window
     {
         if (_currentIndex == 0) return;
         _currentIndex--;
+        _progressFinished = false;
         NavigationFrame.Navigate(PageOrder[_currentIndex]);
         UpdateButtons();
     }
