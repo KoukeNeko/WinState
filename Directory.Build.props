@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    Single source of truth for the product version across WinState, WinState.Installer and
+    WinState.Bootstrapper (all under the repo root inherit this; the vendored LibreHardwareMonitor
+    submodule has its own Directory.Build.props that shadows this one, so it keeps its 0.9.4).
+
+    Bump VersionPrefix here for every release. VS, the About page (reads the assembly version),
+    the installer's Apps & features DisplayVersion, and the release tag all derive from it — so
+    there is no longer a stale VS version drifting from the git tag.
+
+    VersionSuffix marks pre-releases (InformationalVersion becomes e.g. 0.1.0-pre). Clear it for a
+    stable release. AssemblyVersion / FileVersion ignore the suffix and stay numeric (0.1.0.0).
+  -->
+  <PropertyGroup>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>pre</VersionSuffix>
+    <Company>KoukeNeko</Company>
+    <Product>WinState</Product>
+  </PropertyGroup>
+</Project>
