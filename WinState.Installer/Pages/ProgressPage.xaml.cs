@@ -39,6 +39,8 @@ public sealed partial class ProgressPage : Page
 
             ProgressBar.IsIndeterminate = false;
             ProgressBar.Value = 100;
+            // Flip the big title from "Installing" to "Installed" now that it's done.
+            HeadingText.Text = app.IsUninstallMode ? L.Instance.ProgressUninstalled : L.Instance.ProgressInstalled;
             CurrentStepText.Text = app.IsUninstallMode ? L.Instance.ProgressUninstallComplete : L.Instance.ProgressInstallComplete;
 
             // Don't auto-jump. Re-enable Next so the user can read the log and proceed to the

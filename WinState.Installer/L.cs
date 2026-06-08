@@ -86,6 +86,8 @@ public sealed class L : INotifyPropertyChanged
     // Progress page
     public string ProgressInstalling => T("Installing", "安裝中");
     public string ProgressUninstalling => T("Uninstalling", "解除安裝中");
+    public string ProgressInstalled => T("Installed", "已安裝");
+    public string ProgressUninstalled => T("Uninstalled", "已解除安裝");
     public string ProgressStarting => T("Starting...", "開始中...");
     public string ProgressInstallingEllipsis => T("Installing…", "安裝中…");
     public string ProgressUninstallingEllipsis => T("Uninstalling…", "解除安裝中…");
