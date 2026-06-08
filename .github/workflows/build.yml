@@ -79,17 +79,34 @@ jobs:
           -r ${{ matrix.rid }}
           -o installer-publish
 
-      # Upload the installer folder as the user-facing artifact. GitHub Actions wraps
-      # everything in a zip on download anyway, so let it auto-pack the folder into one
-      # WinState-Setup-<rid>.zip — the user unzips once and double-clicks
-      # WinState.Installer.exe inside. Skipping the bootstrapper here because GitHub Actions
-      # would zip the bootstrapper's 200 MB single exe too (double-zip wrapper = wasted
-      # bandwidth and no extra value). The WinState.Bootstrapper project stays in the repo
-      # for local single-exe builds via scripts/build-installer.ps1 and for a future
-      # Releases workflow that serves raw assets.
-      - name: Upload installer artifact
+      # ---- Single-file bootstrapper (wraps the installer folder in one .exe) ------------------
+      # GitHub Actions artifacts always wrap their contents in a .zip on download, so:
+      #   - upload the installer folder → zip contains 350+ files (looks like a mess)
+      #   - upload one bootstrapper .exe → zip contains a single .exe (what the user expects)
+      # Pay the bootstrapper's ~200 MB self-extracting overhead so the unzip experience is
+      # "one exe, double-click it".
+
+      - name: Zip installer into bootstrapper payload
+        shell: pwsh
+        run: |
+          if (Test-Path WinState.Bootstrapper/payload.zip) { Remove-Item -Force WinState.Bootstrapper/payload.zip }
+          Compress-Archive -Path installer-publish/* -DestinationPath WinState.Bootstrapper/payload.zip -CompressionLevel Optimal
+
+      - name: Publish bootstrapper (single-file setup exe)
+        run: >
+          dotnet publish WinState.Bootstrapper/WinState.Bootstrapper.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o setup-publish
+
+      - name: Rename setup exe with RID suffix
+        shell: pwsh
+        run: |
+          Move-Item -Force setup-publish/WinState-Setup.exe setup-publish/WinState-Setup-${{ matrix.rid }}.exe
+
+      - name: Upload single-file setup exe
         uses: actions/upload-artifact@v4
         with:
           name: WinState-Setup-${{ matrix.rid }}
-          path: installer-publish/
+          path: setup-publish/WinState-Setup-${{ matrix.rid }}.exe
           if-no-files-found: error
