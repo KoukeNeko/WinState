@@ -13,10 +13,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Defaults are localized; OnNavigatedTo refines the heading to install vs uninstall. -->
+        <!-- Heading is set by OnNavigatedTo based on install vs uninstall mode, so no default
+             text here (a hardcoded "Installing" would briefly flash in the uninstaller). -->
         <TextBlock Grid.Row="0"
                    x:Name="HeadingText"
-                   Text="{x:Bind loc:L.Instance.ProgressInstalling, Mode=OneWay}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
