@@ -55,9 +55,32 @@ public sealed partial class MainWindow : Window
         CancelButton.Visibility = PageOrder[_currentIndex] == typeof(ProgressPage) || PageOrder[_currentIndex] == typeof(FinishedPage)
             ? Visibility.Collapsed
             : Visibility.Visible;
+
+        // While the Progress page is mid-install we DO NOT want the user clicking Next to skip
+        // to the success screen before file copy / registry / scheduled task finish. The page
+        // re-enables the button (and auto-advances via GoNextProgrammatic) once the install
+        // task finishes.
+        if (PageOrder[_currentIndex] == typeof(ProgressPage))
+        {
+            NextButton.IsEnabled = false;
+        }
+        else
+        {
+            NextButton.IsEnabled = true;
+        }
     }
 
-    public void GoNext() => NextButton_Click(this, new RoutedEventArgs());
+    /// <summary>
+    /// Allows the ProgressPage to advance once its install/uninstall task finishes. Bypasses
+    /// the disabled Next button state used to block premature manual clicks.
+    /// </summary>
+    public void GoNextProgrammatic()
+    {
+        NextButton.IsEnabled = true;
+        NextButton_Click(this, new RoutedEventArgs());
+    }
+
+    public void GoNext() => GoNextProgrammatic();
 
     private void NextButton_Click(object sender, RoutedEventArgs e)
     {
