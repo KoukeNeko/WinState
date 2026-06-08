@@ -37,11 +37,11 @@ public sealed partial class ProgressPage : Page
 
             ProgressBar.IsIndeterminate = false;
             ProgressBar.Value = 100;
-            CurrentStepText.Text = "Finished.";
+            CurrentStepText.Text = app.IsUninstallMode ? "Uninstall complete." : "Installation complete.";
 
-            // Auto-advance to the Finished page so the user gets the success message without an
-            // extra "Next" click.
-            app.GetMainWindow()?.GoNext();
+            // Don't auto-jump. Re-enable Next so the user can read the log and proceed to the
+            // Finished page when they're ready.
+            app.GetMainWindow()?.OnProgressFinished();
         }
         catch (OperationCanceledException)
         {
@@ -53,6 +53,7 @@ public sealed partial class ProgressPage : Page
             ProgressBar.ShowError = true;
             CurrentStepText.Text = "Failed.";
             Report($"ERROR: {ex.Message}");
+            // Leave Next disabled on failure — there is no successful state to advance to.
         }
     }
 

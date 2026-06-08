@@ -11,12 +11,13 @@ public sealed partial class MainWindow : Window
 {
     public InstallOptions Options { get; } = new();
 
-    // Normal flow: Welcome → Options → Progress → Finished
+    // Normal flow: Welcome → Options → Summary → Progress → Finished
     // Uninstall flow (launched with --uninstall): UninstallConfirm → Progress → Finished
     private readonly Type[] _installFlow =
     {
         typeof(WelcomePage),
         typeof(OptionsPage),
+        typeof(SummaryPage),
         typeof(ProgressPage),
         typeof(FinishedPage),
     };
@@ -52,10 +53,19 @@ public sealed partial class MainWindow : Window
     // rows and the log don't wrap awkwardly.
     private void ConfigureWindow()
     {
-        const int width = 860;
-        const int height = 560;
+        // These are logical (DIP) sizes. AppWindow.Resize takes PHYSICAL pixels, so on a 150% or
+        // 200% display the same numbers would render the window half-size — which is exactly why
+        // it looked tiny. Scale by the monitor's DPI so the wizard is a consistent physical size.
+        const int dipWidth = 900;
+        const int dipHeight = 600;
 
-        AppWindow?.Resize(new Windows.Graphics.SizeInt32(width, height));
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        uint dpi = GetDpiForWindow(hwnd);
+        double scale = dpi <= 0 ? 1.0 : dpi / 96.0;
+
+        AppWindow?.Resize(new Windows.Graphics.SizeInt32(
+            (int)(dipWidth * scale),
+            (int)(dipHeight * scale)));
 
         if (AppWindow?.Presenter is OverlappedPresenter presenter)
         {
@@ -67,10 +77,20 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
+
     private void UpdateButtons()
     {
         BackButton.IsEnabled = _currentIndex > 0 && _currentIndex < PageOrder.Length - 1;
-        NextButton.Content = _currentIndex == PageOrder.Length - 1 ? "Close" : "Next";
+        // Last page → Close; the page right before Progress is the commit point → Install/Uninstall;
+        // everything else → Next.
+        bool isCommitStep = _currentIndex + 1 < PageOrder.Length && PageOrder[_currentIndex + 1] == typeof(ProgressPage);
+        NextButton.Content = _currentIndex == PageOrder.Length - 1
+            ? "Close"
+            : isCommitStep
+                ? ((App.Current as App)?.IsUninstallMode == true ? "Uninstall" : "Install")
+                : "Next";
         // Disable Cancel once the Progress page is running so the user can't half-cancel a
         // file copy or registry write.
         CancelButton.Visibility = PageOrder[_currentIndex] == typeof(ProgressPage) || PageOrder[_currentIndex] == typeof(FinishedPage)
@@ -92,16 +112,14 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Allows the ProgressPage to advance once its install/uninstall task finishes. Bypasses
-    /// the disabled Next button state used to block premature manual clicks.
+    /// Called by ProgressPage when the install/uninstall task finishes successfully. Re-enables
+    /// Next (which UpdateButtons disabled on entry to the Progress page) so the user can read the
+    /// log and proceed to the Finished page on their own. We deliberately do NOT auto-advance.
     /// </summary>
-    public void GoNextProgrammatic()
+    public void OnProgressFinished()
     {
         NextButton.IsEnabled = true;
-        NextButton_Click(this, new RoutedEventArgs());
     }
-
-    public void GoNext() => GoNextProgrammatic();
 
     private void NextButton_Click(object sender, RoutedEventArgs e)
     {
