@@ -136,7 +136,7 @@
   <data name="Pop_Free" xml:space="preserve"><value>空閒：</value></data>
   <data name="Pop_Committed" xml:space="preserve"><value>認可：</value></data>
   <data name="Pop_CommitLimit" xml:space="preserve"><value>認可上限：</value></data>
-  <data name="Pop_PublicIp" xml:space="preserve"><value>公網 IP：</value></data>
+  <data name="Pop_PublicIp" xml:space="preserve"><value>外網 IP：</value></data>
   <data name="Pop_LocalIp" xml:space="preserve"><value>內網 IP：</value></data>
   <data name="Pop_Interface" xml:space="preserve"><value>介面：</value></data>
   <data name="Pop_NetworkLabel" xml:space="preserve"><value>網路：</value></data>
