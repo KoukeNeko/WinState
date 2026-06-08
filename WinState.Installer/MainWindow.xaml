@@ -41,6 +41,17 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Language picker, bottom-left, visible on every page. -->
+            <ComboBox x:Name="LanguageCombo"
+                      Grid.Column="0"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center"
+                      MinWidth="140"
+                      SelectionChanged="LanguageCombo_SelectionChanged">
+                <ComboBoxItem Content="English" Tag="en"/>
+                <ComboBoxItem Content="繁體中文" Tag="zh"/>
+            </ComboBox>
+
             <Button x:Name="CancelButton"
                     Grid.Column="1"
                     Content="{x:Bind loc:L.Instance.Cancel, Mode=OneWay}"

@@ -15,7 +15,7 @@
 
         <TextBlock Grid.Row="0"
                    Text="{x:Bind loc:L.Instance.OptionsTitle, Mode=OneWay}"
-                   FontSize="24"
+                   FontSize="28"
                    FontWeight="SemiBold"/>
 
         <!-- Install location -->

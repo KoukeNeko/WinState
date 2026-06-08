@@ -14,7 +14,7 @@
 
         <TextBlock Grid.Row="0"
                    Text="{x:Bind loc:L.Instance.SummaryTitle, Mode=OneWay}"
-                   FontSize="24"
+                   FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"

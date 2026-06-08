@@ -12,28 +12,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Title + language picker on the same row -->
-        <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0"
-                       VerticalAlignment="Center"
-                       Text="{x:Bind loc:L.Instance.WelcomeTitle, Mode=OneWay}"
-                       FontSize="28"
-                       FontWeight="SemiBold"/>
-
-            <ComboBox x:Name="LanguageCombo"
-                      Grid.Column="1"
-                      VerticalAlignment="Center"
-                      MinWidth="140"
-                      SelectionChanged="LanguageCombo_SelectionChanged">
-                <ComboBoxItem Content="English" Tag="en"/>
-                <ComboBoxItem Content="繁體中文" Tag="zh"/>
-            </ComboBox>
-        </Grid>
+        <TextBlock Grid.Row="0"
+                   Text="{x:Bind loc:L.Instance.WelcomeTitle, Mode=OneWay}"
+                   FontSize="28"
+                   FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
                    Text="{x:Bind loc:L.Instance.WelcomeBody, Mode=OneWay}"

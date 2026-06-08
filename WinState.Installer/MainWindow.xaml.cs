@@ -44,14 +44,26 @@ public sealed partial class MainWindow : Window
 
         RefreshChrome();
 
+        // Reflect the current language in the picker without triggering a switch.
+        LanguageCombo.SelectedIndex = L.Instance.IsChinese ? 1 : 0;
+
         // Title and buttons are set in code (not x:Bind), so refresh them when the user switches
-        // language on the Welcome page.
+        // language via the bottom-left picker.
         L.Instance.PropertyChanged += (_, _) => RefreshChrome();
 
         ConfigureWindow();
 
         NavigationFrame.Navigate(PageOrder[0]);
         UpdateButtons();
+    }
+
+    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Tag "zh" -> Traditional Chinese, anything else -> English. Setting IsChinese raises
+        // PropertyChanged on L.Instance, refreshing every {x:Bind L.Instance.*, OneWay} string
+        // plus the chrome (subscribed above).
+        var tag = (LanguageCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        L.Instance.IsChinese = tag == "zh";
     }
 
     private void RefreshChrome()
