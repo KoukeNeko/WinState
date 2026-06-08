@@ -84,8 +84,8 @@
   <data name="Settings_RestartNeeded" xml:space="preserve"><value>需要重新啟動</value></data>
   <data name="Settings_RestartMessage" xml:space="preserve"><value>圖示順序與顯示的變更會在重新啟動應用程式後生效（門檻變更即時套用）。</value></data>
 
-  <data name="Settings_ProcessList" xml:space="preserve"><value>程序清單</value></data>
-  <data name="Settings_ProcessListDesc" xml:space="preserve"><value>每個分頁的程序清單顯示的項目數量（1–50）。</value></data>
+  <data name="Settings_ProcessList" xml:space="preserve"><value>行程清單</value></data>
+  <data name="Settings_ProcessListDesc" xml:space="preserve"><value>每個分頁的行程清單顯示的項目數量（1–50）。</value></data>
 
   <data name="Settings_RefreshRate" xml:space="preserve"><value>更新頻率</value></data>
   <data name="Settings_RefreshRateDesc" xml:space="preserve"><value>每個類別資料的重新整理間隔，單位毫秒（250–10000）。隱藏在系統匣時會自動放慢以節省資源。</value></data>
@@ -113,7 +113,7 @@
   <data name="Pop_Cores" xml:space="preserve"><value>核心</value></data>
   <data name="Pop_Info" xml:space="preserve"><value>資訊</value></data>
   <data name="Pop_Details" xml:space="preserve"><value>詳細資訊</value></data>
-  <data name="Pop_Processes" xml:space="preserve"><value>程序</value></data>
+  <data name="Pop_Processes" xml:space="preserve"><value>行程</value></data>
   <data name="Pop_UsageHistory" xml:space="preserve"><value>使用歷史</value></data>
   <data name="Pop_User" xml:space="preserve"><value>使用者</value></data>
   <data name="Pop_System" xml:space="preserve"><value>系統</value></data>
