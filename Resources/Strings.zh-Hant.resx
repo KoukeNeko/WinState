@@ -157,7 +157,7 @@
 
   <data name="Pop_Clock" xml:space="preserve"><value>時脈：</value></data>
   <data name="Pop_Volt" xml:space="preserve"><value>電壓：</value></data>
-  <data name="Pop_Uptime" xml:space="preserve"><value>開機時間：</value></data>
+  <data name="Pop_Uptime" xml:space="preserve"><value>已開機：</value></data>
   <data name="Pop_ProcCount" xml:space="preserve"><value>行程：</value></data>
   <data name="Pop_Threads" xml:space="preserve"><value>執行緒：</value></data>
   <data name="Pop_Handles" xml:space="preserve"><value>控制代碼：</value></data>
