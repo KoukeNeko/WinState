@@ -100,10 +100,10 @@ CI builds **self-contained, single-file** executables for every push — no .NET
 
 1. Open the [**Actions → build**](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml) tab and pick the latest green run.
 2. Download the artifact for your CPU:
-   - `WinState-win-x64` — Intel / AMD 64-bit
-   - `WinState-win-arm64` — ARM64
-3. Unzip and run `WinState.exe` (accept the UAC prompt).
-4. **First launch:** WinState will prompt for the **PawnIO driver** if it is not already installed. Settings → *Hardware driver* has an *Install via WinGet* button (`winget install -e --id namazso.PawnIO`) or you can grab the installer from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
+   - `WinState-Setup-win-x64` / `WinState-Setup-win-arm64` — guided installer (recommended)
+   - `WinState-win-x64` / `WinState-win-arm64` — bare WinState.exe (skip the wizard)
+3. Unzip the artifact and double-click `WinState.Installer.exe` (or `WinState.exe` for the bare path); accept the UAC prompt. The installer's options page lets you toggle PawnIO install and launch-at-logon.
+4. **PawnIO driver:** the installer offers a one-click WinGet install (`winget install -e --id namazso.PawnIO`); alternatively grab it from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
 
 > Artifacts need a GitHub login and expire after 90 days — building from source is the most reliable route.
 
