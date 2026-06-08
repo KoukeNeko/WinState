@@ -25,7 +25,7 @@ jobs:
         rid: [win-x64, win-arm64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Do not leave a usable GITHUB_TOKEN in the runner's git config: nothing in this
           # workflow pushes back to the repo, and a leaked token in a later step would be able
@@ -36,7 +36,7 @@ jobs:
           submodules: recursive
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -58,7 +58,7 @@ jobs:
           -o publish
 
       - name: Upload exe artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: WinState-${{ matrix.rid }}
           path: publish/WinState.exe
@@ -105,7 +105,7 @@ jobs:
           Move-Item -Force setup-publish/WinState-Setup.exe setup-publish/WinState-Setup-${{ matrix.rid }}.exe
 
       - name: Upload single-file setup exe
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: WinState-Setup-${{ matrix.rid }}
           path: setup-publish/WinState-Setup-${{ matrix.rid }}.exe
