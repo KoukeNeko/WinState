@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:WinState.ViewModels.Windows"
              xmlns:helpers="clr-namespace:WinState.Helpers"
+             xmlns:services="clr-namespace:WinState.Services"
              mc:Ignorable="d"
              x:Name="Root"
              Width="320">
@@ -166,13 +167,62 @@
                     <TextBlock Text="{helpers:Loc Key=Pop_Info}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                     <TextBlock Text="{Binding CpuName}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <UniformGrid Columns="2">
-                        <TextBlock Text="{Binding CpuClock, StringFormat='Clock: {0:F0} MHz'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding CpuTemperature, StringFormat='Temp: {0:F1} °C'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding CpuVoltage, StringFormat='Volt: {0:F3} V'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding Uptime, StringFormat='Uptime: {0:dd\.hh\:mm\:ss}'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding ProcessCount, StringFormat='Processes: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding ThreadCount, StringFormat='Threads: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
-                        <TextBlock Text="{Binding HandleCount, StringFormat='Handles: {0}'}" Foreground="#AAAAAA" Margin="0,2"/>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1:F0} MHz">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Clock]"/>
+                                    <Binding Path="CpuClock"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1:F1} °C">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Temp]"/>
+                                    <Binding Path="CpuTemperature"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1:F3} V">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Volt]"/>
+                                    <Binding Path="CpuVoltage"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1:dd\.hh\:mm\:ss}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Uptime]"/>
+                                    <Binding Path="Uptime"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_ProcCount]"/>
+                                    <Binding Path="ProcessCount"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Threads]"/>
+                                    <Binding Path="ThreadCount"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Handles]"/>
+                                    <Binding Path="HandleCount"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
                     </UniformGrid>
                 </StackPanel>
 

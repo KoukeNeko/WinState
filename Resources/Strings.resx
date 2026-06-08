@@ -154,4 +154,11 @@
   <data name="Pop_VideoEngine" xml:space="preserve"><value>Video Engine:</value></data>
   <data name="Pop_MemoryUsed" xml:space="preserve"><value>Memory Used:</value></data>
   <data name="Pop_MemoryTotal" xml:space="preserve"><value>Memory Total:</value></data>
+
+  <data name="Pop_Clock" xml:space="preserve"><value>Clock:</value></data>
+  <data name="Pop_Volt" xml:space="preserve"><value>Volt:</value></data>
+  <data name="Pop_Uptime" xml:space="preserve"><value>Uptime:</value></data>
+  <data name="Pop_ProcCount" xml:space="preserve"><value>Processes:</value></data>
+  <data name="Pop_Threads" xml:space="preserve"><value>Threads:</value></data>
+  <data name="Pop_Handles" xml:space="preserve"><value>Handles:</value></data>
 </root>
