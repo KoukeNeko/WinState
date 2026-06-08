@@ -3,6 +3,7 @@
     x:Class="WinState.Installer.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:WinState.Installer"
     Title="WinState Installer">
 
     <Grid>
@@ -42,13 +43,13 @@
 
             <Button x:Name="CancelButton"
                     Grid.Column="1"
-                    Content="Cancel"
+                    Content="{x:Bind loc:L.Cancel}"
                     Click="CancelButton_Click"
                     MinWidth="100"/>
 
             <Button x:Name="BackButton"
                     Grid.Column="2"
-                    Content="Back"
+                    Content="{x:Bind loc:L.Back}"
                     Click="BackButton_Click"
                     IsEnabled="False"
                     MinWidth="100"/>

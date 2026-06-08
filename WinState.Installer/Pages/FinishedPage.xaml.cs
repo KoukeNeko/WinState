@@ -20,8 +20,8 @@ public sealed partial class FinishedPage : Page
         {
             LaunchNowCheckbox.IsChecked = false;
             LaunchNowCheckbox.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-            HeadingText.Text = "Uninstalled";
-            BodyText.Text = "WinState has been removed.";
+            HeadingText.Text = L.FinishedUninstalledTitle;
+            BodyText.Text = L.FinishedUninstalledBody;
         }
     }
 

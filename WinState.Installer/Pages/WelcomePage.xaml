@@ -2,7 +2,8 @@
 <Page
     x:Class="WinState.Installer.Pages.WelcomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:WinState.Installer">
 
     <Grid RowSpacing="12">
         <Grid.RowDefinitions>
@@ -12,23 +13,23 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="Install WinState"
+                   Text="{x:Bind loc:L.WelcomeTitle}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
-                   Text="WinState is a lightweight Windows system monitor that lives in your tray. This wizard will copy it to your Program Files folder and optionally set up the PawnIO driver and Start-with-Windows."
+                   Text="{x:Bind loc:L.WelcomeBody}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <StackPanel Grid.Row="2"
                     Spacing="8"
                     Margin="0,16,0,0">
-            <TextBlock Text="What it does:" FontWeight="SemiBold"/>
-            <TextBlock Text="• Copies WinState to C:\Program Files\WinState (default; you can change this on the next page)." TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="• Optionally installs the PawnIO kernel driver via WinGet so CPU temperature, voltage, package power and motherboard sensors work." TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="• Optionally registers a Scheduled Task so WinState starts elevated at logon." TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="• Adds a Start Menu shortcut and an entry under Apps &amp; features so you can uninstall later." TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.WelcomeWhatItDoes}" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Bind loc:L.WelcomeBullet1}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.WelcomeBullet2}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.WelcomeBullet3}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.WelcomeBullet4}" TextWrapping="Wrap" Opacity="0.8"/>
         </StackPanel>
     </Grid>
 </Page>

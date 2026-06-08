@@ -26,12 +26,12 @@ public sealed partial class ProgressPage : Page
         if (app is null) return;
         var options = app.GetOptions();
 
-        HeadingText.Text = app.IsUninstallMode ? "Uninstalling" : "Installing";
+        HeadingText.Text = app.IsUninstallMode ? L.ProgressUninstalling : L.ProgressInstalling;
 
         var logic = new InstallerLogic(line => Report(line));
         try
         {
-            CurrentStepText.Text = app.IsUninstallMode ? "Uninstalling…" : "Installing…";
+            CurrentStepText.Text = app.IsUninstallMode ? L.ProgressUninstallingEllipsis : L.ProgressInstallingEllipsis;
             if (app.IsUninstallMode)
                 await Task.Run(() => logic.UninstallAsync(options, _cts.Token));
             else
@@ -39,7 +39,7 @@ public sealed partial class ProgressPage : Page
 
             ProgressBar.IsIndeterminate = false;
             ProgressBar.Value = 100;
-            CurrentStepText.Text = app.IsUninstallMode ? "Uninstall complete." : "Installation complete.";
+            CurrentStepText.Text = app.IsUninstallMode ? L.ProgressUninstallComplete : L.ProgressInstallComplete;
 
             // Don't auto-jump. Re-enable Next so the user can read the log and proceed to the
             // Finished page when they're ready.
@@ -47,13 +47,13 @@ public sealed partial class ProgressPage : Page
         }
         catch (OperationCanceledException)
         {
-            CurrentStepText.Text = "Cancelled.";
+            CurrentStepText.Text = L.ProgressCancelled;
         }
         catch (Exception ex)
         {
             ProgressBar.IsIndeterminate = false;
             ProgressBar.ShowError = true;
-            CurrentStepText.Text = "Failed.";
+            CurrentStepText.Text = L.ProgressFailed;
             Report($"ERROR: {ex.Message}");
             // Leave Next disabled on failure — there is no successful state to advance to.
         }

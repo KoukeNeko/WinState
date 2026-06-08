@@ -44,7 +44,7 @@ public sealed partial class MainWindow : Window
 
         // Reflect uninstall mode in the window title + the custom title-bar text.
         bool uninstall = (App.Current as App)?.IsUninstallMode == true;
-        Title = uninstall ? "WinState Uninstaller" : "WinState Setup";
+        Title = uninstall ? L.UninstallerTitle : L.SetupTitle;
         TitleBarText.Text = Title;
 
         ConfigureWindow();
@@ -92,10 +92,10 @@ public sealed partial class MainWindow : Window
         // everything else → Next.
         bool isCommitStep = _currentIndex + 1 < PageOrder.Length && PageOrder[_currentIndex + 1] == typeof(ProgressPage);
         NextButton.Content = _currentIndex == PageOrder.Length - 1
-            ? "Close"
+            ? L.Close
             : isCommitStep
-                ? ((App.Current as App)?.IsUninstallMode == true ? "Uninstall" : "Install")
-                : "Next";
+                ? ((App.Current as App)?.IsUninstallMode == true ? L.Uninstall : L.Install)
+                : L.Next;
         // Disable Cancel once the Progress page is running so the user can't half-cancel a
         // file copy or registry write.
         CancelButton.Visibility = PageOrder[_currentIndex] == typeof(ProgressPage) || PageOrder[_currentIndex] == typeof(FinishedPage)

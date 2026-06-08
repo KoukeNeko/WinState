@@ -76,11 +76,13 @@
   <ItemGroup>
     <None Remove="Assets\wpfui-icon-256.png" />
     <None Remove="Assets\wpfui-icon-1024.png" />
+    <None Remove="Assets\WinState-icon-512.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\wpfui-icon-256.png" />
     <Resource Include="Assets\wpfui-icon-1024.png" />
+    <Resource Include="Assets\WinState-icon-512.png" />
   </ItemGroup>
 
   <!-- Contributors snapshot (refreshed by scripts/fetch-contributors.ps1 before publish). -->

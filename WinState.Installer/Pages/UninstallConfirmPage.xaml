@@ -2,7 +2,8 @@
 <Page
     x:Class="WinState.Installer.Pages.UninstallConfirmPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:WinState.Installer">
 
     <Grid RowSpacing="16">
         <Grid.RowDefinitions>
@@ -12,31 +13,30 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="Uninstall WinState"
+                   Text="{x:Bind loc:L.UninstallConfirmTitle}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
-                   Text="The wizard will remove WinState's program files, the Start Menu shortcut, the Apps &amp; features entry and the logon Scheduled Task. Choose what else to remove:"
+                   Text="{x:Bind loc:L.UninstallConfirmBody}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <StackPanel Grid.Row="2" Spacing="12" Margin="0,8,0,0">
             <CheckBox x:Name="RemoveSettingsCheckbox" IsChecked="True">
                 <StackPanel>
-                    <TextBlock Text="Remove saved settings"/>
-                    <TextBlock Text="Deletes your configuration under %AppData%\WinState (theme, tray icons, thresholds…). Leave unchecked to keep them for a future reinstall."
+                    <TextBlock Text="{x:Bind loc:L.UninstallRemoveSettings}"/>
+                    <TextBlock Text="{x:Bind loc:L.UninstallRemoveSettingsDesc}"
                                Opacity="0.7" TextWrapping="Wrap" FontSize="12"/>
                 </StackPanel>
             </CheckBox>
 
             <CheckBox x:Name="RemovePawnIOCheckbox" IsChecked="False">
                 <StackPanel>
-                    <TextBlock Text="Remove the PawnIO driver"/>
-                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource SystemFillColorCautionBrush}">
-                        <Run Text="⚠ Not recommended."/>
-                        <Run Text="Other hardware-monitoring apps (e.g. FanControl, HWiNFO with PawnIO) may share this driver. Only remove it if WinState is the only app that uses it."/>
-                    </TextBlock>
+                    <TextBlock Text="{x:Bind loc:L.UninstallRemovePawnIO}"/>
+                    <TextBlock Text="{x:Bind loc:L.UninstallRemovePawnIODesc}"
+                               Opacity="0.7" TextWrapping="Wrap" FontSize="12"
+                               Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
                 </StackPanel>
             </CheckBox>
         </StackPanel>

@@ -473,7 +473,7 @@
                         Height="56"
                         Margin="0,0,16,0"
                         VerticalAlignment="Center"
-                        Source="pack://application:,,,/Assets/wpfui-icon-256.png" />
+                        Source="pack://application:,,,/Assets/WinState-icon-512.png" />
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock
