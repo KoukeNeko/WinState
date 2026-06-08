@@ -1,3 +1,4 @@
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -40,10 +41,30 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
-        AppWindow?.Resize(new Windows.Graphics.SizeInt32(720, 520));
+        ConfigureWindow();
 
         NavigationFrame.Navigate(PageOrder[0]);
         UpdateButtons();
+    }
+
+    // A wizard should be a fixed-size dialog, not a resizable app window. Lock the size and
+    // strip the maximize / resize affordances; keep it a touch wider than tall so the option
+    // rows and the log don't wrap awkwardly.
+    private void ConfigureWindow()
+    {
+        const int width = 860;
+        const int height = 560;
+
+        AppWindow?.Resize(new Windows.Graphics.SizeInt32(width, height));
+
+        if (AppWindow?.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsResizable = false;
+            presenter.IsMaximizable = false;
+            // Minimizing a modal installer is harmless, but the maximize button next to a
+            // non-resizable window looks broken, so drop it too.
+            presenter.IsMinimizable = false;
+        }
     }
 
     private void UpdateButtons()

@@ -44,21 +44,23 @@ public sealed partial class OptionsPage : Page
         }
     }
 
-    private async void BrowseButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    private void BrowseButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        var picker = new Windows.Storage.Pickers.FolderPicker();
-        // WinUI 3 unpackaged apps must associate the picker with the HWND manually; otherwise
-        // PickSingleFolderAsync silently fails (returns null) on Windows 11.
-        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle((App.Current as App)?.GetMainWindow());
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        // Use the Win32 IFileOpenDialog folder picker rather than the WinRT FolderPicker, which
+        // silently no-ops in this unpackaged self-contained app (see NativeFolderPicker).
+        var mainWindow = (App.Current as App)?.GetMainWindow();
+        if (mainWindow is null) return;
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(mainWindow);
 
-        picker.FileTypeFilter.Add("*");
-        picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.ComputerFolder;
-
-        var folder = await picker.PickSingleFolderAsync();
-        if (folder != null)
+        var picked = Services.NativeFolderPicker.PickFolder(hwnd, InstallPathBox.Text);
+        if (!string.IsNullOrEmpty(picked))
         {
-            InstallPathBox.Text = System.IO.Path.Combine(folder.Path, "WinState");
+            // If the user picked the existing WinState folder, don't append a second WinState
+            // segment; otherwise nest under the chosen folder like a normal installer.
+            var leaf = System.IO.Path.GetFileName(picked.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+            InstallPathBox.Text = string.Equals(leaf, "WinState", StringComparison.OrdinalIgnoreCase)
+                ? picked
+                : System.IO.Path.Combine(picked, "WinState");
         }
     }
 }
