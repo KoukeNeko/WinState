@@ -67,7 +67,12 @@ internal static class Program
             // Pass through any args (e.g. --uninstall when Apps & features chains us back).
             foreach (var a in args) psi.ArgumentList.Add(a);
 
-            using var p = Process.Start(psi)!;
+            using var p = Process.Start(psi);
+            if (p is null)
+            {
+                ShowError("Setup failed", $"Could not start {InnerInstallerExe}.");
+                return 4;
+            }
             p.WaitForExit();
             return p.ExitCode;
         }

@@ -17,9 +17,9 @@ public sealed partial class SummaryPage : Page
         if (o is null) return;
 
         PathText.Text = o.InstallPath;
-        PawnIOText.Text = o.InstallPawnIO ? "• Install the PawnIO driver" : "• Skip PawnIO driver";
-        LaunchText.Text = o.LaunchAtLogon ? "• Launch WinState at logon" : "• Don't launch at logon";
-        ShortcutText.Text = o.CreateStartMenuShortcut ? "• Add a Start Menu shortcut" : "• No Start Menu shortcut";
+        PawnIOText.Text = o.InstallPawnIO ? L.Instance.SummaryPawnIOOn : L.Instance.SummaryPawnIOOff;
+        LaunchText.Text = o.LaunchAtLogon ? L.Instance.SummaryLaunchOn : L.Instance.SummaryLaunchOff;
+        ShortcutText.Text = o.CreateStartMenuShortcut ? L.Instance.SummaryShortcutOn : L.Instance.SummaryShortcutOff;
 
         // Tone down the skipped options so the active ones read as the highlights.
         PawnIOText.Opacity = o.InstallPawnIO ? 1.0 : 0.5;

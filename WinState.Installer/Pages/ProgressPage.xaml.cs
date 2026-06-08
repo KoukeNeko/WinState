@@ -24,9 +24,13 @@ public sealed partial class ProgressPage : Page
         InitializeComponent();
 
         // The heading / status are managed in code (not x:Bind), so re-render them on a language
-        // switch. Unsubscribe when the page leaves the visual tree.
+        // switch. Unsubscribe + dispose the CTS when the page leaves the visual tree.
         L.Instance.PropertyChanged += OnLanguageChanged;
-        Unloaded += (_, _) => L.Instance.PropertyChanged -= OnLanguageChanged;
+        Unloaded += (_, _) =>
+        {
+            L.Instance.PropertyChanged -= OnLanguageChanged;
+            _cts.Dispose();
+        };
     }
 
     private void OnLanguageChanged(object? sender, PropertyChangedEventArgs e) => RefreshTexts();

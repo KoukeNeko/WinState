@@ -108,7 +108,7 @@ CI builds **self-contained, single-file** executables for every push — no .NET
 4. **PawnIO driver:** the installer offers a one-click WinGet install (`winget install -e --id namazso.PawnIO`); alternatively grab it from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
 
 > Artifacts need a GitHub login and expire after 90 days — building from source is the most reliable route.
-
+>
 > **Why PawnIO?** Microsoft's [vulnerable-driver blocklist](https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules) now includes WinRing0, which is what stock LibreHardwareMonitor uses to read CPU MSRs. WinState ships namazso's [PawnIO fork](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed) instead — same API, signed driver, no Defender warning.
 
 ### 🔨 Build from source
@@ -208,7 +208,7 @@ CI 每次 push 都會建置 **self-contained 單檔** 執行檔，目標機器�
 4. **PawnIO 驅動：** 安裝精靈提供一鍵 WinGet 安裝（`winget install -e --id namazso.PawnIO`）；也可到 [pawnio.eu](https://pawnio.eu/) 下載。沒裝的話 GPU / RAM / 磁碟 / 網路一切照常，只是 CPU 溫度、電壓、Package Power 與主機板感測器會空白。
 
 > Artifact 需登入 GitHub 才能下載、且 90 天後過期 — 從原始碼建置最穩。
-
+>
 > **為何用 PawnIO？** 微軟的 [vulnerable driver blocklist](https://learn.microsoft.com/en-us/windows/security/threat-protection/windows-defender-application-control/microsoft-recommended-driver-block-rules) 已收錄 WinRing0，而那正是原版 LibreHardwareMonitor 讀 CPU MSR 用的驅動。WinState 改用 namazso 的 [PawnIO fork](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed) — 介面相同、簽章驅動、不會被 Defender 提示。
 
 ### 🔨 從原始碼建置

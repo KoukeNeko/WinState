@@ -15,13 +15,7 @@ public sealed partial class OptionsPage : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        // The wizard frame inherits MainWindow as the visual parent; reach back through it for
-        // shared state instead of standing up a service container for one DTO.
-        if (App.Current is App && Microsoft.UI.Xaml.Window.Current is null)
-        {
-            // Walk visual ancestors to find the MainWindow. WinUI 3 windows are not in the visual
-            // tree, so look up by App.Current's window instead.
-        }
+        // Pull the shared options DTO off the App singleton.
         _options ??= (App.Current as App)?.GetOptions();
         if (_options != null)
         {

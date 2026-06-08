@@ -35,6 +35,8 @@ public sealed class InstallerLogic
                 "payload/WinState.exe could not be found next to the installer. " +
                 "Make sure WinState is published into the installer's payload/ folder before building the installer.");
 
+        ValidateInstallPath(options.InstallPath);
+
         Directory.CreateDirectory(options.InstallPath);
         var targetExe = Path.Combine(options.InstallPath, "WinState.exe");
 
@@ -113,6 +115,32 @@ public sealed class InstallerLogic
             SafeRun($"{L.Instance.LogRemoving} {installPath}", () => DeleteInstallDirectory(installPath));
             if (Directory.Exists(installPath))
                 SafeRun(L.Instance.LogSchedulingCleanup, () => ScheduleSelfDelete(installPath));
+        }
+    }
+
+    // The installer runs elevated and the uninstall later deletes the install dir wholesale, so a
+    // path pointing at a system / root location would be catastrophic. Require a rooted absolute
+    // path that is NOT a protected system directory (and not a parent of one).
+    private static void ValidateInstallPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
+            throw new ArgumentException("Install location must be a full, absolute path.");
+
+        string full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
+
+        string windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd(Path.DirectorySeparatorChar);
+        string sys32 = Environment.GetFolderPath(Environment.SpecialFolder.System).TrimEnd(Path.DirectorySeparatorChar);
+        string root = Path.GetPathRoot(full)?.TrimEnd(Path.DirectorySeparatorChar) ?? "";
+
+        bool Equals(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+        if (Equals(full, root) || Equals(full, windows) || Equals(full, sys32)
+            || Equals(full, Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).TrimEnd(Path.DirectorySeparatorChar))
+            || Equals(full, Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).TrimEnd(Path.DirectorySeparatorChar)))
+        {
+            throw new ArgumentException(
+                $"Refusing to install directly into a system or root location ({full}). " +
+                "Choose a dedicated subfolder, e.g. C:\\Program Files\\WinState.");
         }
     }
 
@@ -214,7 +242,8 @@ public sealed class InstallerLogic
 
         var path = GetShortcutPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        dynamic shortcut = shell.CreateShortcut(path);
+        dynamic? shortcut = shell.CreateShortcut(path);
+        if (shortcut is null) return;
         shortcut.TargetPath = targetExe;
         shortcut.WorkingDirectory = Path.GetDirectoryName(targetExe);
         shortcut.IconLocation = targetExe + ",0";

@@ -62,6 +62,8 @@
   <data name="Settings_Appearance" xml:space="preserve"><value>Appearance</value></data>
   <data name="Settings_Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="Settings_ThemeCaption" xml:space="preserve"><value>Choose the app's light or dark look.</value></data>
+  <data name="Settings_ThemeLight" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_ThemeDark" xml:space="preserve"><value>Dark</value></data>
   <data name="Settings_Language" xml:space="preserve"><value>Language</value></data>
   <data name="Settings_LanguageCaption" xml:space="preserve"><value>Choose the display language.</value></data>
   <data name="Settings_LanguageAuto" xml:space="preserve"><value>Auto (system)</value></data>
@@ -74,6 +76,10 @@
   <data name="Settings_HardwareDriverDesc" xml:space="preserve"><value>WinState reads CPU temperature, voltage, package power and motherboard sensors through PawnIO (a signed ring-0 driver that replaces WinRing0, which Microsoft added to its vulnerable-driver blocklist). Without it those values stay blank; GPU / RAM / disk / network / CPU usage are unaffected.</value></data>
   <data name="Settings_InstallViaWinGet" xml:space="preserve"><value>Install via WinGet</value></data>
   <data name="Settings_RecheckDriver" xml:space="preserve"><value>Re-check driver status</value></data>
+  <data name="Settings_DriverRunning" xml:space="preserve"><value>Installed and running</value></data>
+  <data name="Settings_DriverStopped" xml:space="preserve"><value>Installed but stopped — restart the machine to start the driver.</value></data>
+  <data name="Settings_DriverNotInstalled" xml:space="preserve"><value>Not installed — CPU temperature / voltage / power and motherboard sensors will be empty until you install it.</value></data>
+  <data name="Settings_DriverUnknown" xml:space="preserve"><value>Driver state unknown.</value></data>
 
   <data name="Settings_TrayIcons" xml:space="preserve"><value>Tray icons</value></data>
   <data name="Settings_TrayIconsDesc" xml:space="preserve"><value>Check which icons to show and reorder them; percentage icons let you set color thresholds (yellow / orange / red).</value></data>

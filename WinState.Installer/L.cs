@@ -82,6 +82,12 @@ public sealed class L : INotifyPropertyChanged
     public string SummaryBody => T(
         "Review your choices, then click Install to begin. Nothing is written to disk until then.",
         "確認你的選擇後按「安裝」開始。在此之前不會寫入任何檔案。");
+    public string SummaryPawnIOOn => T("• Install the PawnIO driver", "• 安裝 PawnIO 驅動");
+    public string SummaryPawnIOOff => T("• Skip PawnIO driver", "• 略過 PawnIO 驅動");
+    public string SummaryLaunchOn => T("• Launch WinState at logon", "• 登入時啟動 WinState");
+    public string SummaryLaunchOff => T("• Don't launch at logon", "• 不在登入時啟動");
+    public string SummaryShortcutOn => T("• Add a Start Menu shortcut", "• 新增開始功能表捷徑");
+    public string SummaryShortcutOff => T("• No Start Menu shortcut", "• 不建立開始功能表捷徑");
 
     // Progress page
     public string ProgressInstalling => T("Installing", "安裝中");

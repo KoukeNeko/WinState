@@ -105,13 +105,13 @@ namespace WinState.ViewModels.Pages
 
         private void RefreshPawnIODriverState()
         {
-            PawnIODriverStatusText = PawnIODriverService.GetState() switch
+            PawnIODriverStatusText = LocalizationService.Instance.Get(PawnIODriverService.GetState() switch
             {
-                PawnIODriverState.Running => "Installed and running",
-                PawnIODriverState.Stopped => "Installed but stopped — restart the machine to start the driver.",
-                PawnIODriverState.NotInstalled => "Not installed — CPU temperature / voltage / power and motherboard sensors will be empty until you install it.",
-                _ => "Driver state unknown."
-            };
+                PawnIODriverState.Running => "Settings_DriverRunning",
+                PawnIODriverState.Stopped => "Settings_DriverStopped",
+                PawnIODriverState.NotInstalled => "Settings_DriverNotInstalled",
+                _ => "Settings_DriverUnknown"
+            });
         }
 
         [RelayCommand]
@@ -169,6 +169,9 @@ namespace WinState.ViewModels.Pages
             // The "Auto" label is itself localized, so refresh it after a switch.
             var autoItem = Languages.FirstOrDefault(l => l.Code == "Auto");
             if (autoItem != null) autoItem.Display = LocalizationService.Instance.Get("Settings_LanguageAuto");
+
+            // The driver status string is localized too, so re-derive it in the new language.
+            RefreshPawnIODriverState();
         }
 
         private void LoadProcessListSettings()
