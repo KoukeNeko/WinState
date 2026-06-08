@@ -38,7 +38,7 @@ public sealed class InstallerLogic
         Directory.CreateDirectory(options.InstallPath);
         var targetExe = Path.Combine(options.InstallPath, "WinState.exe");
 
-        _log($"Copying {Path.GetFileName(sourceExe)} → {targetExe}");
+        _log($"{L.Instance.LogCopying} {Path.GetFileName(sourceExe)} → {targetExe}");
         File.Copy(sourceExe, targetExe, overwrite: true);
         ct.ThrowIfCancellationRequested();
 
@@ -49,32 +49,32 @@ public sealed class InstallerLogic
         var installerTarget = Path.Combine(options.InstallPath, "WinState.Installer.exe");
         if (!string.IsNullOrEmpty(installerSource) && File.Exists(installerSource))
         {
-            _log($"Copying uninstaller → {installerTarget}");
+            _log($"{L.Instance.LogCopyingUninstaller} {installerTarget}");
             File.Copy(installerSource, installerTarget, overwrite: true);
         }
         ct.ThrowIfCancellationRequested();
 
         if (options.CreateStartMenuShortcut)
         {
-            _log("Creating Start Menu shortcut");
+            _log(L.Instance.LogCreatingShortcut);
             CreateStartMenuShortcut(targetExe);
         }
         ct.ThrowIfCancellationRequested();
 
         if (options.LaunchAtLogon)
         {
-            _log("Registering logon Scheduled Task");
+            _log(L.Instance.LogRegisteringTask);
             RegisterScheduledTask(targetExe);
         }
         ct.ThrowIfCancellationRequested();
 
-        _log("Registering uninstaller under Apps & features");
+        _log(L.Instance.LogRegisteringUninstaller);
         WriteUninstallRegistry(options.InstallPath, installerTarget);
         ct.ThrowIfCancellationRequested();
 
         if (options.InstallPawnIO)
         {
-            _log("Installing PawnIO via winget (this can take a minute)…");
+            _log(L.Instance.LogInstallingPawnIO);
             await InstallPawnIOAsync(ct);
         }
     }
@@ -84,23 +84,23 @@ public sealed class InstallerLogic
     public async Task UninstallAsync(InstallOptions options, CancellationToken ct)
     {
         // Best-effort: continue on each step so a missing artifact doesn't strand the user.
-        SafeRun("Removing logon Scheduled Task", () => UnregisterScheduledTask());
-        SafeRun("Removing Start Menu shortcut", () => RemoveStartMenuShortcut());
-        SafeRun("Removing uninstall registry entry", () => RemoveUninstallRegistry());
+        SafeRun(L.Instance.LogRemovingTask, () => UnregisterScheduledTask());
+        SafeRun(L.Instance.LogRemovingShortcut, () => RemoveStartMenuShortcut());
+        SafeRun(L.Instance.LogRemovingRegistry, () => RemoveUninstallRegistry());
 
         if (options.RemoveUserSettings)
-            SafeRun("Removing saved settings", () => RemoveUserSettings());
+            SafeRun(L.Instance.LogRemovingSettings, () => RemoveUserSettings());
         else
-            _log("(Keeping saved settings under %AppData%\\WinState.)");
+            _log(L.Instance.LogKeepingSettings);
 
         if (options.RemovePawnIO)
         {
-            _log("Uninstalling PawnIO via winget (this can take a minute)…");
+            _log(L.Instance.LogUninstallingPawnIO);
             await UninstallPawnIOAsync(ct);
         }
         else
         {
-            _log("(PawnIO driver left installed — other apps may rely on it.)");
+            _log(L.Instance.LogPawnIOLeft);
         }
 
         // Delete the program files LAST. Our own running exe (WinState.Installer.exe) lives
@@ -110,9 +110,9 @@ public sealed class InstallerLogic
         string? installPath = ReadInstallPathFromRegistry() ?? DeriveInstallPathFromSelf();
         if (!string.IsNullOrEmpty(installPath) && Directory.Exists(installPath))
         {
-            SafeRun($"Removing {installPath}", () => DeleteInstallDirectory(installPath));
+            SafeRun($"{L.Instance.LogRemoving} {installPath}", () => DeleteInstallDirectory(installPath));
             if (Directory.Exists(installPath))
-                SafeRun("Scheduling cleanup of remaining files", () => ScheduleSelfDelete(installPath));
+                SafeRun(L.Instance.LogSchedulingCleanup, () => ScheduleSelfDelete(installPath));
         }
     }
 
@@ -417,9 +417,9 @@ $@"<?xml version=""1.0"" encoding=""UTF-16""?>
             }
             await p.WaitForExitAsync(ct);
             if (p.ExitCode == 0)
-                _log("  PawnIO installed.");
+                _log($"  {L.Instance.LogPawnIOInstalled}");
             else if (p.ExitCode == 3010)
-                _log("  PawnIO installed (reboot recommended before CPU sensors fully populate).");
+                _log($"  {L.Instance.LogPawnIOInstalledReboot}");
             else
                 _log($"  winget exited with code {p.ExitCode} — open pawnio.eu manually if CPU sensors stay blank.");
         }

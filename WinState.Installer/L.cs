@@ -117,5 +117,25 @@ public sealed class L : INotifyPropertyChanged
         "⚠ Not recommended. Other hardware-monitoring apps (e.g. FanControl, HWiNFO with PawnIO) may share this driver. Only remove it if WinState is the only app that uses it.",
         "⚠ 不建議。其他硬體監控程式（例如 FanControl、搭配 PawnIO 的 HWiNFO）可能共用此驅動。僅在 WinState 是唯一使用者時才移除。");
 
+    // Progress log lines. The interpolated parts (paths, file names) are appended by the caller.
+    public string LogCopying => T("Copying", "正在複製");
+    public string LogCopyingUninstaller => T("Copying uninstaller →", "正在複製解除安裝程式 →");
+    public string LogCreatingShortcut => T("Creating Start Menu shortcut", "正在建立開始功能表捷徑");
+    public string LogRegisteringTask => T("Registering logon Scheduled Task", "正在註冊登入排程工作");
+    public string LogRegisteringUninstaller => T("Registering uninstaller under Apps & features", "正在註冊解除安裝項目（應用程式與功能）");
+    public string LogInstallingPawnIO => T("Installing PawnIO via winget (this can take a minute)…", "正在透過 winget 安裝 PawnIO（可能需要一分鐘）…");
+    public string LogPawnIOInstalled => T("PawnIO installed.", "PawnIO 已安裝。");
+    public string LogPawnIOInstalledReboot => T("PawnIO installed (reboot recommended before CPU sensors fully populate).", "PawnIO 已安裝（建議重新開機，CPU 感測器才會完整顯示）。");
+    public string LogRemovingTask => T("Removing logon Scheduled Task", "正在移除登入排程工作");
+    public string LogRemovingShortcut => T("Removing Start Menu shortcut", "正在移除開始功能表捷徑");
+    public string LogRemovingRegistry => T("Removing uninstall registry entry", "正在移除解除安裝登錄項目");
+    public string LogRemovingSettings => T("Removing saved settings", "正在移除已儲存的設定");
+    public string LogKeepingSettings => T("(Keeping saved settings under %AppData%\\WinState.)", "（保留 %AppData%\\WinState 下的設定。）");
+    public string LogUninstallingPawnIO => T("Uninstalling PawnIO via winget (this can take a minute)…", "正在透過 winget 解除安裝 PawnIO（可能需要一分鐘）…");
+    public string LogPawnIOLeft => T("(PawnIO driver left installed — other apps may rely on it.)", "（已保留 PawnIO 驅動，其他程式可能仍需要它。）");
+    public string LogPawnIORemoved => T("PawnIO removed.", "PawnIO 已移除。");
+    public string LogRemoving => T("Removing", "正在移除");
+    public string LogSchedulingCleanup => T("Scheduling cleanup of remaining files", "正在排程清理剩餘檔案");
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }
