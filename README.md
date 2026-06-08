@@ -52,6 +52,8 @@ CPU · GPU · RAM · Disk · Network · Power — at a glance, with rich frosted
 
 WinState packs six live metrics into your Windows notification area. Each tray icon shows a number at a glance; click one and a Windows 11–style **acrylic flyout** opens with detailed graphs, sensors and the top processes for that category. Built on .NET 10 + WPF (WPF-UI / Fluent), with hardware data from LibreHardwareMonitor.
 
+> 🌐 **Bilingual** — English and Traditional Chinese (繁體中文), switchable live in settings (Auto follows your Windows display language). The guided installer is localized too.
+
 > ⚙️ **Runs as administrator** — hardware sensors, SMART data and per-process ETW tracing all require elevation.
 
 ### ✨ Features
@@ -82,7 +84,7 @@ Icons are text-rendered and re-rasterized for the **taskbar monitor's DPI**, so 
 
 | Group | What you can change |
 |-------|---------------------|
-| **Appearance** | Light / Dark theme |
+| **Appearance** | Light / Dark theme, and display language (English / 繁體中文 / Auto — applies live) |
 | **General** | Launch WinState automatically at logon (registers a Scheduled Task that runs elevated) |
 | **Hardware driver** | One-click install of the PawnIO driver via WinGet, or a link to pawnio.eu, plus a live status indicator |
 | **Tray icons** | Which icons show, their order, and per-icon warning thresholds |
@@ -148,7 +150,9 @@ Built with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreH
 
 ## 繁體中文
 
-WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看到數字；點下去就會彈出 Windows 11 風格的**壓克力霜玻璃視窗**，顯示該類別的詳細圖表、感測器與佔用最高的程序。以 .NET 10 + WPF（WPF-UI / Fluent）打造，硬體資料來自 LibreHardwareMonitor。
+WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看到數字；點下去就會彈出 Windows 11 風格的**壓克力霜玻璃視窗**，顯示該類別的詳細圖表、感測器與佔用最高的行程。以 .NET 10 + WPF（WPF-UI / Fluent）打造，硬體資料來自 LibreHardwareMonitor。
+
+> 🌐 **雙語** — 英文與繁體中文，可在設定中即時切換（「自動」會跟隨 Windows 顯示語言）。安裝程式也已在地化。
 
 > ⚙️ **以系統管理員執行** — 硬體感測、SMART 資料、以及 per-process 的 ETW 追蹤都需要提權。
 
@@ -169,10 +173,10 @@ WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看�
 
 #### 詳細彈出視窗（霜玻璃）
 
-- **CPU** — 整體＋每核心使用率歷史、時脈／溫度／電壓／封裝功耗、處理程序／執行緒／控制代碼數、開機時長，以及 CPU 佔用最高的程序。
-- **記憶體** — 使用率歷史＋認可壓力、完整明細（使用中、壓縮、快取、已認可、認可上限…），以及記憶體佔用最高的程序。
-- **網路** — 上傳/下載與歷史圖、公網與內網 IP、MAC、介面卡資訊，以及流量最高的程序。「主要介面」是**持有預設路由**的那張網卡，所以忙碌的 VPN 或虛擬交換器不會搶走判讀。
-- **磁碟** — 各磁區容量、**SMART**（溫度、健康度、總讀寫量）、各碟讀寫圖，以及磁碟佔用最高的程序。
+- **CPU** — 整體＋每核心使用率歷史、時脈／溫度／電壓／封裝功耗、行程／執行緒／控制代碼數、開機時長，以及 CPU 佔用最高的行程。
+- **記憶體** — 使用率歷史＋認可壓力、完整明細（使用中、壓縮、快取、已認可、認可上限…），以及記憶體佔用最高的行程。
+- **網路** — 上傳/下載與歷史圖、公網與內網 IP、MAC、介面卡資訊，以及流量最高的行程。「主要介面」是**持有預設路由**的那張網卡，所以忙碌的 VPN 或虛擬交換器不會搶走判讀。
+- **磁碟** — 各磁區容量、**SMART**（溫度、健康度、總讀寫量）、各碟讀寫圖，以及磁碟佔用最高的行程。
 - **GPU** — 使用率、VRAM、溫度與時脈（支援多 GPU）。
 - **感測器** — 依裝置分組顯示所有詳細硬體感測器。
 
@@ -180,11 +184,11 @@ WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看�
 
 | 群組 | 可調整 |
 |------|--------|
-| **外觀** | 亮色 / 暗色主題 |
+| **外觀** | 亮色 / 暗色主題，以及顯示語言（English / 繁體中文 / 自動 — 即時套用） |
 | **一般** | 登入 Windows 時自動啟動（背後是一個以系統管理員執行的 Scheduled Task） |
 | **硬體驅動程式** | 一鍵透過 WinGet 安裝 PawnIO 驅動，或開官網連結，並即時顯示驅動狀態 |
 | **系統匣圖示** | 顯示哪些圖示、排序、各圖示變色門檻 |
-| **程序清單** | 每個彈出視窗列出的程序數量（1–50） |
+| **行程清單** | 每個彈出視窗列出的行程數量（1–50） |
 | **更新頻率** | 各類別輪詢間隔，毫秒（250–10000） |
 
 #### 省資源設計
@@ -198,10 +202,10 @@ CI 每次 push 都會建置 **self-contained 單檔** 執行檔，目標機器�
 
 1. 開 [**Actions → build**](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml) 頁，選最新一次綠燈的執行。
 2. 依你的 CPU 下載 artifact：
-   - `WinState-win-x64` — Intel / AMD 64 位元
-   - `WinState-win-arm64` — ARM64
-3. 解壓後執行 `WinState.exe`（同意 UAC 提權）。
-4. **第一次啟動：** 若尚未安裝 **PawnIO 驅動程式**，WinState 會在設定頁的「硬體驅動程式」區塊提示安裝 — 按 *Install via WinGet*（`winget install -e --id namazso.PawnIO`）或到 [pawnio.eu](https://pawnio.eu/) 下載。沒裝的話 GPU / RAM / 磁碟 / 網路一切照常，只是 CPU 溫度、電壓、Package Power 與主機板感測器會空白。
+   - `WinState-Setup-win-x64` / `WinState-Setup-win-arm64` — 引導式安裝程式（建議；artifact zip 內就只有一個 `WinState-Setup-<rid>.exe`）。
+   - `WinState-win-x64` / `WinState-win-arm64` — 裸 WinState.exe，不含安裝精靈。
+3. 解壓後執行裡面的 `.exe`（同意 UAC 提權）。安裝精靈左下角可切換語言，選項頁可勾選 PawnIO 安裝與開機自動啟動。
+4. **PawnIO 驅動：** 安裝精靈提供一鍵 WinGet 安裝（`winget install -e --id namazso.PawnIO`）；也可到 [pawnio.eu](https://pawnio.eu/) 下載。沒裝的話 GPU / RAM / 磁碟 / 網路一切照常，只是 CPU 溫度、電壓、Package Power 與主機板感測器會空白。
 
 > Artifact 需登入 GitHub 才能下載、且 90 天後過期 — 從原始碼建置最穩。
 
