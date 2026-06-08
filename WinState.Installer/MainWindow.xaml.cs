@@ -108,7 +108,12 @@ public sealed partial class MainWindow : Window
 
     private void UpdateButtons()
     {
-        BackButton.IsEnabled = _currentIndex > 0 && _currentIndex < PageOrder.Length - 1;
+        // Back is unavailable on the very first page, the Progress page (an install/uninstall is
+        // running — you can't go back) and the Finished page.
+        var currentPage = PageOrder[_currentIndex];
+        BackButton.IsEnabled = _currentIndex > 0
+            && currentPage != typeof(ProgressPage)
+            && currentPage != typeof(FinishedPage);
         // Last page → Close; the page right before Progress is the commit point → Install/Uninstall;
         // everything else → Next.
         bool isCommitStep = _currentIndex + 1 < PageOrder.Length && PageOrder[_currentIndex + 1] == typeof(ProgressPage);
