@@ -43,13 +43,13 @@
 
             <Button x:Name="CancelButton"
                     Grid.Column="1"
-                    Content="{x:Bind loc:L.Cancel}"
+                    Content="{x:Bind loc:L.Instance.Cancel, Mode=OneWay}"
                     Click="CancelButton_Click"
                     MinWidth="100"/>
 
             <Button x:Name="BackButton"
                     Grid.Column="2"
-                    Content="{x:Bind loc:L.Back}"
+                    Content="{x:Bind loc:L.Instance.Back, Mode=OneWay}"
                     Click="BackButton_Click"
                     IsEnabled="False"
                     MinWidth="100"/>

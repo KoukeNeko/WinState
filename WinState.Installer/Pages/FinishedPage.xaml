@@ -15,19 +15,19 @@
 
         <TextBlock x:Name="HeadingText"
                    Grid.Row="0"
-                   Text="{x:Bind loc:L.FinishedTitle}"
+                   Text="{x:Bind loc:L.Instance.FinishedTitle, Mode=OneWay}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock x:Name="BodyText"
                    Grid.Row="1"
-                   Text="{x:Bind loc:L.FinishedBody}"
+                   Text="{x:Bind loc:L.Instance.FinishedBody, Mode=OneWay}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <CheckBox Grid.Row="2"
                   x:Name="LaunchNowCheckbox"
-                  Content="{x:Bind loc:L.FinishedLaunchNow}"
+                  Content="{x:Bind loc:L.Instance.FinishedLaunchNow, Mode=OneWay}"
                   IsChecked="True"/>
     </Grid>
 </Page>

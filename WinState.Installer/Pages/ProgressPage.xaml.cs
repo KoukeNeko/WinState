@@ -26,12 +26,12 @@ public sealed partial class ProgressPage : Page
         if (app is null) return;
         var options = app.GetOptions();
 
-        HeadingText.Text = app.IsUninstallMode ? L.ProgressUninstalling : L.ProgressInstalling;
+        HeadingText.Text = app.IsUninstallMode ? L.Instance.ProgressUninstalling : L.Instance.ProgressInstalling;
 
         var logic = new InstallerLogic(line => Report(line));
         try
         {
-            CurrentStepText.Text = app.IsUninstallMode ? L.ProgressUninstallingEllipsis : L.ProgressInstallingEllipsis;
+            CurrentStepText.Text = app.IsUninstallMode ? L.Instance.ProgressUninstallingEllipsis : L.Instance.ProgressInstallingEllipsis;
             if (app.IsUninstallMode)
                 await Task.Run(() => logic.UninstallAsync(options, _cts.Token));
             else
@@ -39,7 +39,7 @@ public sealed partial class ProgressPage : Page
 
             ProgressBar.IsIndeterminate = false;
             ProgressBar.Value = 100;
-            CurrentStepText.Text = app.IsUninstallMode ? L.ProgressUninstallComplete : L.ProgressInstallComplete;
+            CurrentStepText.Text = app.IsUninstallMode ? L.Instance.ProgressUninstallComplete : L.Instance.ProgressInstallComplete;
 
             // Don't auto-jump. Re-enable Next so the user can read the log and proceed to the
             // Finished page when they're ready.
@@ -47,13 +47,13 @@ public sealed partial class ProgressPage : Page
         }
         catch (OperationCanceledException)
         {
-            CurrentStepText.Text = L.ProgressCancelled;
+            CurrentStepText.Text = L.Instance.ProgressCancelled;
         }
         catch (Exception ex)
         {
             ProgressBar.IsIndeterminate = false;
             ProgressBar.ShowError = true;
-            CurrentStepText.Text = L.ProgressFailed;
+            CurrentStepText.Text = L.Instance.ProgressFailed;
             Report($"ERROR: {ex.Message}");
             // Leave Next disabled on failure — there is no successful state to advance to.
         }

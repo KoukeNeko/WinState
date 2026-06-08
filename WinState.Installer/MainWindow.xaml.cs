@@ -42,14 +42,23 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
-        // Reflect uninstall mode in the window title + the custom title-bar text.
-        bool uninstall = (App.Current as App)?.IsUninstallMode == true;
-        Title = uninstall ? L.UninstallerTitle : L.SetupTitle;
-        TitleBarText.Text = Title;
+        RefreshChrome();
+
+        // Title and buttons are set in code (not x:Bind), so refresh them when the user switches
+        // language on the Welcome page.
+        L.Instance.PropertyChanged += (_, _) => RefreshChrome();
 
         ConfigureWindow();
 
         NavigationFrame.Navigate(PageOrder[0]);
+        UpdateButtons();
+    }
+
+    private void RefreshChrome()
+    {
+        bool uninstall = (App.Current as App)?.IsUninstallMode == true;
+        Title = uninstall ? L.Instance.UninstallerTitle : L.Instance.SetupTitle;
+        TitleBarText.Text = Title;
         UpdateButtons();
     }
 
@@ -92,10 +101,10 @@ public sealed partial class MainWindow : Window
         // everything else → Next.
         bool isCommitStep = _currentIndex + 1 < PageOrder.Length && PageOrder[_currentIndex + 1] == typeof(ProgressPage);
         NextButton.Content = _currentIndex == PageOrder.Length - 1
-            ? L.Close
+            ? L.Instance.Close
             : isCommitStep
-                ? ((App.Current as App)?.IsUninstallMode == true ? L.Uninstall : L.Install)
-                : L.Next;
+                ? ((App.Current as App)?.IsUninstallMode == true ? L.Instance.Uninstall : L.Instance.Install)
+                : L.Instance.Next;
         // Disable Cancel once the Progress page is running so the user can't half-cancel a
         // file copy or registry write.
         CancelButton.Visibility = PageOrder[_currentIndex] == typeof(ProgressPage) || PageOrder[_currentIndex] == typeof(FinishedPage)

@@ -12,24 +12,42 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="{x:Bind loc:L.WelcomeTitle}"
-                   FontSize="28"
-                   FontWeight="SemiBold"/>
+        <!-- Title + language picker on the same row -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="{x:Bind loc:L.Instance.WelcomeTitle, Mode=OneWay}"
+                       FontSize="28"
+                       FontWeight="SemiBold"/>
+
+            <ComboBox x:Name="LanguageCombo"
+                      Grid.Column="1"
+                      VerticalAlignment="Center"
+                      MinWidth="140"
+                      SelectionChanged="LanguageCombo_SelectionChanged">
+                <ComboBoxItem Content="English" Tag="en"/>
+                <ComboBoxItem Content="繁體中文" Tag="zh"/>
+            </ComboBox>
+        </Grid>
 
         <TextBlock Grid.Row="1"
-                   Text="{x:Bind loc:L.WelcomeBody}"
+                   Text="{x:Bind loc:L.Instance.WelcomeBody, Mode=OneWay}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <StackPanel Grid.Row="2"
                     Spacing="8"
                     Margin="0,16,0,0">
-            <TextBlock Text="{x:Bind loc:L.WelcomeWhatItDoes}" FontWeight="SemiBold"/>
-            <TextBlock Text="{x:Bind loc:L.WelcomeBullet1}" TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="{x:Bind loc:L.WelcomeBullet2}" TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="{x:Bind loc:L.WelcomeBullet3}" TextWrapping="Wrap" Opacity="0.8"/>
-            <TextBlock Text="{x:Bind loc:L.WelcomeBullet4}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeWhatItDoes, Mode=OneWay}" FontWeight="SemiBold"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet1, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet2, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet3, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
+            <TextBlock Text="{x:Bind loc:L.Instance.WelcomeBullet4, Mode=OneWay}" TextWrapping="Wrap" Opacity="0.8"/>
         </StackPanel>
     </Grid>
 </Page>

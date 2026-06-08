@@ -13,23 +13,23 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="{x:Bind loc:L.SummaryTitle}"
+                   Text="{x:Bind loc:L.Instance.SummaryTitle, Mode=OneWay}"
                    FontSize="24"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
-                   Text="{x:Bind loc:L.SummaryBody}"
+                   Text="{x:Bind loc:L.Instance.SummaryBody, Mode=OneWay}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <StackPanel Grid.Row="2" Spacing="14" Margin="0,8,0,0">
             <StackPanel Spacing="2">
-                <TextBlock Text="{x:Bind loc:L.OptionsInstallLocation}" FontWeight="SemiBold" Opacity="0.7" FontSize="13"/>
+                <TextBlock Text="{x:Bind loc:L.Instance.OptionsInstallLocation, Mode=OneWay}" FontWeight="SemiBold" Opacity="0.7" FontSize="13"/>
                 <TextBlock x:Name="PathText" TextWrapping="Wrap"/>
             </StackPanel>
 
             <StackPanel Spacing="2">
-                <TextBlock Text="{x:Bind loc:L.OptionsOptionalTasks}" FontWeight="SemiBold" Opacity="0.7" FontSize="13"/>
+                <TextBlock Text="{x:Bind loc:L.Instance.OptionsOptionalTasks, Mode=OneWay}" FontWeight="SemiBold" Opacity="0.7" FontSize="13"/>
                 <TextBlock x:Name="PawnIOText"/>
                 <TextBlock x:Name="LaunchText"/>
                 <TextBlock x:Name="ShortcutText"/>

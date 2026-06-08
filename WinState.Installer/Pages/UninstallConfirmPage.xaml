@@ -13,28 +13,28 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="{x:Bind loc:L.UninstallConfirmTitle}"
+                   Text="{x:Bind loc:L.Instance.UninstallConfirmTitle, Mode=OneWay}"
                    FontSize="28"
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
-                   Text="{x:Bind loc:L.UninstallConfirmBody}"
+                   Text="{x:Bind loc:L.Instance.UninstallConfirmBody, Mode=OneWay}"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
         <StackPanel Grid.Row="2" Spacing="12" Margin="0,8,0,0">
             <CheckBox x:Name="RemoveSettingsCheckbox" IsChecked="True">
                 <StackPanel>
-                    <TextBlock Text="{x:Bind loc:L.UninstallRemoveSettings}"/>
-                    <TextBlock Text="{x:Bind loc:L.UninstallRemoveSettingsDesc}"
+                    <TextBlock Text="{x:Bind loc:L.Instance.UninstallRemoveSettings, Mode=OneWay}"/>
+                    <TextBlock Text="{x:Bind loc:L.Instance.UninstallRemoveSettingsDesc, Mode=OneWay}"
                                Opacity="0.7" TextWrapping="Wrap" FontSize="12"/>
                 </StackPanel>
             </CheckBox>
 
             <CheckBox x:Name="RemovePawnIOCheckbox" IsChecked="False">
                 <StackPanel>
-                    <TextBlock Text="{x:Bind loc:L.UninstallRemovePawnIO}"/>
-                    <TextBlock Text="{x:Bind loc:L.UninstallRemovePawnIODesc}"
+                    <TextBlock Text="{x:Bind loc:L.Instance.UninstallRemovePawnIO, Mode=OneWay}"/>
+                    <TextBlock Text="{x:Bind loc:L.Instance.UninstallRemovePawnIODesc, Mode=OneWay}"
                                Opacity="0.7" TextWrapping="Wrap" FontSize="12"
                                Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
                 </StackPanel>

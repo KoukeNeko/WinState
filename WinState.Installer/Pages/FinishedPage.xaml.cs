@@ -20,8 +20,8 @@ public sealed partial class FinishedPage : Page
         {
             LaunchNowCheckbox.IsChecked = false;
             LaunchNowCheckbox.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
-            HeadingText.Text = L.FinishedUninstalledTitle;
-            BodyText.Text = L.FinishedUninstalledBody;
+            HeadingText.Text = L.Instance.FinishedUninstalledTitle;
+            BodyText.Text = L.Instance.FinishedUninstalledBody;
         }
     }
 
