@@ -110,7 +110,7 @@ namespace WinState.ViewModels.Windows
     public partial class MainWindowViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string _applicationTitle = "WinState 設定";
+        private string _applicationTitle = WinState.Services.LocalizationService.Instance.Get("Tray_SettingsTitle");
 
         private readonly SystemInfoService _systemInfoService;
         public ObservableCollection<CoreUsageViewModel> Cores { get; private set; } = new ObservableCollection<CoreUsageViewModel>();

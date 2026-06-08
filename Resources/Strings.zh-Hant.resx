@@ -104,4 +104,54 @@
   <data name="Cat_Memory" xml:space="preserve"><value>記憶體</value></data>
   <data name="Cat_Network" xml:space="preserve"><value>網路</value></data>
   <data name="Cat_Disk" xml:space="preserve"><value>磁碟</value></data>
+
+  <data name="Tray_SettingsTitle" xml:space="preserve"><value>WinState 設定</value></data>
+
+  <data name="Pop_Network" xml:space="preserve"><value>網路</value></data>
+  <data name="Pop_Disk" xml:space="preserve"><value>磁碟</value></data>
+  <data name="Pop_Sensors" xml:space="preserve"><value>感測器</value></data>
+  <data name="Pop_Cores" xml:space="preserve"><value>核心</value></data>
+  <data name="Pop_Info" xml:space="preserve"><value>資訊</value></data>
+  <data name="Pop_Details" xml:space="preserve"><value>詳細資訊</value></data>
+  <data name="Pop_Processes" xml:space="preserve"><value>程序</value></data>
+  <data name="Pop_UsageHistory" xml:space="preserve"><value>使用歷史</value></data>
+  <data name="Pop_User" xml:space="preserve"><value>使用者</value></data>
+  <data name="Pop_System" xml:space="preserve"><value>系統</value></data>
+  <data name="Pop_Upload" xml:space="preserve"><value>上傳</value></data>
+  <data name="Pop_Download" xml:space="preserve"><value>下載</value></data>
+  <data name="Pop_Pressure" xml:space="preserve"><value>壓力</value></data>
+  <data name="Pop_Usage" xml:space="preserve"><value>使用率</value></data>
+  <data name="Pop_Processor" xml:space="preserve"><value>處理器</value></data>
+  <data name="Pop_VideoMemory" xml:space="preserve"><value>顯示記憶體</value></data>
+  <data name="Pop_Total" xml:space="preserve"><value>總計：</value></data>
+  <data name="Pop_Used" xml:space="preserve"><value>已用：</value></data>
+  <data name="Pop_App" xml:space="preserve"><value>應用程式：</value></data>
+  <data name="Pop_Wired" xml:space="preserve"><value>鎖定：</value></data>
+  <data name="Pop_PagedPool" xml:space="preserve"><value>分頁集區：</value></data>
+  <data name="Pop_Compressed" xml:space="preserve"><value>壓縮：</value></data>
+  <data name="Pop_Cache" xml:space="preserve"><value>快取：</value></data>
+  <data name="Pop_Standby" xml:space="preserve"><value>待命：</value></data>
+  <data name="Pop_Modified" xml:space="preserve"><value>已修改：</value></data>
+  <data name="Pop_Available" xml:space="preserve"><value>可用：</value></data>
+  <data name="Pop_Free" xml:space="preserve"><value>空閒：</value></data>
+  <data name="Pop_Committed" xml:space="preserve"><value>認可：</value></data>
+  <data name="Pop_CommitLimit" xml:space="preserve"><value>認可上限：</value></data>
+  <data name="Pop_PublicIp" xml:space="preserve"><value>公網 IP：</value></data>
+  <data name="Pop_LocalIp" xml:space="preserve"><value>內網 IP：</value></data>
+  <data name="Pop_Interface" xml:space="preserve"><value>介面：</value></data>
+  <data name="Pop_NetworkLabel" xml:space="preserve"><value>網路：</value></data>
+  <data name="Pop_PhysicalAddress" xml:space="preserve"><value>實體位址：</value></data>
+  <data name="Pop_Temp" xml:space="preserve"><value>溫度：</value></data>
+  <data name="Pop_Health" xml:space="preserve"><value>健康度：</value></data>
+  <data name="Pop_Hours" xml:space="preserve"><value>時數：</value></data>
+  <data name="Pop_CoreClock" xml:space="preserve"><value>核心時脈：</value></data>
+  <data name="Pop_MemoryClock" xml:space="preserve"><value>記憶體時脈：</value></data>
+  <data name="Pop_Temperature" xml:space="preserve"><value>溫度：</value></data>
+  <data name="Pop_HotSpot" xml:space="preserve"><value>熱點：</value></data>
+  <data name="Pop_PowerDraw" xml:space="preserve"><value>功耗：</value></data>
+  <data name="Pop_FanSpeed" xml:space="preserve"><value>風扇轉速：</value></data>
+  <data name="Pop_MemController" xml:space="preserve"><value>記憶體控制器：</value></data>
+  <data name="Pop_VideoEngine" xml:space="preserve"><value>視訊引擎：</value></data>
+  <data name="Pop_MemoryUsed" xml:space="preserve"><value>已用記憶體：</value></data>
+  <data name="Pop_MemoryTotal" xml:space="preserve"><value>記憶體總計：</value></data>
 </root>

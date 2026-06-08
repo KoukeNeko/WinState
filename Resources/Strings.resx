@@ -104,4 +104,54 @@
   <data name="Cat_Memory" xml:space="preserve"><value>Memory</value></data>
   <data name="Cat_Network" xml:space="preserve"><value>Network</value></data>
   <data name="Cat_Disk" xml:space="preserve"><value>Disk</value></data>
+
+  <data name="Tray_SettingsTitle" xml:space="preserve"><value>WinState Settings</value></data>
+
+  <data name="Pop_Network" xml:space="preserve"><value>NETWORK</value></data>
+  <data name="Pop_Disk" xml:space="preserve"><value>DISK</value></data>
+  <data name="Pop_Sensors" xml:space="preserve"><value>SENSORS</value></data>
+  <data name="Pop_Cores" xml:space="preserve"><value>CORES</value></data>
+  <data name="Pop_Info" xml:space="preserve"><value>INFO</value></data>
+  <data name="Pop_Details" xml:space="preserve"><value>DETAILS</value></data>
+  <data name="Pop_Processes" xml:space="preserve"><value>PROCESSES</value></data>
+  <data name="Pop_UsageHistory" xml:space="preserve"><value>USAGE HISTORY</value></data>
+  <data name="Pop_User" xml:space="preserve"><value>User</value></data>
+  <data name="Pop_System" xml:space="preserve"><value>System</value></data>
+  <data name="Pop_Upload" xml:space="preserve"><value>Upload</value></data>
+  <data name="Pop_Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Pop_Pressure" xml:space="preserve"><value>Pressure</value></data>
+  <data name="Pop_Usage" xml:space="preserve"><value>Usage</value></data>
+  <data name="Pop_Processor" xml:space="preserve"><value>Processor</value></data>
+  <data name="Pop_VideoMemory" xml:space="preserve"><value>Video Memory</value></data>
+  <data name="Pop_Total" xml:space="preserve"><value>Total:</value></data>
+  <data name="Pop_Used" xml:space="preserve"><value>Used:</value></data>
+  <data name="Pop_App" xml:space="preserve"><value>App:</value></data>
+  <data name="Pop_Wired" xml:space="preserve"><value>Wired:</value></data>
+  <data name="Pop_PagedPool" xml:space="preserve"><value>Paged Pool:</value></data>
+  <data name="Pop_Compressed" xml:space="preserve"><value>Compressed:</value></data>
+  <data name="Pop_Cache" xml:space="preserve"><value>Cache:</value></data>
+  <data name="Pop_Standby" xml:space="preserve"><value>Standby:</value></data>
+  <data name="Pop_Modified" xml:space="preserve"><value>Modified:</value></data>
+  <data name="Pop_Available" xml:space="preserve"><value>Available:</value></data>
+  <data name="Pop_Free" xml:space="preserve"><value>Free:</value></data>
+  <data name="Pop_Committed" xml:space="preserve"><value>Committed:</value></data>
+  <data name="Pop_CommitLimit" xml:space="preserve"><value>Commit Limit:</value></data>
+  <data name="Pop_PublicIp" xml:space="preserve"><value>Public IP:</value></data>
+  <data name="Pop_LocalIp" xml:space="preserve"><value>Local IP:</value></data>
+  <data name="Pop_Interface" xml:space="preserve"><value>Interface:</value></data>
+  <data name="Pop_NetworkLabel" xml:space="preserve"><value>Network:</value></data>
+  <data name="Pop_PhysicalAddress" xml:space="preserve"><value>Physical address:</value></data>
+  <data name="Pop_Temp" xml:space="preserve"><value>Temp:</value></data>
+  <data name="Pop_Health" xml:space="preserve"><value>Health:</value></data>
+  <data name="Pop_Hours" xml:space="preserve"><value>Hours:</value></data>
+  <data name="Pop_CoreClock" xml:space="preserve"><value>Core Clock:</value></data>
+  <data name="Pop_MemoryClock" xml:space="preserve"><value>Memory Clock:</value></data>
+  <data name="Pop_Temperature" xml:space="preserve"><value>Temperature:</value></data>
+  <data name="Pop_HotSpot" xml:space="preserve"><value>Hot Spot:</value></data>
+  <data name="Pop_PowerDraw" xml:space="preserve"><value>Power Draw:</value></data>
+  <data name="Pop_FanSpeed" xml:space="preserve"><value>Fan Speed:</value></data>
+  <data name="Pop_MemController" xml:space="preserve"><value>Mem Controller:</value></data>
+  <data name="Pop_VideoEngine" xml:space="preserve"><value>Video Engine:</value></data>
+  <data name="Pop_MemoryUsed" xml:space="preserve"><value>Memory Used:</value></data>
+  <data name="Pop_MemoryTotal" xml:space="preserve"><value>Memory Total:</value></data>
 </root>

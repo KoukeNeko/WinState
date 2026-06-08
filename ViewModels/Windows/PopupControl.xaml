@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:WinState.ViewModels.Windows"
+             xmlns:helpers="clr-namespace:WinState.Helpers"
              mc:Ignorable="d"
              x:Name="Root"
              Width="320">
@@ -119,17 +120,17 @@
                 <!-- Legend -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,15">
                     <Rectangle Width="10" Height="10" Fill="#3399FF" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
-                    <TextBlock Text="User" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_User}" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
 
                     <Rectangle Width="10" Height="10" Fill="#FF3333" RadiusX="2" RadiusY="2" Margin="0,0,5,0"/>
-                    <TextBlock Text="System" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_System}" Foreground="#AAAAAA" FontSize="12" Margin="0,0,15,0"/>
 
                     <TextBlock Text="{Binding CpuUsage, StringFormat={}Total: {0:0}%}" Foreground="White" FontSize="12" FontWeight="Bold" Margin="20,0,0,0"/>
                 </StackPanel>
 
                 <!-- Cores Grid -->
                 <StackPanel Grid.Row="3" Margin="0,10,0,15">
-                    <TextBlock Text="CORES" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_Cores}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                     <ItemsControl ItemsSource="{Binding Cores}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -162,7 +163,7 @@
 
                 <!-- CPU Info -->
                 <StackPanel Grid.Row="4" Margin="0,0,0,15">
-                    <TextBlock Text="INFO" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_Info}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                     <TextBlock Text="{Binding CpuName}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <UniformGrid Columns="2">
                         <TextBlock Text="{Binding CpuClock, StringFormat='Clock: {0:F0} MHz'}" Foreground="#AAAAAA" Margin="0,2"/>
@@ -181,7 +182,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_Processes}" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
 
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProcesses}">
                         <ItemsControl.ItemsPanel>
@@ -277,7 +278,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Pressure" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <TextBlock Text="{helpers:Loc Key=Pop_Pressure}" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
                         <ProgressBar Grid.Column="1" Value="{Binding RamPressure, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="{Binding RamPressureBrush}" VerticalAlignment="Center" Margin="5,0"/>
                         <TextBlock Grid.Column="2" Text="{Binding RamPressure, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                     </Grid>
@@ -289,13 +290,13 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Usage" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                        <TextBlock Text="{helpers:Loc Key=Pop_Usage}" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
                         <ProgressBar Grid.Column="1" Value="{Binding RamUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
                         <TextBlock Grid.Column="2" Text="{Binding RamUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                     </Grid>
                 </StackPanel>
 
-                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBlock Grid.Row="2" Text="{helpers:Loc Key=Pop_UsageHistory}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
                 <!-- Graph -->
                 <Border Grid.Row="3" Height="80" Background="#252525" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
@@ -337,90 +338,90 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+                        <TextBlock Grid.Row="0" Text="{helpers:Loc Key=Pop_Details}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
 
                         <!-- Total -->
-                        <TextBlock Grid.Row="1" Text="Total:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="1" Text="{helpers:Loc Key=Pop_Total}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RamTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Used -->
-                        <TextBlock Grid.Row="2" Text="Used:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="2" Text="{helpers:Loc Key=Pop_Used}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding RamUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- App -->
                         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#3399FF" Margin="0,0,5,0"/>
-                            <TextBlock Text="App:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_App}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RamAppString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Wired (Non-Paged Pool) -->
                         <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FFA500" Margin="0,0,5,0"/>
-                            <TextBlock Text="Wired:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Wired}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RamWiredString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Paged Pool -->
                         <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FF9933" Margin="0,0,5,0"/>
-                            <TextBlock Text="Paged Pool:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_PagedPool}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding RamPagedPoolString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Compressed -->
                         <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FF3333" Margin="0,0,5,0"/>
-                            <TextBlock Text="Compressed:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Compressed}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RamCompressedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Cache -->
                         <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#33CCFF" Margin="0,0,5,0"/>
-                            <TextBlock Text="Cache:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Cache}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding RamCacheString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Standby -->
                         <StackPanel Grid.Row="8" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#99CCFF" Margin="0,0,5,0"/>
-                            <TextBlock Text="Standby:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Standby}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding RamStandbyString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Modified -->
                         <StackPanel Grid.Row="9" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FF6699" Margin="0,0,5,0"/>
-                            <TextBlock Text="Modified:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Modified}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding RamModifiedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Available -->
                         <StackPanel Grid.Row="10" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#99FF99" Margin="0,0,5,0"/>
-                            <TextBlock Text="Available:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Available}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding RamAvailableString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                          <!-- Free -->
                         <StackPanel Grid.Row="11" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#CCCCCC" Margin="0,0,5,0"/>
-                            <TextBlock Text="Free:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Free}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding RamFreeString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Committed -->
                         <StackPanel Grid.Row="12" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FFCC00" Margin="0,0,5,0"/>
-                            <TextBlock Text="Committed:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Committed}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding RamCommittedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Commit Limit -->
                         <StackPanel Grid.Row="13" Orientation="Horizontal" Margin="0,2">
                             <Rectangle Width="8" Height="8" Fill="#FFE680" Margin="0,0,5,0"/>
-                            <TextBlock Text="Commit Limit:" Foreground="#888"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_CommitLimit}" Foreground="#888"/>
                         </StackPanel>
                         <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding RamCommitLimitString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
                     </Grid>
@@ -431,7 +432,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+                        <TextBlock Text="{helpers:Loc Key=Pop_Processes}" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
 
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopMemoryProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -518,7 +519,7 @@
                         <TextBlock Text="📊" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#888"/>
                     </Border>
 
-                    <TextBlock Grid.Column="1" Text="NETWORK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+                    <TextBlock Grid.Column="1" Text="{helpers:Loc Key=Pop_Network}" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
 
                     <!-- Settings Icon (Placeholder) -->
                     <Border Grid.Column="2" Width="24" Height="24" Background="Transparent" CornerRadius="4" Visibility="Collapsed">
@@ -541,7 +542,7 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Rectangle Width="10" Height="10" Fill="#FF3333" RadiusX="3" RadiusY="3" Margin="0,0,5,0"/>
-                            <TextBlock Text="Upload" Foreground="#888" FontSize="12"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Upload}" Foreground="#888" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -553,12 +554,12 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Rectangle Width="10" Height="10" Fill="#3399FF" RadiusX="3" RadiusY="3" Margin="0,0,5,0"/>
-                            <TextBlock Text="Download" Foreground="#888" FontSize="12"/>
+                            <TextBlock Text="{helpers:Loc Key=Pop_Download}" Foreground="#888" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Grid.Row="2" Text="USAGE HISTORY" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBlock Grid.Row="2" Text="{helpers:Loc Key=Pop_UsageHistory}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
 
                 <!-- Graph -->
                 <Border Grid.Row="3" Height="80" Background="#1E1E1E" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
@@ -590,7 +591,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,10"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_Details}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Margin="0,0,0,10"/>
 
                     <Grid Grid.Row="1" Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
@@ -606,23 +607,23 @@
                         </Grid.RowDefinitions>
 
                         <!-- Public IP -->
-                        <TextBlock Grid.Row="0" Text="Public IP:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="0" Text="{helpers:Loc Key=Pop_PublicIp}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PublicIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
 
                         <!-- Local IP -->
-                        <TextBlock Grid.Row="1" Text="Local IP:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="1" Text="{helpers:Loc Key=Pop_LocalIp}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LocalIpAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right" TextWrapping="Wrap"/>
 
                         <!-- Interface -->
-                        <TextBlock Grid.Row="2" Text="Interface:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="2" Text="{helpers:Loc Key=Pop_Interface}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding InterfaceDescription}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                         <!-- Network -->
-                        <TextBlock Grid.Row="3" Text="Network:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="3" Text="{helpers:Loc Key=Pop_NetworkLabel}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding NetworkName}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
 
                         <!-- Physical Address -->
-                        <TextBlock Grid.Row="4" Text="Physical address:" Foreground="#888" Margin="0,2"/>
+                        <TextBlock Grid.Row="4" Text="{helpers:Loc Key=Pop_PhysicalAddress}" Foreground="#888" Margin="0,2"/>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MacAddress}" Foreground="#DDDDDD" FontWeight="Normal" HorizontalAlignment="Right"/>
                     </Grid>
 
@@ -632,7 +633,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+                        <TextBlock Text="{helpers:Loc Key=Pop_Processes}" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
 
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopNetworkProcesses}">
                             <ItemsControl.ItemsPanel>
@@ -716,7 +717,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="DISK" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
+                    <TextBlock Grid.Column="1" Text="{helpers:Loc Key=Pop_Disk}" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0"/>
                 </Grid>
 
                 <!-- Disk List -->
@@ -761,7 +762,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </StackPanel.Style>
-                                        <TextBlock Text="Temp:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{helpers:Loc Key=Pop_Temp}" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
                                         <TextBlock Text="{Binding TemperatureString}" Foreground="White" FontSize="10"/>
                                     </StackPanel>
 
@@ -776,7 +777,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </StackPanel.Style>
-                                        <TextBlock Text="Health:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{helpers:Loc Key=Pop_Health}" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
                                         <TextBlock Text="{Binding HealthString}" Foreground="White" FontSize="10"/>
                                     </StackPanel>
 
@@ -791,7 +792,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </StackPanel.Style>
-                                        <TextBlock Text="Hours:" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
+                                        <TextBlock Text="{helpers:Loc Key=Pop_Hours}" Foreground="#888" FontSize="10" Margin="0,0,2,0"/>
                                         <TextBlock Text="{Binding PowerOnHoursString}" Foreground="White" FontSize="10"/>
                                     </StackPanel>
 
@@ -874,7 +875,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="PROCESSES" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
+                    <TextBlock Text="{helpers:Loc Key=Pop_Processes}" Style="{StaticResource HeaderStyle}" FontSize="12" Margin="0,0,0,5"/>
 
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding TopDiskProcesses}">
                         <ItemsControl.ItemsPanel>
@@ -975,7 +976,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="40"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Processor" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <TextBlock Text="{helpers:Loc Key=Pop_Processor}" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
                                         <ProgressBar Grid.Column="1" Value="{Binding Usage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#3399FF" VerticalAlignment="Center" Margin="5,0"/>
                                         <TextBlock Grid.Column="2" Text="{Binding Usage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                     </Grid>
@@ -987,7 +988,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="40"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Video Memory" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
+                                        <TextBlock Text="{helpers:Loc Key=Pop_VideoMemory}" Foreground="#AAAAAA" VerticalAlignment="Center" FontSize="12"/>
                                         <ProgressBar Grid.Column="1" Value="{Binding MemoryUsage, Mode=OneWay}" Maximum="100" Height="6" Background="#333333" Foreground="#FF3333" VerticalAlignment="Center" Margin="5,0"/>
                                         <TextBlock Grid.Column="2" Text="{Binding MemoryUsage, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                     </Grid>
@@ -1015,46 +1016,46 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="DETAILS" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
+                                    <TextBlock Text="{helpers:Loc Key=Pop_Details}" Foreground="#3399FF" FontWeight="Bold" FontSize="12" Grid.ColumnSpan="2" Margin="0,0,0,5"/>
 
                                     <!-- Core Clock -->
-                                    <TextBlock Grid.Row="1" Text="Core Clock:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="1" Text="{helpers:Loc Key=Pop_CoreClock}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Clock, StringFormat={}{0:0} MHz}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Clock -->
-                                    <TextBlock Grid.Row="2" Text="Memory Clock:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="2" Text="{helpers:Loc Key=Pop_MemoryClock}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MemoryClock, StringFormat={}{0:0} MHz}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Temperature -->
-                                    <TextBlock Grid.Row="3" Text="Temperature:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="3" Text="{helpers:Loc Key=Pop_Temperature}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Temperature, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Hot Spot -->
-                                    <TextBlock Grid.Row="4" Text="Hot Spot:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="4" Text="{helpers:Loc Key=Pop_HotSpot}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding HotSpot, StringFormat={}{0:0}°C}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Power Draw -->
-                                    <TextBlock Grid.Row="5" Text="Power Draw:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="5" Text="{helpers:Loc Key=Pop_PowerDraw}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Power, StringFormat={}{0:0.0} W}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Fan Speed -->
-                                    <TextBlock Grid.Row="6" Text="Fan Speed:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="6" Text="{helpers:Loc Key=Pop_FanSpeed}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FanRpm, StringFormat={}{0:0} RPM}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Controller -->
-                                    <TextBlock Grid.Row="7" Text="Mem Controller:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="7" Text="{helpers:Loc Key=Pop_MemController}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding MemoryControllerLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Video Engine -->
-                                    <TextBlock Grid.Row="8" Text="Video Engine:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="8" Text="{helpers:Loc Key=Pop_VideoEngine}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding VideoEngineLoad, StringFormat={}{0:0}%}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Used -->
-                                    <TextBlock Grid.Row="9" Text="Memory Used:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="9" Text="{helpers:Loc Key=Pop_MemoryUsed}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding MemoryUsedString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- Memory Total -->
-                                    <TextBlock Grid.Row="10" Text="Memory Total:" Foreground="#888" Margin="0,2"/>
+                                    <TextBlock Grid.Row="10" Text="{helpers:Loc Key=Pop_MemoryTotal}" Foreground="#888" Margin="0,2"/>
                                     <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding MemoryTotalString}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Right"/>
 
                                     <!-- PCIe Rx -->
@@ -1092,7 +1093,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="SENSORS" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                <TextBlock Text="{helpers:Loc Key=Pop_Sensors}" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="900">
                     <ItemsControl ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
