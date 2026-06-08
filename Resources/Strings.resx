@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Settings_Appearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="Settings_Theme" xml:space="preserve"><value>Theme</value></data>
+  <data name="Settings_ThemeCaption" xml:space="preserve"><value>Choose the app's light or dark look.</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings_LanguageCaption" xml:space="preserve"><value>Choose the display language.</value></data>
+  <data name="Settings_LanguageAuto" xml:space="preserve"><value>Auto (system)</value></data>
+
+  <data name="Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_StartAtLogon" xml:space="preserve"><value>Start at logon</value></data>
+  <data name="Settings_StartAtLogonCaption" xml:space="preserve"><value>Automatically start WinState with administrator privileges when you sign in to Windows.</value></data>
+
+  <data name="Settings_HardwareDriver" xml:space="preserve"><value>Hardware driver</value></data>
+  <data name="Settings_HardwareDriverDesc" xml:space="preserve"><value>WinState reads CPU temperature, voltage, package power and motherboard sensors through PawnIO (a signed ring-0 driver that replaces WinRing0, which Microsoft added to its vulnerable-driver blocklist). Without it those values stay blank; GPU / RAM / disk / network / CPU usage are unaffected.</value></data>
+  <data name="Settings_InstallViaWinGet" xml:space="preserve"><value>Install via WinGet</value></data>
+  <data name="Settings_RecheckDriver" xml:space="preserve"><value>Re-check driver status</value></data>
+
+  <data name="Settings_TrayIcons" xml:space="preserve"><value>Tray icons</value></data>
+  <data name="Settings_TrayIconsDesc" xml:space="preserve"><value>Check which icons to show and reorder them; percentage icons let you set color thresholds (yellow / orange / red).</value></data>
+  <data name="Settings_WarnPct" xml:space="preserve"><value>Warn %</value></data>
+  <data name="Settings_HighPct" xml:space="preserve"><value>High %</value></data>
+  <data name="Settings_CriticalPct" xml:space="preserve"><value>Critical %</value></data>
+  <data name="Settings_RestoreDefaults" xml:space="preserve"><value>Restore defaults</value></data>
+  <data name="Settings_RestartNeeded" xml:space="preserve"><value>Restart needed</value></data>
+  <data name="Settings_RestartMessage" xml:space="preserve"><value>Changes to icon order and visibility take effect after restarting the app (threshold changes apply live).</value></data>
+
+  <data name="Settings_ProcessList" xml:space="preserve"><value>Process list</value></data>
+  <data name="Settings_ProcessListDesc" xml:space="preserve"><value>Number of processes each tab's list shows (1–50).</value></data>
+
+  <data name="Settings_RefreshRate" xml:space="preserve"><value>Refresh rate</value></data>
+  <data name="Settings_RefreshRateDesc" xml:space="preserve"><value>Per-category data refresh interval in milliseconds (250–10000). Automatically slows down while hidden in the tray to save resources.</value></data>
+
+  <data name="Settings_About" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_AboutTagline" xml:space="preserve"><value>Lightweight system monitor</value></data>
+  <data name="Settings_Contributors" xml:space="preserve"><value>Contributors</value></data>
+  <data name="Settings_ContributorsThanks" xml:space="preserve"><value>Thanks to everyone who has contributed to WinState.</value></data>
+
+  <data name="Common_MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="Common_MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Common_Saved" xml:space="preserve"><value>✓ Saved</value></data>
+
+  <data name="Cat_Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="Cat_Gpu" xml:space="preserve"><value>GPU</value></data>
+  <data name="Cat_Memory" xml:space="preserve"><value>Memory</value></data>
+  <data name="Cat_Network" xml:space="preserve"><value>Network</value></data>
+  <data name="Cat_Disk" xml:space="preserve"><value>Disk</value></data>
+</root>

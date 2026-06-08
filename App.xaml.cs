@@ -74,6 +74,11 @@ namespace WinState
         /// </summary>
         private void OnStartup(object sender, StartupEventArgs e)
         {
+            // Apply the saved UI language before any window is shown so the first render is already
+            // in the right language. "Auto" follows the system culture.
+            var settings = GetService<IUserSettingsService>();
+            LocalizationService.Instance.ApplyLanguage(settings?.GetLanguage());
+
             _host.Start();
         }
 

@@ -25,6 +25,13 @@ namespace WinState.ViewModels.Pages
         [ObservableProperty]
         private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
 
+        // Language picker. Items are (code, display) pairs; selecting one applies it live via
+        // LocalizationService and persists the code ("Auto" / "en" / "zh-Hant").
+        public ObservableCollection<LanguageOption> Languages { get; } = new();
+
+        [ObservableProperty]
+        private LanguageOption? _selectedLanguage;
+
         [ObservableProperty]
         private ObservableCollection<TrayIconEntryViewModel> _trayIcons = new();
 
@@ -81,6 +88,7 @@ namespace WinState.ViewModels.Pages
             CurrentTheme = ApplicationThemeManager.GetAppTheme();
             AppVersion = $"WinState - {GetAssemblyVersion()}";
 
+            LoadLanguageSetting();
             LoadTrayIconSettings();
             LoadProcessListSettings();
             LoadRefreshSettings();
@@ -134,6 +142,33 @@ namespace WinState.ViewModels.Pages
                 StartWithWindows = StartupManager.IsEnabled();
                 _syncingStartup = false;
             }
+        }
+
+        private void LoadLanguageSetting()
+        {
+            Languages.Clear();
+            foreach (var (code, displayKey) in LocalizationService.SupportedLanguages)
+            {
+                // "Auto" shows a localized label that itself follows the language; the concrete
+                // languages show their own endonym ("English", "繁體中文") so they're recognisable
+                // regardless of the current UI language.
+                string display = code == "Auto" ? LocalizationService.Instance.Get(displayKey) : displayKey;
+                Languages.Add(new LanguageOption(code, display));
+            }
+
+            string saved = _userSettingsService.GetLanguage();
+            SelectedLanguage = Languages.FirstOrDefault(l => l.Code == saved) ?? Languages[0];
+        }
+
+        partial void OnSelectedLanguageChanged(LanguageOption? value)
+        {
+            if (!_isInitialized || value is null) return;
+            LocalizationService.Instance.ApplyLanguage(value.Code);
+            _userSettingsService.SaveLanguage(value.Code);
+
+            // The "Auto" label is itself localized, so refresh it after a switch.
+            var autoItem = Languages.FirstOrDefault(l => l.Code == "Auto");
+            if (autoItem != null) autoItem.Display = LocalizationService.Instance.Get("Settings_LanguageAuto");
         }
 
         private void LoadProcessListSettings()
@@ -483,5 +518,21 @@ namespace WinState.ViewModels.Pages
 
         [ObservableProperty]
         private ImageSource? _avatar;
+    }
+
+    /// <summary>One entry in the language picker. Display is observable so the "Auto" label can be
+    /// refreshed after a language switch.</summary>
+    public partial class LanguageOption : ObservableObject
+    {
+        public string Code { get; }
+
+        [ObservableProperty]
+        private string _display;
+
+        public LanguageOption(string code, string display)
+        {
+            Code = code;
+            _display = display;
+        }
     }
 }

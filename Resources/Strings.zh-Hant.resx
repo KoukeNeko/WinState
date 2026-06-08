@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="Settings_Appearance" xml:space="preserve"><value>外觀</value></data>
+  <data name="Settings_Theme" xml:space="preserve"><value>佈景主題</value></data>
+  <data name="Settings_ThemeCaption" xml:space="preserve"><value>選擇應用程式的亮色或暗色外觀。</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>語言</value></data>
+  <data name="Settings_LanguageCaption" xml:space="preserve"><value>選擇顯示語言。</value></data>
+  <data name="Settings_LanguageAuto" xml:space="preserve"><value>自動（系統）</value></data>
+
+  <data name="Settings_General" xml:space="preserve"><value>一般</value></data>
+  <data name="Settings_StartAtLogon" xml:space="preserve"><value>開機時自動啟動</value></data>
+  <data name="Settings_StartAtLogonCaption" xml:space="preserve"><value>登入 Windows 時，自動以系統管理員權限啟動 WinState。</value></data>
+
+  <data name="Settings_HardwareDriver" xml:space="preserve"><value>硬體驅動程式</value></data>
+  <data name="Settings_HardwareDriverDesc" xml:space="preserve"><value>WinState 透過 PawnIO（簽章版 ring-0 驅動，取代 Microsoft 已列入 vulnerable driver blocklist 的 WinRing0）讀取 CPU 溫度、電壓、Package Power 與主機板感測器。沒有安裝時上述項目會空白；GPU / RAM / Disk / Network / CPU 使用率不受影響。</value></data>
+  <data name="Settings_InstallViaWinGet" xml:space="preserve"><value>透過 WinGet 安裝</value></data>
+  <data name="Settings_RecheckDriver" xml:space="preserve"><value>重新檢查驅動狀態</value></data>
+
+  <data name="Settings_TrayIcons" xml:space="preserve"><value>系統匣圖示</value></data>
+  <data name="Settings_TrayIconsDesc" xml:space="preserve"><value>勾選要顯示的項目並調整順序；百分比圖示可設定變色門檻（黃 / 橘 / 紅）。</value></data>
+  <data name="Settings_WarnPct" xml:space="preserve"><value>黃 %</value></data>
+  <data name="Settings_HighPct" xml:space="preserve"><value>橘 %</value></data>
+  <data name="Settings_CriticalPct" xml:space="preserve"><value>紅 %</value></data>
+  <data name="Settings_RestoreDefaults" xml:space="preserve"><value>還原預設</value></data>
+  <data name="Settings_RestartNeeded" xml:space="preserve"><value>需要重新啟動</value></data>
+  <data name="Settings_RestartMessage" xml:space="preserve"><value>圖示順序與顯示的變更會在重新啟動應用程式後生效（門檻變更即時套用）。</value></data>
+
+  <data name="Settings_ProcessList" xml:space="preserve"><value>程序清單</value></data>
+  <data name="Settings_ProcessListDesc" xml:space="preserve"><value>每個分頁的程序清單顯示的項目數量（1–50）。</value></data>
+
+  <data name="Settings_RefreshRate" xml:space="preserve"><value>更新頻率</value></data>
+  <data name="Settings_RefreshRateDesc" xml:space="preserve"><value>每個類別資料的重新整理間隔，單位毫秒（250–10000）。隱藏在系統匣時會自動放慢以節省資源。</value></data>
+
+  <data name="Settings_About" xml:space="preserve"><value>關於</value></data>
+  <data name="Settings_AboutTagline" xml:space="preserve"><value>輕量系統監控工具</value></data>
+  <data name="Settings_Contributors" xml:space="preserve"><value>貢獻者</value></data>
+  <data name="Settings_ContributorsThanks" xml:space="preserve"><value>感謝所有為 WinState 付出的人。</value></data>
+
+  <data name="Common_MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="Common_MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Common_Saved" xml:space="preserve"><value>✓ 已儲存</value></data>
+
+  <data name="Cat_Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="Cat_Gpu" xml:space="preserve"><value>GPU</value></data>
+  <data name="Cat_Memory" xml:space="preserve"><value>記憶體</value></data>
+  <data name="Cat_Network" xml:space="preserve"><value>網路</value></data>
+  <data name="Cat_Disk" xml:space="preserve"><value>磁碟</value></data>
+</root>

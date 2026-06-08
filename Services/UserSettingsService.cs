@@ -18,6 +18,10 @@ namespace WinState.Services
 
         RefreshSettings GetRefreshSettings();
         void SaveRefreshSettings(RefreshSettings settings);
+
+        /// <summary>UI language: "Auto" (follow system), "en", or "zh-Hant".</summary>
+        string GetLanguage();
+        void SaveLanguage(string language);
     }
 
     /// <summary>
@@ -201,6 +205,36 @@ namespace WinState.Services
             }
         }
 
+        private string? _cachedLanguage;
+
+        public string GetLanguage()
+        {
+            if (_cachedLanguage != null) return _cachedLanguage;
+            _cachedLanguage = LoadSettingsWrapper().Language ?? "Auto";
+            return _cachedLanguage;
+        }
+
+        public void SaveLanguage(string language)
+        {
+            lock (_settingsLock)
+            {
+                try
+                {
+                    var wrapper = LoadSettingsWrapper();
+                    wrapper.Language = language;
+
+                    var json = JsonSerializer.Serialize(wrapper, _jsonOptions);
+                    WriteSettingsAtomically(json);
+
+                    _cachedLanguage = language;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to save language: {ex.Message}");
+                }
+            }
+        }
+
         private UserSettingsWrapper LoadSettingsWrapper()
         {
             if (File.Exists(_settingsFilePath))
@@ -223,6 +257,7 @@ namespace WinState.Services
         /// </summary>
         private class UserSettingsWrapper
         {
+            public string? Language { get; set; }
             public TrayIconSettings? TrayIconSettings { get; set; }
             public ProcessListSettings? ProcessListSettings { get; set; }
             public RefreshSettings? RefreshSettings { get; set; }
