@@ -193,9 +193,17 @@
                         </TextBlock>
                         <TextBlock Foreground="#AAAAAA" Margin="0,2">
                             <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0} {1:dd\.hh\:mm\:ss}">
-                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Uptime]"/>
-                                    <Binding Path="Uptime"/>
+                                <MultiBinding StringFormat="{}{0} {1}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Threads]"/>
+                                    <Binding Path="ThreadCount"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} {1}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Handles]"/>
+                                    <Binding Path="HandleCount"/>
                                 </MultiBinding>
                             </TextBlock.Text>
                         </TextBlock>
@@ -209,17 +217,9 @@
                         </TextBlock>
                         <TextBlock Foreground="#AAAAAA" Margin="0,2">
                             <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0} {1}">
-                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Threads]"/>
-                                    <Binding Path="ThreadCount"/>
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                        <TextBlock Foreground="#AAAAAA" Margin="0,2">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0} {1}">
-                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Handles]"/>
-                                    <Binding Path="HandleCount"/>
+                                <MultiBinding StringFormat="{}{0} {1:dd\.hh\:mm\:ss}">
+                                    <Binding Source="{x:Static services:LocalizationService.Instance}" Path="[Pop_Uptime]"/>
+                                    <Binding Path="Uptime"/>
                                 </MultiBinding>
                             </TextBlock.Text>
                         </TextBlock>
