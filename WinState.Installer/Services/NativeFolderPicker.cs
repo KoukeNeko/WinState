@@ -33,14 +33,22 @@ internal static class NativeFolderPicker
                 return null;
 
             dialog.GetResult(out IShellItem item);
-            item.GetDisplayName(SIGDN_FILESYSPATH, out IntPtr pszPath);
             try
             {
-                return Marshal.PtrToStringUni(pszPath);
+                item.GetDisplayName(SIGDN_FILESYSPATH, out IntPtr pszPath);
+                try
+                {
+                    return Marshal.PtrToStringUni(pszPath);
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(pszPath);
+                }
             }
             finally
             {
-                Marshal.FreeCoTaskMem(pszPath);
+                // Release the item even if GetDisplayName throws (which would otherwise skip the
+                // release and leak the COM object).
                 Marshal.ReleaseComObject(item);
             }
         }

@@ -167,8 +167,8 @@ public sealed class InstallerLogic
             Arguments = "uninstall -e --id namazso.PawnIO --silent",
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            // No stdout/stderr redirect: nothing drains the pipes, so a chatty winget could
+            // fill the buffer and deadlock on WaitForExit.
         };
         try
         {
@@ -180,7 +180,7 @@ public sealed class InstallerLogic
             }
             await p.WaitForExitAsync(ct);
             _log(p.ExitCode == 0
-                ? "  PawnIO removed."
+                ? $"  {L.Instance.LogPawnIORemoved}"
                 : $"  winget exited with code {p.ExitCode} — remove PawnIO manually if needed.");
         }
         catch (Exception ex)
@@ -384,12 +384,17 @@ $@"<?xml version=""1.0"" encoding=""UTF-16""?>
     private void DeleteInstallDirectory(string path)
     {
         // Hand-roll instead of Directory.Delete(recursive) so we can swallow ACL hiccups on
-        // individual files without aborting the whole uninstall.
-        foreach (var f in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+        // individual files without aborting the whole uninstall. The enumeration itself is
+        // wrapped too so an access error mid-walk doesn't skip the final directory delete.
+        try
         {
-            try { File.SetAttributes(f, FileAttributes.Normal); File.Delete(f); }
-            catch (Exception ex) { _log($"  (skipping {f}: {ex.Message})"); }
+            foreach (var f in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            {
+                try { File.SetAttributes(f, FileAttributes.Normal); File.Delete(f); }
+                catch (Exception ex) { _log($"  (skipping {f}: {ex.Message})"); }
+            }
         }
+        catch (Exception ex) { _log($"  (error enumerating files: {ex.Message})"); }
         try { Directory.Delete(path, recursive: true); }
         catch (Exception ex) { _log($"  (could not remove {path}: {ex.Message})"); }
     }
@@ -404,8 +409,8 @@ $@"<?xml version=""1.0"" encoding=""UTF-16""?>
             Arguments = "install -e --id namazso.PawnIO --silent --accept-package-agreements --accept-source-agreements",
             UseShellExecute = false,
             CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            // No stdout/stderr redirect: nothing drains the pipes, so a chatty winget could
+            // fill the buffer and deadlock on WaitForExit.
         };
         try
         {

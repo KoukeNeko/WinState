@@ -261,6 +261,10 @@ namespace WinState.ViewModels.Windows
             _systemInfoService.DataUpdated += OnDataUpdated;
             _systemInfoService.Start();
 
+            // The window title is localized; refresh it live when the language changes.
+            WinState.Services.LocalizationService.Instance.PropertyChanged += (_, _) =>
+                ApplicationTitle = WinState.Services.LocalizationService.Instance.Get("Tray_SettingsTitle");
+
             // Initialize RAM history
             for (int i = 0; i < 60; i++) _ramHistory.Enqueue(0);
 

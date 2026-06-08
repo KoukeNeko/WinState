@@ -106,6 +106,17 @@ public sealed partial class MainWindow : Window
             // non-resizable window looks broken, so drop it too.
             presenter.IsMinimizable = false;
         }
+
+        // Block closing the window while an install/uninstall is actively running — tearing it
+        // down mid-copy/registry/scheduled-task could leave a half-installed state.
+        if (AppWindow != null)
+        {
+            AppWindow.Closing += (sender, args) =>
+            {
+                if (PageOrder[_currentIndex] == typeof(ProgressPage) && !_progressFinished)
+                    args.Cancel = true;
+            };
+        }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
