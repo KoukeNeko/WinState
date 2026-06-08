@@ -17,14 +17,28 @@
                    FontWeight="SemiBold"/>
 
         <TextBlock Grid.Row="1"
-                   Text="The wizard will remove WinState's program files, the Start Menu shortcut, the Apps &amp; features entry and the logon Scheduled Task. Saved settings under %AppData%\WinState are kept; delete them by hand if you want a fully clean removal."
+                   Text="The wizard will remove WinState's program files, the Start Menu shortcut, the Apps &amp; features entry and the logon Scheduled Task. Choose what else to remove:"
                    TextWrapping="Wrap"
                    Opacity="0.8"/>
 
-        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
-            <TextBlock Text="Not removed:" FontWeight="SemiBold"/>
-            <TextBlock Text="• PawnIO driver — other apps (e.g. FanControl) may still depend on it. Uninstall it separately from Apps &amp; features if you don't need it anymore."
-                       TextWrapping="Wrap" Opacity="0.8"/>
+        <StackPanel Grid.Row="2" Spacing="12" Margin="0,8,0,0">
+            <CheckBox x:Name="RemoveSettingsCheckbox" IsChecked="True">
+                <StackPanel>
+                    <TextBlock Text="Remove saved settings"/>
+                    <TextBlock Text="Deletes your configuration under %AppData%\WinState (theme, tray icons, thresholds…). Leave unchecked to keep them for a future reinstall."
+                               Opacity="0.7" TextWrapping="Wrap" FontSize="12"/>
+                </StackPanel>
+            </CheckBox>
+
+            <CheckBox x:Name="RemovePawnIOCheckbox" IsChecked="False">
+                <StackPanel>
+                    <TextBlock Text="Remove the PawnIO driver"/>
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource SystemFillColorCautionBrush}">
+                        <Run Text="⚠ Not recommended."/>
+                        <Run Text="Other hardware-monitoring apps (e.g. FanControl, HWiNFO with PawnIO) may share this driver. Only remove it if WinState is the only app that uses it."/>
+                    </TextBlock>
+                </StackPanel>
+            </CheckBox>
         </StackPanel>
     </Grid>
 </Page>

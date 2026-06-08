@@ -13,6 +13,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
+                   x:Name="HeadingText"
                    Text="Installing"
                    FontSize="24"
                    FontWeight="SemiBold"/>

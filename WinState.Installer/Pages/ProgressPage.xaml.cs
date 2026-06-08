@@ -26,12 +26,14 @@ public sealed partial class ProgressPage : Page
         if (app is null) return;
         var options = app.GetOptions();
 
+        HeadingText.Text = app.IsUninstallMode ? "Uninstalling" : "Installing";
+
         var logic = new InstallerLogic(line => Report(line));
         try
         {
             CurrentStepText.Text = app.IsUninstallMode ? "Uninstalling…" : "Installing…";
             if (app.IsUninstallMode)
-                await Task.Run(() => logic.UninstallAsync(_cts.Token));
+                await Task.Run(() => logic.UninstallAsync(options, _cts.Token));
             else
                 await Task.Run(() => logic.InstallAsync(options, _cts.Token));
 

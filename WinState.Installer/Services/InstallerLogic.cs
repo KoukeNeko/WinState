@@ -81,23 +81,112 @@ public sealed class InstallerLogic
 
     // -------------- uninstall ------------------------------------------------------------------
 
-    public Task UninstallAsync(CancellationToken ct)
+    public async Task UninstallAsync(InstallOptions options, CancellationToken ct)
     {
         // Best-effort: continue on each step so a missing artifact doesn't strand the user.
         SafeRun("Removing logon Scheduled Task", () => UnregisterScheduledTask());
         SafeRun("Removing Start Menu shortcut", () => RemoveStartMenuShortcut());
         SafeRun("Removing uninstall registry entry", () => RemoveUninstallRegistry());
 
-        string? installPath = ReadInstallPathFromRegistry();
+        if (options.RemoveUserSettings)
+            SafeRun("Removing saved settings", () => RemoveUserSettings());
+        else
+            _log("(Keeping saved settings under %AppData%\\WinState.)");
+
+        if (options.RemovePawnIO)
+        {
+            _log("Uninstalling PawnIO via winget (this can take a minute)…");
+            await UninstallPawnIOAsync(ct);
+        }
+        else
+        {
+            _log("(PawnIO driver left installed — other apps may rely on it.)");
+        }
+
+        // Delete the program files LAST. Our own running exe (WinState.Installer.exe) lives
+        // inside the install dir, so Windows won't let us delete it while we're running. Remove
+        // everything we can, then hand the locked leftover to a detached cmd that retries after
+        // this process exits.
+        string? installPath = ReadInstallPathFromRegistry() ?? DeriveInstallPathFromSelf();
         if (!string.IsNullOrEmpty(installPath) && Directory.Exists(installPath))
         {
             SafeRun($"Removing {installPath}", () => DeleteInstallDirectory(installPath));
+            if (Directory.Exists(installPath))
+                SafeRun("Scheduling cleanup of remaining files", () => ScheduleSelfDelete(installPath));
         }
+    }
 
-        // We deliberately leave PawnIO alone: it's a system-wide driver other apps (e.g.
-        // FanControl) may also rely on, and undoing it requires the same UAC dance as installing.
-        _log("(PawnIO driver left installed — remove it manually via Apps & features if you no longer need it.)");
-        return Task.CompletedTask;
+    // Fallback when the registry entry was already removed: our own exe sits in the install dir.
+    private static string? DeriveInstallPathFromSelf()
+    {
+        return Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName);
+    }
+
+    // Detached cmd that polls until the install dir is gone (i.e. once our exe exits and unlocks),
+    // bounded so a stuck lock can't loop forever. Started without a window.
+    private void ScheduleSelfDelete(string installPath)
+    {
+        string script =
+            "@echo off\r\n" +
+            "set DIR=" + installPath + "\r\n" +
+            "for /l %%i in (1,1,20) do (\r\n" +
+            "  rmdir /s /q \"%DIR%\" 2>nul\r\n" +
+            "  if not exist \"%DIR%\" goto done\r\n" +
+            "  timeout /t 1 /nobreak >nul\r\n" +
+            ")\r\n" +
+            ":done\r\n";
+
+        string batPath = Path.Combine(Path.GetTempPath(), $"winstate-cleanup-{Guid.NewGuid():N}.bat");
+        File.WriteAllText(batPath, script);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            // /c runs then exits; the bat self-deletes its own folder target, then we delete the bat.
+            Arguments = $"/c \"\"{batPath}\" & del \"{batPath}\"\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        Process.Start(psi);
+    }
+
+    // Settings live in %AppData%\WinState (see UserSettingsService in the main app).
+    private void RemoveUserSettings()
+    {
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WinState");
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, recursive: true);
+    }
+
+    private async Task UninstallPawnIOAsync(CancellationToken ct)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "winget",
+            Arguments = "uninstall -e --id namazso.PawnIO --silent",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        try
+        {
+            using var p = Process.Start(psi);
+            if (p is null)
+            {
+                _log("  (winget unavailable — remove PawnIO manually from Apps & features.)");
+                return;
+            }
+            await p.WaitForExitAsync(ct);
+            _log(p.ExitCode == 0
+                ? "  PawnIO removed."
+                : $"  winget exited with code {p.ExitCode} — remove PawnIO manually if needed.");
+        }
+        catch (Exception ex)
+        {
+            _log($"  PawnIO removal failed: {ex.Message}");
+        }
     }
 
     // -------------- payload --------------------------------------------------------------------

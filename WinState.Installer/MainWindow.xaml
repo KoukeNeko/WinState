@@ -12,12 +12,13 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Title bar zone (drag-to-move). Window backdrop is set in code-behind. -->
+        <!-- Title bar zone (drag-to-move). Window backdrop + title text set in code-behind. -->
         <Grid x:Name="AppTitleBar"
               Grid.Row="0"
               Height="40"
               Background="Transparent">
-            <TextBlock Text="WinState Installer"
+            <TextBlock x:Name="TitleBarText"
+                       Text="WinState Setup"
                        VerticalAlignment="Center"
                        Margin="16,0,0,0"
                        FontWeight="SemiBold"/>

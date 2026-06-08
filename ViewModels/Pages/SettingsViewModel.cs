@@ -162,10 +162,10 @@ namespace WinState.ViewModels.Pages
 
         private static bool IsValidCount(int value) => value >= ProcessListSettings.Min && value <= ProcessListSettings.Max;
 
-        partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnNetworkProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
-        partial void OnDiskProcessCountChanged(int value) { if (IsValidCount(value)) SaveProcessListSettings(); }
+        partial void OnCpuProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcCpu"); } }
+        partial void OnMemoryProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcMem"); } }
+        partial void OnNetworkProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcNet"); } }
+        partial void OnDiskProcessCountChanged(int value) { if (IsValidCount(value)) { SaveProcessListSettings(); FlashSaved("ProcDisk"); } }
 
         private void LoadRefreshSettings()
         {
@@ -192,11 +192,44 @@ namespace WinState.ViewModels.Pages
 
         private static bool IsValidInterval(int value) => value >= RefreshSettings.Min && value <= RefreshSettings.Max;
 
-        partial void OnCpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnGpuRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnMemoryRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnDiskRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
-        partial void OnNetworkRefreshMsChanged(int value) { if (IsValidInterval(value)) SaveRefreshSettings(); }
+        partial void OnCpuRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefCpu"); } }
+        partial void OnGpuRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefGpu"); } }
+        partial void OnMemoryRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefMem"); } }
+        partial void OnDiskRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefDisk"); } }
+        partial void OnNetworkRefreshMsChanged(int value) { if (IsValidInterval(value)) { SaveRefreshSettings(); FlashSaved("RefNet"); } }
+
+        // ---- "Saved" indicator -------------------------------------------------------------------
+        // The view shows a green check next to whichever field id equals RecentlySavedField. We set
+        // it on each successful save and clear it after a short delay so the indicator fades on its
+        // own. The DispatcherTimer fires on the UI thread, so touching the bound property is safe.
+
+        [ObservableProperty]
+        private string _recentlySavedField = string.Empty;
+
+        private System.Windows.Threading.DispatcherTimer? _savedTimer;
+
+        private void FlashSaved(string fieldId)
+        {
+            RecentlySavedField = fieldId;
+
+            _savedTimer ??= CreateSavedTimer();
+            _savedTimer.Stop();
+            _savedTimer.Start();
+        }
+
+        private System.Windows.Threading.DispatcherTimer CreateSavedTimer()
+        {
+            var t = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1.6)
+            };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                RecentlySavedField = string.Empty;
+            };
+            return t;
+        }
 
         private void LoadTrayIconSettings()
         {

@@ -42,6 +42,11 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
+        // Reflect uninstall mode in the window title + the custom title-bar text.
+        bool uninstall = (App.Current as App)?.IsUninstallMode == true;
+        Title = uninstall ? "WinState Uninstaller" : "WinState Setup";
+        TitleBarText.Text = Title;
+
         ConfigureWindow();
 
         NavigationFrame.Navigate(PageOrder[0]);
@@ -155,7 +160,12 @@ public sealed class InstallOptions
     public string InstallPath { get; set; } = System.IO.Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WinState");
 
+    // Install-time choices.
     public bool InstallPawnIO { get; set; } = true;
     public bool LaunchAtLogon { get; set; } = true;
     public bool CreateStartMenuShortcut { get; set; } = true;
+
+    // Uninstall-time choices (set on the UninstallConfirm page).
+    public bool RemoveUserSettings { get; set; } = true;   // %AppData%\WinState
+    public bool RemovePawnIO { get; set; } = false;        // off by default — shared driver
 }
