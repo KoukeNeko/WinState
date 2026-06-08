@@ -16,7 +16,7 @@
       Both build in isolation (LHM via ProjectReference, the installer as its own .exe), so
       excluding their folders here keeps the two compilations cleanly separated.
     -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**;WinState.Bootstrapper\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

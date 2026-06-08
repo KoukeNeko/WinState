@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibreHardwareMonitorLib", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinState.Installer", "WinState.Installer\WinState.Installer.csproj", "{5C096F1E-1E72-428A-9566-37BC1B0A4B6A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinState.Bootstrapper", "WinState.Bootstrapper\WinState.Bootstrapper.csproj", "{171B3AB3-7459-4632-8B39-3C789F891777}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +61,18 @@ Global
 		{5C096F1E-1E72-428A-9566-37BC1B0A4B6A}.Release|x64.Build.0 = Release|x64
 		{5C096F1E-1E72-428A-9566-37BC1B0A4B6A}.Release|x86.ActiveCfg = Release|x64
 		{5C096F1E-1E72-428A-9566-37BC1B0A4B6A}.Release|x86.Build.0 = Release|x64
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|x64.Build.0 = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Debug|x86.Build.0 = Debug|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|Any CPU.Build.0 = Release|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|x64.ActiveCfg = Release|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|x64.Build.0 = Release|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|x86.ActiveCfg = Release|Any CPU
+		{171B3AB3-7459-4632-8B39-3C789F891777}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

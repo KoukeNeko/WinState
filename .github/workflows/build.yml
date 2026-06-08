@@ -79,9 +79,24 @@ jobs:
           -r ${{ matrix.rid }}
           -o installer-publish
 
-      - name: Upload installer artifact
+      # ---- Single-file bootstrapper (wraps the installer folder in one .exe) ------------------
+
+      - name: Zip installer into bootstrapper payload
+        shell: pwsh
+        run: |
+          if (Test-Path WinState.Bootstrapper/payload.zip) { Remove-Item -Force WinState.Bootstrapper/payload.zip }
+          Compress-Archive -Path installer-publish/* -DestinationPath WinState.Bootstrapper/payload.zip -CompressionLevel Optimal
+
+      - name: Publish bootstrapper (single-file setup exe)
+        run: >
+          dotnet publish WinState.Bootstrapper/WinState.Bootstrapper.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o setup-publish
+
+      - name: Upload single-file installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WinState-Installer-${{ matrix.rid }}
-          path: installer-publish/
+          name: WinState-Setup-${{ matrix.rid }}
+          path: setup-publish/WinState-Setup.exe
           if-no-files-found: error

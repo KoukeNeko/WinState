@@ -372,5 +372,9 @@ debug_sensors.txt
 # artifact, not source.
 WinState.Installer/payload/
 
+# Bootstrapper payload is the zipped installer-publish folder, embedded into the
+# bootstrapper at publish time. Same story as the installer payload above.
+WinState.Bootstrapper/payload.zip
+
 # Local install artifacts produced by scripts/build-installer.ps1.
 artifacts/
