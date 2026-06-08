@@ -63,3 +63,25 @@ jobs:
           name: WinState-${{ matrix.rid }}
           path: publish/WinState.exe
           if-no-files-found: error
+
+      # ---- Installer (WinUI 3 wizard wrapping the single-file exe above) -----------------------
+
+      - name: Stage payload for installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path WinState.Installer/payload | Out-Null
+          Copy-Item -Force publish/WinState.exe WinState.Installer/payload/WinState.exe
+
+      - name: Publish installer
+        run: >
+          dotnet publish WinState.Installer/WinState.Installer.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -o installer-publish
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinState-Installer-${{ matrix.rid }}
+          path: installer-publish/
+          if-no-files-found: error

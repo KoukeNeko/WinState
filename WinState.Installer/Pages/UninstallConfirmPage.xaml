@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="WinState.Installer.Pages.UninstallConfirmPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Uninstall WinState"
+                   FontSize="28"
+                   FontWeight="SemiBold"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="The wizard will remove WinState's program files, the Start Menu shortcut, the Apps &amp; features entry and the logon Scheduled Task. Saved settings under %AppData%\WinState are kept; delete them by hand if you want a fully clean removal."
+                   TextWrapping="Wrap"
+                   Opacity="0.8"/>
+
+        <StackPanel Grid.Row="2" Spacing="8" Margin="0,16,0,0">
+            <TextBlock Text="Not removed:" FontWeight="SemiBold"/>
+            <TextBlock Text="• PawnIO driver — other apps (e.g. FanControl) may still depend on it. Uninstall it separately from Apps &amp; features if you don't need it anymore."
+                       TextWrapping="Wrap" Opacity="0.8"/>
+        </StackPanel>
+    </Grid>
+</Page>

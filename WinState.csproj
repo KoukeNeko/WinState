@@ -10,12 +10,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!--
-      The vendored LibreHardwareMonitor PawnIO fork lives under Vendor/ but the SDK's default
-      Compile/Page/Resource globs would otherwise pull every .cs / .xaml / .resx in that
-      sibling tree into WinState's compilation. Exclude the whole vendor folder; the
-      LibreHardwareMonitorLib csproj is referenced as a ProjectReference and builds in isolation.
+      Sibling projects (the vendored LHM PawnIO fork, the WinUI 3 installer wizard) live in
+      sub-folders under the repo root, and the WPF SDK's default Compile/Page/Resource globs
+      would otherwise pull every .cs / .xaml from those trees into WinState's compilation.
+      Both build in isolation (LHM via ProjectReference, the installer as its own .exe), so
+      excluding their folders here keeps the two compilations cleanly separated.
     -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

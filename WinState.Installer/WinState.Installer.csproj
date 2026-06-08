@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>WinState.Installer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\icon.ico</ApplicationIcon>
+    <Platforms>x64;arm64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Unpackaged WinUI 3: ship as a plain .exe so the user can double-click an installer
+         rather than going through MSIX. Self-contained so we do not need the user to install
+         the Windows App Runtime first. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
+    <!-- The WinUI 3 source generators emit duplicate diagnostics if WPF/MAUI XAML pulled in via
+         project references is not excluded. The installer has no XAML outside its own folder. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250108002" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
+  </ItemGroup>
+
+  <!--
+    The installer expects payload/WinState.exe sitting next to its own EXE at runtime. CI
+    (scripts/build-installer.ps1 locally) runs `dotnet publish` on WinState first and copies
+    the self-contained single-file exe into payload/. The Condition guards against the
+    installer's own first build before the payload is in place — building succeeds and the
+    installer surfaces a clear "payload not found" error at runtime instead.
+  -->
+  <ItemGroup>
+    <Content Include="payload\WinState.exe"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             Condition="Exists('payload\WinState.exe')" />
+  </ItemGroup>
+
+</Project>
