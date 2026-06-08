@@ -4,7 +4,7 @@
     <!-- WinExe so double-clicking does not flash a console window. The bootstrapper has no UI of
          its own — errors go through User32 MessageBox via P/Invoke. -->
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\icon.ico</ApplicationIcon>
     <Nullable>enable</Nullable>

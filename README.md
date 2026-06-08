@@ -8,7 +8,7 @@
 
 [![build](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml/badge.svg?branch=dev)](https://github.com/KoukeNeko/WinState/actions/workflows/build.yml)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white)
-![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)
 ![arch](https://img.shields.io/badge/arch-x64%20%7C%20arm64-blue)
 
 CPU · GPU · RAM · Disk · Network · Power — at a glance, with rich frosted-glass flyouts.
@@ -50,7 +50,7 @@ CPU · GPU · RAM · Disk · Network · Power — at a glance, with rich frosted
 
 ## English
 
-WinState packs six live metrics into your Windows notification area. Each tray icon shows a number at a glance; click one and a Windows 11–style **acrylic flyout** opens with detailed graphs, sensors and the top processes for that category. Built on .NET 8 + WPF (WPF-UI / Fluent), with hardware data from LibreHardwareMonitor.
+WinState packs six live metrics into your Windows notification area. Each tray icon shows a number at a glance; click one and a Windows 11–style **acrylic flyout** opens with detailed graphs, sensors and the top processes for that category. Built on .NET 10 + WPF (WPF-UI / Fluent), with hardware data from LibreHardwareMonitor.
 
 > ⚙️ **Runs as administrator** — hardware sensors, SMART data and per-process ETW tracing all require elevation.
 
@@ -125,11 +125,11 @@ Produce the same single-file exe as CI:
 dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-**Requirements:** Windows 10/11 · .NET 8 SDK.
+**Requirements:** Windows 10/11 · .NET 10 SDK.
 
 ### 🧱 Tech stack
 
-- **.NET 8 / WPF** (`net8.0-windows`)
+- **.NET 10 / WPF** (`net10.0-windows`)
 - **[WPF-UI](https://github.com/lepoco/wpfui)** 4.0 — Fluent controls, Mica / Acrylic
 - **[LibreHardwareMonitorLib (PawnIO fork)](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed)** — CPU / GPU / disk sensors & SMART, talking to the signed PawnIO driver instead of WinRing0
 - **Microsoft.Diagnostics.Tracing.TraceEvent** — per-process disk & network via ETW
@@ -148,7 +148,7 @@ Built with [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreH
 
 ## 繁體中文
 
-WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看到數字；點下去就會彈出 Windows 11 風格的**壓克力霜玻璃視窗**，顯示該類別的詳細圖表、感測器與佔用最高的程序。以 .NET 8 + WPF（WPF-UI / Fluent）打造，硬體資料來自 LibreHardwareMonitor。
+WinState 把六項即時指標放進 Windows 系統匣。每個圖示一眼看到數字；點下去就會彈出 Windows 11 風格的**壓克力霜玻璃視窗**，顯示該類別的詳細圖表、感測器與佔用最高的程序。以 .NET 10 + WPF（WPF-UI / Fluent）打造，硬體資料來自 LibreHardwareMonitor。
 
 > ⚙️ **以系統管理員執行** — 硬體感測、SMART 資料、以及 per-process 的 ETW 追蹤都需要提權。
 
@@ -223,11 +223,11 @@ dotnet run -c Release
 dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-**需求：** Windows 10/11 · .NET 8 SDK。
+**需求：** Windows 10/11 · .NET 10 SDK。
 
 ### 🧱 技術堆疊
 
-- **.NET 8 / WPF**（`net8.0-windows`）
+- **.NET 10 / WPF**（`net10.0-windows`）
 - **[WPF-UI](https://github.com/lepoco/wpfui)** 4.0 — Fluent 控制項、Mica / Acrylic
 - **[LibreHardwareMonitorLib（PawnIO fork）](https://github.com/namazso/LibreHardwareMonitor/tree/pawnio-squashed)** — CPU / GPU / 磁碟感測與 SMART，透過簽章版 PawnIO 驅動讀取硬體
 - **Microsoft.Diagnostics.Tracing.TraceEvent** — 透過 ETW 取得 per-process 磁碟與網路
