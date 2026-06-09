@@ -12,7 +12,7 @@
     stable release. AssemblyVersion / FileVersion ignore the suffix and stay numeric (0.1.0.0).
   -->
   <PropertyGroup>
-    <VersionPrefix>0.1.2</VersionPrefix>
+    <VersionPrefix>0.1.3</VersionPrefix>
     <VersionSuffix>pre</VersionSuffix>
     <Company>KoukeNeko</Company>
     <Product>WinState</Product>
