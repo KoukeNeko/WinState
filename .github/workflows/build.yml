@@ -64,6 +64,35 @@ jobs:
           path: publish/WinState.exe
           if-no-files-found: error
 
+      # ---- Slim (framework-dependent) single-file exe -----------------------------------------
+      # The self-contained exe above bundles the .NET 10 runtime (~80 MB). This slim variant
+      # leaves the runtime out (~17 MB) for users who already have the .NET 10 Desktop Runtime
+      # installed. Renamed with a RID suffix so it does not collide with the self-contained exe
+      # when both are downloaded into the same folder.
+
+      - name: Publish slim framework-dependent exe
+        run: >
+          dotnet publish WinState.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained false
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish-slim
+
+      - name: Rename slim exe with RID suffix
+        shell: pwsh
+        run: |
+          Move-Item -Force publish-slim/WinState.exe publish-slim/WinState-Slim-${{ matrix.rid }}.exe
+
+      - name: Upload slim exe artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: WinState-Slim-${{ matrix.rid }}
+          path: publish-slim/WinState-Slim-${{ matrix.rid }}.exe
+          if-no-files-found: error
+
       # ---- Installer (WinUI 3 wizard wrapping the single-file exe above) -----------------------
 
       - name: Stage payload for installer

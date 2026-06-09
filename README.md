@@ -104,6 +104,7 @@ CI builds **self-contained, single-file** executables for every push — no .NET
 2. Download the artifact for your CPU:
    - `WinState-Setup-win-x64` / `WinState-Setup-win-arm64` — guided installer (recommended; the artifact zip contains exactly one `WinState-Setup-<rid>.exe`).
    - `WinState-win-x64` / `WinState-win-arm64` — bare WinState.exe, no wizard.
+   - `WinState-Slim-win-x64` / `WinState-Slim-win-arm64` — **slim** bare exe (~17 MB vs ~80 MB) that leaves out the bundled .NET runtime. Pick this only if you already have the [**.NET 10 Desktop Runtime**](https://dotnet.microsoft.com/download/dotnet/10.0) installed; otherwise use one of the self-contained downloads above.
 3. Unzip the artifact and double-click the `.exe` inside; accept the UAC prompt. The installer's options page lets you toggle PawnIO install and launch-at-logon.
 4. **PawnIO driver:** the installer offers a one-click WinGet install (`winget install -e --id namazso.PawnIO`); alternatively grab it from [pawnio.eu](https://pawnio.eu/). Without it, GPU / RAM / disk / network still work, but CPU temperature, voltage, package power and motherboard sensors stay blank.
 
@@ -125,6 +126,13 @@ Produce the same single-file exe as CI:
 
 ```bash
 dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+Or the **slim** framework-dependent exe (needs the .NET 10 Desktop Runtime on the target machine). `scripts/build-slim.ps1` builds both arches at once:
+
+```powershell
+pwsh scripts/build-slim.ps1            # win-x64 + win-arm64
+pwsh scripts/build-slim.ps1 -Rid win-x64
 ```
 
 **Requirements:** Windows 10/11 · .NET 10 SDK.
@@ -204,6 +212,7 @@ CI 每次 push 都會建置 **self-contained 單檔** 執行檔，目標機器�
 2. 依你的 CPU 下載 artifact：
    - `WinState-Setup-win-x64` / `WinState-Setup-win-arm64` — 引導式安裝程式（建議；artifact zip 內就只有一個 `WinState-Setup-<rid>.exe`）。
    - `WinState-win-x64` / `WinState-win-arm64` — 裸 WinState.exe，不含安裝精靈。
+   - `WinState-Slim-win-x64` / `WinState-Slim-win-arm64` — **精簡版** 裸 exe（約 17 MB，相較 self-contained 的 ~80 MB），不內含 .NET 執行階段。僅在你已安裝 [**.NET 10 Desktop Runtime**](https://dotnet.microsoft.com/download/dotnet/10.0) 時才選這個；否則請用上面的 self-contained 版本。
 3. 解壓後執行裡面的 `.exe`（同意 UAC 提權）。安裝精靈左下角可切換語言，選項頁可勾選 PawnIO 安裝與開機自動啟動。
 4. **PawnIO 驅動：** 安裝精靈提供一鍵 WinGet 安裝（`winget install -e --id namazso.PawnIO`）；也可到 [pawnio.eu](https://pawnio.eu/) 下載。沒裝的話 GPU / RAM / 磁碟 / 網路一切照常，只是 CPU 溫度、電壓、Package Power 與主機板感測器會空白。
 
@@ -225,6 +234,13 @@ dotnet run -c Release
 
 ```bash
 dotnet publish WinState.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+或 **精簡版** framework-dependent exe（目標機器需已安裝 .NET 10 Desktop Runtime）。`scripts/build-slim.ps1` 一次建置兩種架構：
+
+```powershell
+pwsh scripts/build-slim.ps1            # win-x64 + win-arm64
+pwsh scripts/build-slim.ps1 -Rid win-x64
 ```
 
 **需求：** Windows 10/11 · .NET 10 SDK。
