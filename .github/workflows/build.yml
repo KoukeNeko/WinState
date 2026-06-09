@@ -64,35 +64,6 @@ jobs:
           path: publish/WinState.exe
           if-no-files-found: error
 
-      # ---- Slim (framework-dependent) single-file exe -----------------------------------------
-      # The self-contained exe above bundles the .NET 10 runtime (~80 MB). This slim variant
-      # leaves the runtime out (~17 MB) for users who already have the .NET 10 Desktop Runtime
-      # installed. Renamed with a RID suffix so it does not collide with the self-contained exe
-      # when both are downloaded into the same folder.
-
-      - name: Publish slim framework-dependent exe
-        run: >
-          dotnet publish WinState.csproj
-          -c Release
-          -r ${{ matrix.rid }}
-          --self-contained false
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:DebugType=none
-          -o publish-slim
-
-      - name: Rename slim exe with RID suffix
-        shell: pwsh
-        run: |
-          Move-Item -Force publish-slim/WinState.exe publish-slim/WinState-Slim-${{ matrix.rid }}.exe
-
-      - name: Upload slim exe artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: WinState-Slim-${{ matrix.rid }}
-          path: publish-slim/WinState-Slim-${{ matrix.rid }}.exe
-          if-no-files-found: error
-
       # ---- Installer (WinUI 3 wizard wrapping the single-file exe above) -----------------------
 
       - name: Stage payload for installer
@@ -138,4 +109,61 @@ jobs:
         with:
           name: WinState-Setup-${{ matrix.rid }}
           path: setup-publish/WinState-Setup-${{ matrix.rid }}.exe
+          if-no-files-found: error
+
+      # ---- Slim setup (same wizard, .NET runtime left out) ------------------------------------
+      # A second setup exe whose WinState.exe + installer + bootstrapper are all framework-
+      # dependent (.NET runtime not bundled) — far smaller, but the target machine must already
+      # have the .NET 10 Desktop Runtime. The Windows App SDK stays bundled (WindowsAppSDK-
+      # SelfContained=true in the installer csproj) so the wizard still runs standalone.
+      # Runs after the self-contained setup uploads because it re-uses payload/ and payload.zip.
+
+      - name: Publish slim WinState (framework-dependent)
+        run: >
+          dotnet publish WinState.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained false
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish-slim
+
+      - name: Stage slim payload for installer
+        shell: pwsh
+        run: |
+          Copy-Item -Force publish-slim/WinState.exe WinState.Installer/payload/WinState.exe
+
+      - name: Publish slim installer
+        run: >
+          dotnet publish WinState.Installer/WinState.Installer.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:SelfContained=false
+          -o installer-publish-slim
+
+      - name: Zip slim installer into bootstrapper payload
+        shell: pwsh
+        run: |
+          if (Test-Path WinState.Bootstrapper/payload.zip) { Remove-Item -Force WinState.Bootstrapper/payload.zip }
+          Compress-Archive -Path installer-publish-slim/* -DestinationPath WinState.Bootstrapper/payload.zip -CompressionLevel Optimal
+
+      - name: Publish slim bootstrapper (single-file setup exe)
+        run: >
+          dotnet publish WinState.Bootstrapper/WinState.Bootstrapper.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:SelfContained=false
+          -o setup-publish-slim
+
+      - name: Rename slim setup exe with RID suffix
+        shell: pwsh
+        run: |
+          Move-Item -Force setup-publish-slim/WinState-Setup.exe setup-publish-slim/WinState-Setup-Slim-${{ matrix.rid }}.exe
+
+      - name: Upload slim setup exe
+        uses: actions/upload-artifact@v5
+        with:
+          name: WinState-Setup-Slim-${{ matrix.rid }}
+          path: setup-publish-slim/WinState-Setup-Slim-${{ matrix.rid }}.exe
           if-no-files-found: error
