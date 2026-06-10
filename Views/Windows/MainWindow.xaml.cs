@@ -16,6 +16,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WinState.ViewModels.Windows;
 using WinState.Services;
+using WinState.Helpers;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
@@ -36,6 +37,11 @@ namespace WinState.Views.Windows
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+        // Brought to the foreground before opening the tray context menu so it dismisses on click-away.
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
         {
@@ -49,9 +55,10 @@ namespace WinState.Views.Windows
 
         private readonly IUserSettingsService _userSettingsService;
         private readonly SystemInfoService _systemInfoService;
-        private readonly List<Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIcons = new();
-        // Maps each visible icon id to its tray icon and the ViewModel property carrying its image.
-        private readonly Dictionary<string, Hardcodet.Wpf.TaskbarNotification.TaskbarIcon> _trayIconsById = new();
+        // All tray icons are owned by a single window with one stable uID each (see TrayIconManager),
+        // which is what lets Windows keep their order independent. _trayContextMenu is the shared
+        // Settings/Exit menu shown on right-click.
+        private TrayIconManager? _trayManager;
         private ContextMenu? _trayContextMenu;
 
         public MainWindow(
@@ -75,114 +82,95 @@ namespace WinState.Views.Windows
             IsVisibleChanged += OnUiSurfaceVisibilityChanged;
 
             // Create tray icons dynamically based on settings
-            CreateTrayIcons();
+            InitializeTrayIcons();
 
             // The window is a single settings page (no navigation sidebar).
             RootContentHost.Content = settingsPage;
         }
 
-        private void CreateTrayIcons()
+        private void InitializeTrayIcons()
         {
-            // Get context menu from resources
-            _trayContextMenu = this.Resources["TrayContextMenu"] as ContextMenu;
-            
-            var settings = _userSettingsService.GetTrayIconSettings();
-            var orderedIcons = settings.Icons
-                .Where(i => i.IsVisible)
-                .OrderBy(i => i.Order)
-                .ToList();
+            // One owner window hosts every tray icon, each under its own fixed uID (TrayIconManager).
+            // That stable (exe, uID) identity is what lets Windows keep their positions independent —
+            // the previous per-icon-window library registered them all under one uID, so the shell
+            // could not tell them apart and the order scrambled whenever any one was touched.
+            _trayContextMenu = Resources["TrayContextMenu"] as ContextMenu;
+            if (_trayContextMenu != null)
+                _trayContextMenu.DataContext = this;
 
-            foreach (var iconConfig in orderedIcons)
-            {
-                var icon = CreateTrayIcon(iconConfig.Id);
-                if (icon != null)
-                {
-                    _trayIcons.Add(icon);
-                }
-            }
+            // Force the window handle now: the app launches straight into the tray, so the icons must
+            // appear before the window is ever shown.
+            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+            _trayManager = new TrayIconManager(hwnd, ShowTrayPopup, ShowTrayContextMenu);
+            _trayManager.RebuildRequested += BuildAndApplyTrayIcons;
 
             ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+            BuildAndApplyTrayIcons();
         }
 
-        private Hardcodet.Wpf.TaskbarNotification.TaskbarIcon? CreateTrayIcon(string iconId)
+        // (Re)registers the visible icons in saved order, each carrying its current image and tooltip.
+        // Runs on startup and whenever the shell re-creates the taskbar (TaskbarCreated).
+        private void BuildAndApplyTrayIcons()
         {
-            // Create individual ContextMenu for each icon with proper DataContext
-            var contextMenu = new System.Windows.Controls.ContextMenu { DataContext = this };
-            var settingsMenuItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
-            settingsMenuItem.SetBinding(System.Windows.Controls.MenuItem.CommandProperty, new Binding("ViewModel.OpenSettingsCommand"));
-            var exitMenuItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
-            exitMenuItem.SetBinding(System.Windows.Controls.MenuItem.CommandProperty, new Binding("ViewModel.ExitApplicationCommand"));
-            contextMenu.Items.Add(settingsMenuItem);
-            contextMenu.Items.Add(new System.Windows.Controls.Separator());
-            contextMenu.Items.Add(exitMenuItem);
+            if (_trayManager == null) return;
 
-            var icon = new Hardcodet.Wpf.TaskbarNotification.TaskbarIcon
-            {
-                Tag = iconId,
-                ContextMenu = contextMenu
-            };
-            
-            icon.TrayLeftMouseUp += OnTrayIconClick;
+            var settings = _userSettingsService.GetTrayIconSettings();
+            var icons = settings.Icons
+                .Where(i => i.IsVisible)
+                .OrderBy(i => i.Order)
+                .Select(i =>
+                {
+                    var (icon, tooltip) = GetTrayIconData(i.Id);
+                    return new TrayIconManager.TrayIconData(i.Id, icon, tooltip);
+                })
+                .ToList();
 
-            // The tooltip is data-bound, but the icon image is assigned directly (see
-            // UpdateTrayIconImage) rather than via IconSource: the latter re-rasterizes the
-            // bitmap to a fixed size, which breaks crispness and sizing under display scaling.
-            string toolTipProperty = iconId switch
-            {
-                "CPU" => "ViewModel.CpuToolTip",
-                "GPU" => "ViewModel.GpuToolTip",
-                "RAM" => "ViewModel.RamToolTip",
-                "DISK" => "ViewModel.DiskToolTip",
-                "NET" => "ViewModel.NetworkToolTip",
-                "POWER" => "ViewModel.PowerToolTip",
-                _ => ""
-            };
-
-            if (toolTipProperty.Length == 0)
-                return null;
-
-            icon.SetBinding(Hardcodet.Wpf.TaskbarNotification.TaskbarIcon.ToolTipTextProperty,
-                new Binding(toolTipProperty) { Source = this });
-
-            _trayIconsById[iconId] = icon;
-            UpdateTrayIconImage(iconId);
-
-            return icon;
+            _trayManager.Rebuild(icons);
         }
 
-        // Mirrors the ViewModel's current System.Drawing.Icon onto the matching tray icon.
-        private void UpdateTrayIconImage(string iconId)
+        // The ViewModel's current System.Drawing.Icon and tooltip text for a category id.
+        private (System.Drawing.Icon? icon, string tooltip) GetTrayIconData(string iconId) => iconId switch
         {
-            if (!_trayIconsById.TryGetValue(iconId, out var trayIcon))
-                return;
+            "CPU" => (ViewModel.CpuIcon, ViewModel.CpuToolTip),
+            "GPU" => (ViewModel.GpuIcon, ViewModel.GpuToolTip),
+            "RAM" => (ViewModel.RamIcon, ViewModel.RamToolTip),
+            "DISK" => (ViewModel.DiskIcon, ViewModel.DiskToolTip),
+            "NET" => (ViewModel.NetworkIcon, ViewModel.NetworkToolTip),
+            "POWER" => (ViewModel.PowerIcon, ViewModel.PowerToolTip),
+            _ => (null, string.Empty)
+        };
 
-            trayIcon.Icon = iconId switch
-            {
-                "CPU" => ViewModel.CpuIcon,
-                "GPU" => ViewModel.GpuIcon,
-                "RAM" => ViewModel.RamIcon,
-                "DISK" => ViewModel.DiskIcon,
-                "NET" => ViewModel.NetworkIcon,
-                "POWER" => ViewModel.PowerIcon,
-                _ => trayIcon.Icon
-            };
+        // Shows the shared Settings/Exit menu at the cursor on right-click. SetForegroundWindow is the
+        // standard tray trick so the menu dismisses when the user clicks away from it.
+        private void ShowTrayContextMenu()
+        {
+            if (_trayContextMenu == null) return;
+            SetForegroundWindow(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+            _trayContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Mouse;
+            _trayContextMenu.IsOpen = true;
         }
 
         private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            // Either the image or the tooltip changing for a category updates that icon in place
+            // (NIM_MODIFY) — it keeps its slot, so the order never shifts on a value tick.
             string? iconId = e.PropertyName switch
             {
-                nameof(MainWindowViewModel.CpuIcon) => "CPU",
-                nameof(MainWindowViewModel.GpuIcon) => "GPU",
-                nameof(MainWindowViewModel.RamIcon) => "RAM",
-                nameof(MainWindowViewModel.DiskIcon) => "DISK",
-                nameof(MainWindowViewModel.NetworkIcon) => "NET",
-                nameof(MainWindowViewModel.PowerIcon) => "POWER",
+                nameof(MainWindowViewModel.CpuIcon) or nameof(MainWindowViewModel.CpuToolTip) => "CPU",
+                nameof(MainWindowViewModel.GpuIcon) or nameof(MainWindowViewModel.GpuToolTip) => "GPU",
+                nameof(MainWindowViewModel.RamIcon) or nameof(MainWindowViewModel.RamToolTip) => "RAM",
+                nameof(MainWindowViewModel.DiskIcon) or nameof(MainWindowViewModel.DiskToolTip) => "DISK",
+                nameof(MainWindowViewModel.NetworkIcon) or nameof(MainWindowViewModel.NetworkToolTip) => "NET",
+                nameof(MainWindowViewModel.PowerIcon) or nameof(MainWindowViewModel.PowerToolTip) => "POWER",
                 _ => null
             };
 
             if (iconId != null)
-                UpdateTrayIconImage(iconId);
+            {
+                var (icon, tooltip) = GetTrayIconData(iconId);
+                _trayManager?.UpdateIcon(iconId, icon, tooltip);
+            }
         }
 
         #region INavigationWindow methods
@@ -205,14 +193,10 @@ namespace WinState.Views.Windows
         {
             ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
 
-            // Dispose tray icons
-            foreach (var icon in _trayIcons)
-            {
-                icon.Dispose();
-            }
-            _trayIcons.Clear();
-            _trayIconsById.Clear();
-            
+            // Remove all tray icons and unhook the window proc.
+            _trayManager?.Dispose();
+            _trayManager = null;
+
             base.OnClosed(e);
             Application.Current.Shutdown();
         }
@@ -251,11 +235,9 @@ namespace WinState.Views.Windows
         // visual-tree count to one.
         private TrayPopupHostWindow? _trayHostWindow;
 
-        private void OnTrayIconClick(object sender, RoutedEventArgs e)
+        // Invoked by TrayIconManager on a left-click of the icon for the given category.
+        private void ShowTrayPopup(string category)
         {
-            var taskbarIcon = sender as Hardcodet.Wpf.TaskbarNotification.TaskbarIcon;
-            string category = taskbarIcon?.Tag as string ?? "ALL";
-
             if (_trayHostWindow == null)
             {
                 _trayHostWindow = new TrayPopupHostWindow();
