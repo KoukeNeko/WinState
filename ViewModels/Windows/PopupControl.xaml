@@ -1145,51 +1145,51 @@
 
                 <TextBlock Text="{helpers:Loc Key=Pop_Sensors}" Style="{StaticResource HeaderStyle}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="900">
-                    <ItemsControl ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
-                        <ItemsControl.GroupStyle>
-                            <GroupStyle>
-                                <GroupStyle.ContainerStyle>
-                                    <Style TargetType="{x:Type GroupItem}">
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type GroupItem}">
-                                                    <StackPanel>
-                                                        <ContentPresenter />
-                                                        <ItemsPresenter Margin="0"/>
-                                                    </StackPanel>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </GroupStyle.ContainerStyle>
-                                <GroupStyle.HeaderTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12" TextWrapping="Wrap"/>
-                                    </DataTemplate>
-                                </GroupStyle.HeaderTemplate>
-                            </GroupStyle>
-                        </ItemsControl.GroupStyle>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="80"/>
-                                    </Grid.ColumnDefinitions>
+                <!-- No inner ScrollViewer: the whole popup scrolls as one region (outer ScrollViewer
+                     in the root layout), capped by the host window's MaxHeight. -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Source={StaticResource SensorsViewSource}}">
+                    <ItemsControl.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.ContainerStyle>
+                                <Style TargetType="{x:Type GroupItem}">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type GroupItem}">
+                                                <StackPanel>
+                                                    <ContentPresenter />
+                                                    <ItemsPresenter Margin="0"/>
+                                                </StackPanel>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </GroupStyle.ContainerStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Foreground="#3399FF" FontWeight="Bold" Margin="0,15,0,5" FontSize="12" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ItemsControl.GroupStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
 
-                                    <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Name}" Foreground="#E0E0E0" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding Value}" Foreground="White" FontWeight="Bold" FontSize="12"/>
-                                        <TextBlock Text="{Binding Unit}" Foreground="#888888" FontSize="10" Margin="2,2,0,0" VerticalAlignment="Bottom"/>
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding Value}" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                                    <TextBlock Text="{Binding Unit}" Foreground="#888888" FontSize="10" Margin="2,2,0,0" VerticalAlignment="Bottom"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </DataTemplate>
 
@@ -1216,6 +1216,11 @@
                 BorderBrush="#22FFFFFF"
                 BorderThickness="1">
 
+            <!-- One shared scroll region for the whole popup. It engages only when the active
+                 section is taller than the window's capped height (the host window's MaxHeight is
+                 set to the cursor screen's working area in MainWindow.ShowTrayPopup). Horizontal
+                 scrolling is disabled so fixed-width graphs clip rather than add a second bar. -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid Margin="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- CPU -->
@@ -1241,6 +1246,7 @@
                 <ContentControl Grid.Row="8" Content="{Binding}" Style="{StaticResource GpuSectionHostStyle}"/>
                 <ContentControl Grid.Row="9" Content="{Binding}" Style="{StaticResource PowerSectionHostStyle}"/>
             </Grid>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

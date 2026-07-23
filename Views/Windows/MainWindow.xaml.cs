@@ -273,18 +273,8 @@ namespace WinState.Views.Windows
             {
                 trayHostWindow.Show();
             }
-            
-            trayHostWindow.UpdateLayout();
-            // Measure desired size if ActualSize is not yet valid
-            trayHostWindow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            
-            double windowWidth = trayHostWindow.ActualWidth > 0 ? trayHostWindow.ActualWidth : trayHostWindow.DesiredSize.Width;
-            double windowHeight = trayHostWindow.ActualHeight > 0 ? trayHostWindow.ActualHeight : trayHostWindow.DesiredSize.Height;
-            
-            if (windowWidth == 0) windowWidth = 320;
-            if (windowHeight == 0) windowHeight = 450;
 
-            // Get DPI scale
+            // Get DPI scale (needs a live PresentationSource, so read it after Show()).
             var source = PresentationSource.FromVisual(trayHostWindow);
             double dpiScaleX = 1.0;
             double dpiScaleY = 1.0;
@@ -294,13 +284,31 @@ namespace WinState.Views.Windows
                 dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
             }
 
+            double margin = 5 * dpiScaleX;
+
+            // Cap the popup to the cursor screen's usable height so a tall section (e.g. POWER with
+            // many sensors) scrolls inside the popup instead of overflowing the screen. The window
+            // uses SizeToContent, which honours MaxHeight, and the ScrollViewer in PopupControl then
+            // shows a scrollbar once content exceeds it. MaxHeight is logical (DIP); the working
+            // area is physical pixels, so convert with the vertical DPI scale.
+            trayHostWindow.MaxHeight = (workingArea.Height - 2 * margin) / dpiScaleY;
+
+            trayHostWindow.UpdateLayout();
+            // Measure desired size if ActualSize is not yet valid
+            trayHostWindow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+            double windowWidth = trayHostWindow.ActualWidth > 0 ? trayHostWindow.ActualWidth : trayHostWindow.DesiredSize.Width;
+            double windowHeight = trayHostWindow.ActualHeight > 0 ? trayHostWindow.ActualHeight : trayHostWindow.DesiredSize.Height;
+
+            if (windowWidth == 0) windowWidth = 320;
+            if (windowHeight == 0) windowHeight = 450;
+
             // Calculate Physical Window Size
             double physicalWindowWidth = windowWidth * dpiScaleX;
             double physicalWindowHeight = windowHeight * dpiScaleY;
-            
+
             double physicalLeft = 0;
             double physicalTop = 0;
-            double margin = 5 * dpiScaleX;
 
             // Determine Taskbar Position and calculate position
             if (workingArea.Bottom < screenBounds.Bottom) // Taskbar at Bottom
