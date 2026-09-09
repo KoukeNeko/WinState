@@ -63,6 +63,15 @@
             </Setter>
         </Style>
 
+        <!-- Readability tint painted over the window's DWM acrylic. DWMSBT_TRANSIENTWINDOW is the
+             "brightest" desktop-acrylic variant and carries no tint of its own, so text placed
+             directly on it loses contrast over a bright/colourful wallpaper. This near-black layer
+             bounds the effective background luminance regardless of what is behind the blur, which
+             keeps the light foreground text (white / #E0E0E0 / #888) above the 4.5:1 WCAG ratio.
+             The leading alpha byte is the readability knob: raise it toward FF for a darker, more
+             legible (less see-through) panel; lower it to let more of the acrylic show. -->
+        <SolidColorBrush x:Key="PopupTintBrush" Color="#8C141414"/>
+
         <local:RamDashConverter x:Key="RamDashConverter"/>
 
         <CollectionViewSource x:Key="SensorsViewSource" Source="{Binding DetailedSensors}">
@@ -111,10 +120,10 @@
                         <Line X1="0" Y1="75" X2="280" Y2="75" Stroke="#333333" StrokeThickness="1" StrokeDashArray="2 2"/>
 
                         <!-- User Usage (Blue) -->
-                        <Polyline Points="{Binding CpuUserHistoryPoints}" Stroke="#3399FF" StrokeThickness="2" />
+                        <Path Data="{Binding CpuUserHistoryGeometry}" Stroke="#3399FF" StrokeThickness="2" />
 
                         <!-- Kernel Usage (Red) -->
-                        <Polyline Points="{Binding CpuKernelHistoryPoints}" Stroke="#FF3333" StrokeThickness="2" />
+                        <Path Data="{Binding CpuKernelHistoryGeometry}" Stroke="#FF3333" StrokeThickness="2" />
                     </Canvas>
                 </Border>
 
@@ -144,16 +153,16 @@
                                     <Viewbox Stretch="Fill">
                                         <Grid Width="295" Height="100">
                                             <!-- System (Kernel) + User = Total (Red) -->
-                                            <Polygon Points="{Binding TotalHistoryPoints}"
-                                                     Fill="#40FF3333"
-                                                     Stroke="#FF3333"
-                                                     StrokeThickness="2" />
+                                            <Path Data="{Binding TotalHistoryGeometry}"
+                                                  Fill="#40FF3333"
+                                                  Stroke="#FF3333"
+                                                  StrokeThickness="2" />
 
                                             <!-- User (Blue) -->
-                                            <Polygon Points="{Binding UserHistoryPoints}"
-                                                     Fill="#403399FF"
-                                                     Stroke="#3399FF"
-                                                     StrokeThickness="2" />
+                                            <Path Data="{Binding UserHistoryGeometry}"
+                                                  Fill="#403399FF"
+                                                  Stroke="#3399FF"
+                                                  StrokeThickness="2" />
                                         </Grid>
                                     </Viewbox>
                                 </Border>
@@ -352,9 +361,9 @@
                 <Border Grid.Row="3" Height="80" Background="#252525" CornerRadius="4" ClipToBounds="True" Margin="0,0,0,15">
                     <Canvas>
                          <!-- Filled Area -->
-                        <Polygon Points="{Binding RamHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
+                        <Path Data="{Binding RamHistoryGeometry}" Fill="#3399FF" Opacity="0.6"/>
                         <!-- Line on top -->
-                        <Polyline Points="{Binding RamHistoryPoints}" Stroke="#3399FF" StrokeThickness="2"/>
+                        <Path Data="{Binding RamHistoryGeometry}" Stroke="#3399FF" StrokeThickness="2"/>
                     </Canvas>
                 </Border>
 
@@ -620,12 +629,12 @@
 
                         <Canvas>
                             <!-- Upload (Red, Top Half) -->
-                            <Polygon Points="{Binding NetworkUploadHistoryPoints}" Fill="#FF3333" Opacity="0.6"/>
-                            <Polyline Points="{Binding NetworkUploadHistoryPoints}" Stroke="#FF3333" StrokeThickness="1"/>
+                            <Path Data="{Binding NetworkUploadHistoryGeometry}" Fill="#FF3333" Opacity="0.6"/>
+                            <Path Data="{Binding NetworkUploadHistoryGeometry}" Stroke="#FF3333" StrokeThickness="1"/>
 
                             <!-- Download (Blue, Bottom Half) -->
-                            <Polygon Points="{Binding NetworkDownloadHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
-                            <Polyline Points="{Binding NetworkDownloadHistoryPoints}" Stroke="#3399FF" StrokeThickness="1"/>
+                            <Path Data="{Binding NetworkDownloadHistoryGeometry}" Fill="#3399FF" Opacity="0.6"/>
+                            <Path Data="{Binding NetworkDownloadHistoryGeometry}" Stroke="#3399FF" StrokeThickness="1"/>
 
                             <!-- Center Line -->
                             <Line X1="0" Y1="40" X2="280" Y2="40" Stroke="#333" StrokeThickness="1"/>
@@ -896,12 +905,12 @@
 
                                         <Canvas>
                                             <!-- Read (Blue, Top Half) -->
-                                            <Polygon Points="{Binding ReadHistoryPoints}" Fill="#3399FF" Opacity="0.6"/>
-                                            <Polyline Points="{Binding ReadHistoryPoints}" Stroke="#3399FF" StrokeThickness="1"/>
+                                            <Path Data="{Binding ReadHistoryGeometry}" Fill="#3399FF" Opacity="0.6"/>
+                                            <Path Data="{Binding ReadHistoryGeometry}" Stroke="#3399FF" StrokeThickness="1"/>
 
                                             <!-- Write (Red, Bottom Half) -->
-                                            <Polygon Points="{Binding WriteHistoryPoints}" Fill="#FF3333" Opacity="0.6"/>
-                                            <Polyline Points="{Binding WriteHistoryPoints}" Stroke="#FF3333" StrokeThickness="1"/>
+                                            <Path Data="{Binding WriteHistoryGeometry}" Fill="#FF3333" Opacity="0.6"/>
+                                            <Path Data="{Binding WriteHistoryGeometry}" Stroke="#FF3333" StrokeThickness="1"/>
 
                                             <!-- Center Line -->
                                             <Line X1="0" Y1="20" X2="280" Y2="20" Stroke="#333" StrokeThickness="1"/>
@@ -1208,10 +1217,12 @@
     </UserControl.Resources>
 
     <Grid>
-        <!-- Main content card. Fully transparent so the window's frosted acrylic blur shows
-             through; the dark tint/readability is provided by the blur's tint colour, and the
-             rounded corners + shadow come from the DWM window itself (see TrayPopupHostWindow). -->
-        <Border Background="Transparent"
+        <!-- Main content card. Painted with a near-black readability tint (PopupTintBrush) over the
+             window's DWM acrylic, which is the "brightest" variant and carries no tint of its own;
+             the tint is what bounds the background contrast so the light text stays legible. The
+             rounded corners + shadow come from the DWM window itself (see TrayPopupHostWindow), and
+             CornerRadius here matches so the tint does not spill past the rounded window edge. -->
+        <Border Background="{StaticResource PopupTintBrush}"
                 CornerRadius="8"
                 BorderBrush="#22FFFFFF"
                 BorderThickness="1">

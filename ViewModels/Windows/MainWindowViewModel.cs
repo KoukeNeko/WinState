@@ -33,8 +33,8 @@ namespace WinState.ViewModels.Windows
     public class CoreUsageViewModel : INotifyPropertyChanged
     {
         public int CoreIndex { get; set; }
-        public PointCollection UserHistoryPoints { get; set; } = new PointCollection();
-        public PointCollection TotalHistoryPoints { get; set; } = new PointCollection();
+        public Geometry UserHistoryGeometry { get; set; } = Geometry.Empty;
+        public Geometry TotalHistoryGeometry { get; set; } = Geometry.Empty;
         public double CurrentUsage { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -47,8 +47,8 @@ namespace WinState.ViewModels.Windows
             var last = history.Length > 0 ? history[^1] : default;
             CurrentUsage = last.User + last.Kernel;
 
-            var userPoints = new PointCollection();
-            var totalPoints = new PointCollection();
+            var userPoints = new List<System.Windows.Point>();
+            var totalPoints = new List<System.Windows.Point>();
 
             // Start at bottom-left
             userPoints.Add(new System.Windows.Point(0, 100));
@@ -72,14 +72,11 @@ namespace WinState.ViewModels.Windows
             userPoints.Add(new System.Windows.Point((x - 1) * step, 100));
             totalPoints.Add(new System.Windows.Point((x - 1) * step, 100));
 
-            if (userPoints.CanFreeze) userPoints.Freeze();
-            if (totalPoints.CanFreeze) totalPoints.Freeze();
-            
-            UserHistoryPoints = userPoints;
-            TotalHistoryPoints = totalPoints;
-            
-            OnPropertyChanged(nameof(UserHistoryPoints));
-            OnPropertyChanged(nameof(TotalHistoryPoints));
+            UserHistoryGeometry = MainWindowViewModel.BuildGraphGeometry(userPoints, closeFigure: true);
+            TotalHistoryGeometry = MainWindowViewModel.BuildGraphGeometry(totalPoints, closeFigure: true);
+
+            OnPropertyChanged(nameof(UserHistoryGeometry));
+            OnPropertyChanged(nameof(TotalHistoryGeometry));
             OnPropertyChanged(nameof(CurrentUsage));
         }
     }
@@ -191,9 +188,9 @@ namespace WinState.ViewModels.Windows
         public string NetworkName => _systemInfoService.NetworkName;
 
         [ObservableProperty]
-        private PointCollection _networkUploadHistoryPoints = new PointCollection();
+        private Geometry _networkUploadHistoryGeometry = Geometry.Empty;
         [ObservableProperty]
-        private PointCollection _networkDownloadHistoryPoints = new PointCollection();
+        private Geometry _networkDownloadHistoryGeometry = Geometry.Empty;
         
         [ObservableProperty]
         private string _networkMaxUploadString = "0 KB/s";
@@ -230,7 +227,7 @@ namespace WinState.ViewModels.Windows
         public string RamCommitLimitString => BytesToReadable(_systemInfoService.RamCommitLimit);
 
         [ObservableProperty]
-        private PointCollection _ramHistoryPoints = new PointCollection();
+        private Geometry _ramHistoryGeometry = Geometry.Empty;
 
         [ObservableProperty]
         private double _ramPressure;
@@ -490,8 +487,8 @@ namespace WinState.ViewModels.Windows
             double graphWidth = 280;
             double step = graphWidth / 59.0;
 
-            var upPoints = new PointCollection();
-            var downPoints = new PointCollection();
+            var upPoints = new List<System.Windows.Point>();
+            var downPoints = new List<System.Windows.Point>();
 
             // Start points (Center line)
             upPoints.Add(new System.Windows.Point(0, graphHeight));
@@ -521,11 +518,8 @@ namespace WinState.ViewModels.Windows
             upPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
             downPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
 
-            if (upPoints.CanFreeze) upPoints.Freeze();
-            if (downPoints.CanFreeze) downPoints.Freeze();
-
-            NetworkUploadHistoryPoints = upPoints;
-            NetworkDownloadHistoryPoints = downPoints;
+            NetworkUploadHistoryGeometry = BuildGraphGeometry(upPoints);
+            NetworkDownloadHistoryGeometry = BuildGraphGeometry(downPoints);
 
             // Update Top Network Processes (in place — see ProcessViewModel comment for why)
             var netProcesses = _systemInfoService.GetTopNetworkProcesses();
@@ -576,6 +570,31 @@ namespace WinState.ViewModels.Windows
                     coreVM.Update(history);
                 }
             }
+        }
+
+        // Builds a frozen StreamGeometry from an ordered point list. StreamGeometry is the
+        // lightest-weight WPF geometry — no per-point DependencyObjects and no layout/hit-test pass
+        // like Polyline/Polygon carry — so binding a Path to one is far cheaper to rebuild every
+        // tick than reassigning a shape's PointCollection. The figure is left open but marked
+        // filled: a Path.Fill on it fills the implicitly-closed shape (reproducing the old Polygon)
+        // while a Path.Stroke on it strokes only the real segments (reproducing the old open
+        // Polyline), so a single geometry backs both the filled area and the outline. Pass
+        // closeFigure: true to also stroke the segment from the last point back to the first, which
+        // reproduces a single Polygon that carried both a Fill and a Stroke (the per-core graphs).
+        internal static Geometry BuildGraphGeometry(IReadOnlyList<System.Windows.Point> points, bool closeFigure = false)
+        {
+            if (points.Count == 0)
+                return Geometry.Empty;
+
+            var geometry = new StreamGeometry();
+            using (StreamGeometryContext ctx = geometry.Open())
+            {
+                ctx.BeginFigure(points[0], isFilled: true, isClosed: closeFigure);
+                for (int i = 1; i < points.Count; i++)
+                    ctx.LineTo(points[i], isStroked: true, isSmoothJoin: false);
+            }
+            geometry.Freeze();
+            return geometry;
         }
 
         // Caches the rendered "signature" of each tray icon so a stable value does not rebuild and
@@ -723,10 +742,10 @@ namespace WinState.ViewModels.Windows
         }
 
         [ObservableProperty]
-        private PointCollection _cpuUserHistoryPoints = new PointCollection();
+        private Geometry _cpuUserHistoryGeometry = Geometry.Empty;
 
         [ObservableProperty]
-        private PointCollection _cpuKernelHistoryPoints = new PointCollection();
+        private Geometry _cpuKernelHistoryGeometry = Geometry.Empty;
 
         [ObservableProperty]
         private ObservableCollection<ProcessViewModel> _topProcesses = new ObservableCollection<ProcessViewModel>();
@@ -740,7 +759,7 @@ namespace WinState.ViewModels.Windows
             double step = graphWidth / (historyLength - 1);
 
             // Update User History Points (use snapshot — the live Queue is mutated on the timer thread)
-            var newUserPoints = new PointCollection();
+            var newUserPoints = new List<System.Windows.Point>();
             var userHistory = _systemInfoService.GetCpuUserHistorySnapshot();
             for (int i = 0; i < userHistory.Length; i++)
             {
@@ -749,15 +768,14 @@ namespace WinState.ViewModels.Windows
                 double val = userHistory[i];
                 if (val > 100) val = 100;
                 if (val < 0) val = 0;
-                
+
                 double y = graphHeight - (val / 100.0 * graphHeight);
                 newUserPoints.Add(new System.Windows.Point(x, y));
             }
-            newUserPoints.Freeze();
-            CpuUserHistoryPoints = newUserPoints;
+            CpuUserHistoryGeometry = BuildGraphGeometry(newUserPoints);
 
             // Update Kernel History Points (use snapshot — the live Queue is mutated on the timer thread)
-            var newKernelPoints = new PointCollection();
+            var newKernelPoints = new List<System.Windows.Point>();
             var kernelHistory = _systemInfoService.GetCpuKernelHistorySnapshot();
             for (int i = 0; i < kernelHistory.Length; i++)
             {
@@ -769,8 +787,7 @@ namespace WinState.ViewModels.Windows
                 double y = graphHeight - (val / 100.0 * graphHeight);
                 newKernelPoints.Add(new System.Windows.Point(x, y));
             }
-            newKernelPoints.Freeze();
-            CpuKernelHistoryPoints = newKernelPoints;
+            CpuKernelHistoryGeometry = BuildGraphGeometry(newKernelPoints);
 
             // Update Top Processes (in place — see ProcessViewModel comment for why)
             var processes = _systemInfoService.GetTopProcesses();
@@ -816,12 +833,12 @@ namespace WinState.ViewModels.Windows
             _ramHistory.Enqueue(RamUsage);
             if (_ramHistory.Count > 60) _ramHistory.Dequeue();
 
-            var points = new PointCollection();
+            var points = new List<System.Windows.Point>();
             double graphHeight = 100;
             double graphWidth = 280;
             double step = graphWidth / 59.0;
             int x = 0;
-            
+
             // Add bottom-left point for filled area
             points.Add(new System.Windows.Point(0, graphHeight));
 
@@ -831,12 +848,11 @@ namespace WinState.ViewModels.Windows
                 points.Add(new System.Windows.Point(x * step, y));
                 x++;
             }
-            
+
             // Add bottom-right point for filled area
             points.Add(new System.Windows.Point(graphWidth, graphHeight));
 
-            if (points.CanFreeze) points.Freeze();
-            RamHistoryPoints = points;
+            RamHistoryGeometry = BuildGraphGeometry(points);
 
             // Update Pressure (Commit Charge %)
             if (_systemInfoService.RamCommitLimit > 0)
@@ -1221,8 +1237,8 @@ namespace WinState.ViewModels.Windows
         [ObservableProperty] private string _totalWritesString = "";
 
         // Graph Properties
-        [ObservableProperty] private PointCollection _readHistoryPoints = new PointCollection();
-        [ObservableProperty] private PointCollection _writeHistoryPoints = new PointCollection();
+        [ObservableProperty] private Geometry _readHistoryGeometry = Geometry.Empty;
+        [ObservableProperty] private Geometry _writeHistoryGeometry = Geometry.Empty;
         [ObservableProperty] private string _peakReadString = "0M";
         [ObservableProperty] private string _peakWriteString = "0M";
         [ObservableProperty] private string _readSpeedString = "0 B/s";
@@ -1268,8 +1284,8 @@ namespace WinState.ViewModels.Windows
             double graphWidth = 280;
             double step = graphWidth / 59.0;
 
-            var readPoints = new PointCollection();
-            var writePoints = new PointCollection();
+            var readPoints = new List<System.Windows.Point>();
+            var writePoints = new List<System.Windows.Point>();
 
             readPoints.Add(new System.Windows.Point(0, graphHeight));
             writePoints.Add(new System.Windows.Point(0, graphHeight));
@@ -1296,11 +1312,8 @@ namespace WinState.ViewModels.Windows
             readPoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
             writePoints.Add(new System.Windows.Point((x - 1) * step, graphHeight));
 
-            if (readPoints.CanFreeze) readPoints.Freeze();
-            if (writePoints.CanFreeze) writePoints.Freeze();
-
-            ReadHistoryPoints = readPoints;
-            WriteHistoryPoints = writePoints;
+            ReadHistoryGeometry = MainWindowViewModel.BuildGraphGeometry(readPoints);
+            WriteHistoryGeometry = MainWindowViewModel.BuildGraphGeometry(writePoints);
         }
     }
 
