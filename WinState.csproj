@@ -16,7 +16,7 @@
       Both build in isolation (LHM via ProjectReference, the installer as its own .exe), so
       excluding their folders here keeps the two compilations cleanly separated.
     -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**;WinState.Bootstrapper\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Vendor\**;WinState.Installer\**;WinState.Installer.Native\**;WinState.Installer.WinUI\**;WinState.Bootstrapper\**;packages\**</DefaultItemExcludes>
     <!--
       NU1701 is a NuGet restore warning from the vendored fork's RAMSPDToolkit-NDD package
       (restored against .NET Framework for a netstandard2.0 target). It propagates into WinState's
