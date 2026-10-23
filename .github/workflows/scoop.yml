@@ -1,0 +1,120 @@
+name: scoop
+
+# When a GitHub release is published, attach a portable single-file WinState.exe per CPU and
+# refresh bucket/winstate.json in KoukeNeko/scoop-bucket so `scoop install koukeneko/winstate`
+# tracks the release. The guided installer has no silent mode, so Scoop installs the bare exe.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to (re)publish to Scoop, e.g. v0.1.3-pre
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  portable:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish self-contained single-file exe
+        run: >
+          dotnet publish WinState.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish
+
+      - name: Upload portable exe to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $asset = "WinState-${{ matrix.rid }}.exe"
+          Move-Item -Force publish/WinState.exe $asset
+          gh release upload $env:TAG $asset --clobber --repo ${{ github.repository }}
+
+  bucket:
+    needs: portable
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the bucket
+        uses: actions/checkout@v5
+        with:
+          repository: KoukeNeko/scoop-bucket
+          token: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+
+      - name: Write manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${TAG#v}"
+          base="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+
+          sha() {
+            gh release download "$TAG" --repo "${{ github.repository }}" \
+              --pattern "WinState-$1.exe" --output - | sha256sum | cut -d' ' -f1
+          }
+          x64=$(sha win-x64)
+          arm64=$(sha win-arm64)
+
+          jq -n \
+            --arg version "$version" \
+            --arg x64url "$base/WinState-win-x64.exe#/WinState.exe" --arg x64 "$x64" \
+            --arg armurl "$base/WinState-win-arm64.exe#/WinState.exe" --arg arm64 "$arm64" '
+            {
+              version: $version,
+              description: "A lightweight, real-time Windows system monitor that lives in your tray",
+              homepage: "https://github.com/KoukeNeko/WinState",
+              notes: [
+                "WinState asks for administrator rights when it starts.",
+                "CPU temperature, voltage and package power need the PawnIO driver: winget install -e --id namazso.PawnIO"
+              ],
+              architecture: {
+                "64bit": { url: $x64url, hash: $x64 },
+                arm64: { url: $armurl, hash: $arm64 }
+              },
+              bin: "WinState.exe",
+              shortcuts: [["WinState.exe", "WinState"]],
+              pre_install: "Get-Process WinState -ErrorAction SilentlyContinue | Stop-Process -Force -PassThru | Wait-Process",
+              pre_uninstall: "Get-Process WinState -ErrorAction SilentlyContinue | Stop-Process -Force -PassThru | Wait-Process"
+            }' > bucket/winstate.json
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket/winstate.json
+          if git diff --cached --quiet; then
+            echo "Manifest already up to date"
+            exit 0
+          fi
+          git commit -m "winstate: update to ${TAG#v}"
+          git push
